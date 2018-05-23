@@ -1,0 +1,98 @@
+---
+title: "partial_mortality.Rmd"
+author: "Ross Cunning"
+date: "5/23/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# Set knitr options
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load packages
+library(tidyverse)
+library(lme4)
+library(lsmeans)
+
+# Define function for accessing corals with specific condition codes
+hasCond <- function(cond, Condition.Codes) {
+  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
+}
+```
+
+# Import data
+```{r}
+# Import tidy tagged coral data (does not include visual estimates of partial mortality extent)
+load("../data/tagged_corals.RData")
+
+# Import 2016 visual estimate of extent of partial mortality data
+ia <- read_csv("../data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
+  select("Date", "Site", "Transect", "Tagged coral (Y/N)", "Coral ID", "Species", "Visual Estimate % Mortality") %>%
+  filter(`Tagged coral (Y/N)` == "Y") %>%
+  rename("pct.mort" = "Visual Estimate % Mortality") %>%
+  mutate(coral = interaction(Site, Transect, `Coral ID`),
+         Date = as.Date(Date, format = "%m/%d/%y")) %>%
+  select("Date", "coral", "Species", "pct.mort") %>%
+  filter(grepl("^R", coral)) %>%
+  mutate(pct.mort = as.numeric(pct.mort)) %>%
+  distinct()  # remove duplicated rows
+
+
+# Merge percent mortality with rest of data
+pmor <- left_join(ia, alldata, by=c("Date", "coral", "Species")) %>%
+  select(Date, reef, dir, Site, Channel, Transect, Coral.ID, Species, pct.mort, coral)
+pmor <- pmor[!is.na(pmor$Channel),]  # A couple of spp IDs didn't match (data entry error?), so other columns did not merge. omit these rows.
+```
+
+# Subset non-disease-susceptible corals
+```{r}
+# WP disease-susceptible species
+sus.spp <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DSTR", "SBOU")
+
+pmor <- filter(pmor, !Species %in% sus.spp)  # exclude susceptible corals
+```
+
+# Analyze 2016 visual estimates of partial mortality
+### Extent of partial mortality for each coral by site
+```{r, fig.width = 10, fig.height = 3}
+# Analyze loss of tissue
+ggplot(pmor, aes(x = Site, y = pct.mort)) + geom_violin() + geom_jitter()
+```
+
+### Test differences in partial mortality between channelside and control sites
+```{r}
+# Fit model
+pmor.mod1 <- pmor %>%
+  glm(pct.mort/100 ~ Channel * reef * dir, data = ., family = "quasibinomial")
+
+# Get lsmeans
+pmor.lsm1 <- lsmeans(pmor.mod1, specs = c("Channel", "reef", "dir"), type = "response")
+
+# Test for differences between channelside and control for each reef/direction
+rbind(pairs(pmor.lsm1, by = c("reef", "dir")), adjust = "none")
+
+# Plot lsmeans
+plot(pmor.lsm1, main = "% partial mortality (non-disease-susceptible corals)")
+```
+
+Non-disease-susceptible corals on the northern middle reef (R2 N) showed increased percent partial mortality at channelside sites (48.3%) relative to control sites (17.5%). There was also a significant difference for the southern middle reef, but control sites had higher partial mortality (35.8%) than the channelside sites (8.5%).
+
+### Test individual species at north middle reef
+```{r}
+pmor.mod2 <- pmor %>%
+  filter(reef == "R2", dir == "N") %>%
+  glm(pct.mort/100 ~ Channel * Species, data = ., family = "quasibinomial")
+
+# Get lsmeans
+pmor.lsm2 <- lsmeans(pmor.mod2, specs = c("Channel", "Species"), type = "response")
+
+# Pairwise comparisons (channelside vs. control) for each species
+rbind(pairs(pmor.lsm2, by = c("Species")), adjust = "none")
+
+# Plot lsmeans
+plot(pmor.lsm2)
+```
+
+*Siderastrea siderea* has significantly higher partial mortality at channelside sites (53.6%) compared to control sites (8.3%) on the northern middle reef. For *Stephanocoenia intersepta*, partial mortality is also higher at channelside relative to control sites (41.0% vs. 7.5%), but this difference was not significant. For *P. astreoides*, there were no tagged corals at the channelside sites at the northern middle reef.
+
+# Analyze PM condition code over time
