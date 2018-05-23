@@ -1,0 +1,958 @@
+---
+title: "Analysis of DCA tagged coral data during PortMiami dredge"
+author: "Ross Cunning, Rachel Silverstein"
+date: "3/07/2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load packages
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(readxl)
+
+# Function for accessing data for a specific coral from full dataset
+getCoral <- function(d, s, t, c) {
+  with(d, d[Site==s & Transect==t & Coral.ID==c, ])
+}
+
+# Function for accessing corals with specific condition codes
+hasCond <- function(cond, Condition.Codes) {
+  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
+}
+```
+
+## Import data
+
+```{r load_data_baseline, include=F}
+# REEF 2
+# File: Reef2_Baseline_POM_2013_050714.xlsx
+# Worksheet: "Raw Data"
+bl_r2 <- read.csv("data/to_analyze/Reef2_Baseline_POM_2013_050714.csv")
+# Subset only tagged corals
+bl_r2 <- droplevels(subset(bl_r2, bl_r2$Tagged.Coral..Y.N=="Y"))
+bl_r2 <- within(bl_r2, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Condition.Code <- as.character(Condition.QA.QC)
+  Site <- factor(str_replace_all(SITE..e.g..R2N1.RR., "-..", ""))
+  Week <- "BL"
+  Transect <- str_extract(Transect..e.g..R2N1.RR.1., ".$")
+  Species <- str_replace_all(Subcategory,
+                             c("Stephanocoenia intersepta"="SINT",
+                               "Diploria strigosa"="DSTR",
+                               "Dichocoenia stokesii"="DSTO",
+                               "Solenastrea bournoni"="SBOU",
+                               "Montastraea cavernosa"="MCAV",
+                               "Siderastrea siderea"="SSID",
+                               "Meandrina meandrites"="MMEA",
+                               "Diploria clivosa"="DCLI",
+                               "Agaricia sp."="AGSP",
+                               "Madracis formosa"="MFOR",
+                               "Madracis decactis"="MDEC",
+                               "Porites astreoides"="PAST",
+                               "Diplora strigosa"="DSTR",
+                               "Colpophyllia natans"="CNAT",
+                               "Eusmilia fastigiata"="EFAS",
+                               "Orbicella faveolata"="OFAV",
+                               "Acropora cervicornis"="ACER",
+                               "Agaricia agaricites"="AAGA"))
+})
+bl_r2 <- bl_r2[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Condition.Code")]
+# Aggregate all conditions for each observed coral
+bl_r2 <- with(bl_r2, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+# Condition codes appear to have been all put together separated by slashes in the baseline data.
+# separate these into a list to match subsequent data points
+#bl_r2$Condition.Codes <- strsplit(bl_r2$Condition.Codes, split = "/")
+
+# Condition codes appear to have been all put together separated by slashes in the baseline data.
+# separate these into a list to match subsequent data points
+bl_r2$Condition.Codes <- lapply(bl_r2$Condition.Codes, function(x) {
+  c(unlist(strsplit(x, split = "/")))
+})
+
+
+####
+# REEF 3
+# File: Reef2_Baseline_POM_2013_050714.xlsx
+# Worksheet: "Raw Data"
+bl_r3 <- read.csv("data/to_analyze/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).csv")
+# Subset only tagged corals
+bl_r3 <- droplevels(subset(bl_r3, bl_r3$Tagged.Coral..Y.N=="Y"))
+bl_r3 <- within(bl_r3, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Condition.Code <- as.character(QA.QC.Condition.Code)
+  Site <- factor(str_replace_all(SITE..e.g..HBNC1.CP., "-..", ""))
+  Week <- "BL"
+  Transect <- str_extract(Transect..e.g..HBNA.1., ".$")
+  Species <- str_replace_all(Subcategory,
+                             c("Stephanocoenia intersepta"="SINT",
+                               "Diploria strigosa"="DSTR",
+                               "Dichocoenia stokesii"="DSTO",
+                               "Dichocenia stokesii"="DSTO",
+                               "Solenastrea bournoni"="SBOU",
+                               "Montastraea cavernosa"="MCAV",
+                               "Siderastrea siderea"="SSID",
+                               "Meandrina meandrites"="MMEA",
+                               "Diploria clivosa"="DCLI",
+                               "Agaricia sp."="AGSP",
+                               "Madracis formosa"="MFOR",
+                               "Madracis decactis"="MDEC",
+                               "Porites astreoides"="PAST",
+                               "Diplora strigosa"="DSTR",
+                               "Colpophyllia natans"="CNAT",
+                               "Eusmilia fastigiata"="EFAS",
+                               "Orbicella faveolata"="OFAV",
+                               "Acropora cervicornis"="ACER",
+                               "Agaricia agaricites"="AAGA",
+                               "Porites porites"="PPOR",
+                               "Agaricia lamarcki"="ALAM",
+                               "Diploria labyrinthiformis"="DLAB"))
+})
+bl_r3 <- bl_r3[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Condition.Code")]
+
+# Aggregate all conditions for each observed coral
+bl_r3 <- with(bl_r3, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+
+# Condition codes appear to have been all put together separated by slashes in the baseline data.
+# separate these into a list to match subsequent data points
+bl_r3$Condition.Codes <- lapply(bl_r3$Condition.Codes, function(x) {
+  c(unlist(strsplit(x, split = "/")))
+})
+
+bl <- rbind(bl_r2, bl_r3)
+
+```
+
+```{r load_data_nov2013_mar2015, echo=FALSE, include=FALSE}
+### compliance monitoring during the project
+data <- read.csv("data/to_analyze/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.csv",
+                 stringsAsFactors = FALSE)
+data <- data[, 1:11]
+range(data$Date)
+
+data <- within(data, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Condition.Code <- as.character(Condition.Code)
+  Site <- factor(str_replace_all(Site, "-..", ""))
+})
+data <- droplevels(data)
+
+# Identify rows with missing values
+na_data <- data[rowSums(is.na(data)) > 0, ]
+na_data
+# Omit rows with missing data (only one row of all NAs...)
+data <- na.omit(data)
+
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# 2014-11-25 should be 2013-11-25 because it is Week #1
+data[data$Date=="2014-11-25", "Date"] <- as.Date("2013-11-25")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# 2013-04-02 should be 2014-04-02
+data[data$Date=="2013-04-02", "Date"] <- as.Date("2014-04-02")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# Why does "Week 27" include dates fom May 22 until July 23, 2014?
+# Looks like a mistake from filling down Date in Excel for Surveyor MLR 
+# Change all Week 27 dates greater than May 23, 2014 to May 23, 2014
+data[data$Date > "2014-05-23" & data$Week==27 & data$Surveyor=="MLR", "Date"] <- as.Date("2014-05-23")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# 2020-05-29 should be 2014-05-29
+data[data$Date=="2020-05-29", "Date"] <- as.Date("2014-05-29")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# Change Week '66/67' to 67
+data[data$Week=="66/67", "Week"] <- 67
+# Change Week '69/70' to 70
+data[data$Week=="69/70", "Week"] <- 70
+# Rows with dat 2013-12-10 say either Week 4 or Week 7... Week 7 appears to be wrong. 
+data[data$Date=="2013-12-10" & data$Week==7, "Week"] <- 4
+# 2014-01-15 should be Week 9, not Week 8. (both present in data)
+data[data$Date=="2014-01-15" & data$Week==8, "Week"] <- 9
+
+# Change "SBOU " to "SBOU"
+data[data$Species=="SBOU ", "Species"] <- "SBOU"
+
+data$Week <- as.integer(data$Week)
+data$Site <- factor(data$Site)
+levels(data$Site)
+data$Species <- factor(data$Species)
+levels(data$Species)
+head(data)
+data$unique.id <- interaction(data$Site, data$Transect, data$Coral.ID)
+levels(data$Site)
+sitesused <- c("R2NC1-LR", "R2NC2-RR", "R2NC3-LR", "R3NC1-LR", "HBNC1-CP", "HBN3-CP",
+               "HBS4-CR", "HBS3-CP", "HBSC1-CP", "R2SC1-RR", "R2SC2-LR", "R2S1-RR", 
+               "R2S2-LR", "R2N1-RR", "R2N2-LR", "R3SC2-LR", "R3SC3-SG", "R3S2-LR",
+               "R3N1-LR")
+## SUBSET ONLY THE 19 SITES IN THE REPORT?
+#data <- data[data$Site %in% sitesused, ]
+compliance_alldata <- data   # make a copy of all data including the hardbottom sites
+## SUBSET ONLY REEF 2 and 3 sites?
+data <- droplevels(data[grepl("^R", data$Site), ])
+##############
+
+# Aggregate all conditions for each observed coral
+data <- with(data, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+data <- data[with(data, order(Site, Transect, Coral.ID, Week)), ]
+```
+
+```{r, eval = FALSE}
+# look at compliance data for all sites including hardbottom
+head(compliance_alldata)
+compliance_alldata2 <- with(compliance_alldata, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+compliance_alldata2 <- compliance_alldata2[with(compliance_alldata2, order(Site, Transect, Coral.ID, Week)), ]
+
+# FIX ERRORS
+spp <- with(compliance_alldata2, aggregate(Species, by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
+                     FUN=function(x) unique(c(as.character(x)))))
+# There are several instances where a given Site-Transect-Coral.ID has multiple spp. assignments...
+# Find which name was used most frequently for each Site-Transect-Coral.ID
+which.spp <- with(compliance_alldata2, {
+  aggregate(data.frame(Species=Species), by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
+            FUN=function(x) {
+              names(table(c(as.character(x))))[which.max(table(c(as.character(x))))]
+            })
+})
+
+# Reassign all values of Species for each coral to the most freq used Species
+for (i in 1:nrow(which.spp)) {
+  compliance_alldata2[compliance_alldata2$Site==which.spp[i, "Site"] & 
+          compliance_alldata2$Transect==which.spp[i, "Transect"] &
+          compliance_alldata2$Coral.ID==which.spp[i, "Coral.ID"],
+          "Species"] <- which.spp[i, "Species"]
+}
+
+# Change Acerv WP to WB
+cond <- compliance_alldata2[compliance_alldata2$Species=="ACER" & hasCond("^WP$", compliance_alldata2$Condition.Codes), "Condition.Codes"]
+compliance_alldata2[compliance_alldata2$Species=="ACER" & hasCond("^WP$", compliance_alldata2$Condition.Codes), "Condition.Codes"] <- str_replace_all(cond, "WP", "WB")
+
+
+# Where did disease first occur?
+# Calculate frequency of WP at each Site on each Date
+wp_cad <- compliance_alldata2 %>%
+  group_by(Site, Date) %>%
+  summarise(freq.WP=sum(hasCond("^WP$", Condition.Codes))/n())
+
+wp_cad
+View(wp_cad)
+dim(wp_cad)
+dim(na.omit(wp_cad))
+
+# Find earliest Date WP was observed >0% across all sites
+wp_cad %>%
+  group_by(Site) %>%
+  summarise(`First WP > 0%`=min(Date[freq.WP > 0])) %>%
+  arrange(`First WP > 0%`) %>%
+  knitr::kable()
+
+# WP never observed at HBN2? etc
+compliance_alldata2 %>%
+  filter(Site=="HBN2", hasCond("^WP$", Condition.Codes))
+
+hbspp <- compliance_alldata2 %>%
+  filter(Week==1) %>%
+  group_by(Site, Species) %>%
+  summarise(n())
+
+range(compliance_alldata2$Date)
+#"90% of all DSTO got the disease", yet none at HBS3 and other HB sites?
+compliance_alldata2 %>%
+  filter(grepl("^HB", Site),
+         )
+
+compliance_alldata2 %>%
+  filter(Site=="HBS3", hasCond("^WP$", Condition.Codes))
+  
+```
+
+```{r load_data_aprmay2015, include=FALSE}
+# from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
+# worksheet name: IA TAGGED ONLY
+ia <- read.csv("data/to_analyze/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.csv")
+ia <- within(ia, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Site <- factor(str_replace_all(Site, "-..", ""))
+})
+ia <- ia[, c(2, 1, 5, 7, 9, 10, 11)]
+# Aggregate all conditions for each observed coral
+ia <- with(ia, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+
+```
+
+```{r load_data_junjuly2015, include=FALSE}
+# NEED TO ASSIGN CORRECT WEEK NUMBERS
+ia2 <- read.csv("data/to_analyze/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.csv")
+# Subset only tagged corals
+ia2 <- ia2[ia2$Tagged.coral..Y.N.=="Y",]
+# Subset only R2 R3
+ia2 <- droplevels(ia2[grepl("^R", ia2$Site), ])
+# Reformat date and site
+ia2 <- within(ia2, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Site <- factor(str_replace_all(Site, "-..", ""))
+  Transect <- str_extract(Transect, ".$")
+})
+# Subset columns of interest
+ia2 <- ia2[, c(2,1,3,4,22,23,24)]
+# Aggregate all conditions for each observed coral
+ia2 <- with(ia2, {
+  aggregate(data.frame(Condition.Codes=Condition.Code.qaqc), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+```
+
+```{r load_data_aug2016, include=FALSE}
+#### newer csi data - one year post-construction - permanent sites
+csi <- read.csv("data/to_analyze/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1)
+# Subset tagged corals only
+csi <- subset(csi, Tagged.coral..Y.N.=="Y")
+csi <- csi[,c(2,1,3,4,21,22,23)]
+csi$Date <- as.Date(csi$Date, format="%m/%d/%y")
+# Subset only R2 and R3
+csi <- droplevels(csi[grepl("^R", csi$Site), ])
+
+
+# Aggregate all conditions for each observed coral
+csi <- with(csi, {
+  aggregate(data.frame(Condition.Codes=Condition.Code.qaqc), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+csi <- csi[with(csi, order(Site, Transect, Coral.ID, Week)), ]
+csi <- droplevels(csi)
+```
+
+```{r merge_data, include=FALSE}
+# Combine all data
+alldata <- rbind(bl, data, ia, ia2, csi)
+
+# Add grouping factors
+alldata$Channel <- ifelse(grepl("C", alldata$Site), "control", "channelside")
+alldata$reef <- substr(alldata$Site, 1, 2)
+alldata$dir <- substr(alldata$Site, 3, 3)
+
+# Find any remaining species names errors to fix
+levels(droplevels(factor(alldata$Species)))
+# Coral that was labele MDEC at all other time points was labeled MFOR once
+alldata[alldata$Species=="MFOR", "Species"] <- "MDEC"
+# Apparently MFER and MALI (Mycetolphyllia ferox vs. aliciae) were both used for some corals, rename to MYCE
+alldata[alldata$Species=="MFER", "Species"] <- "MYCE"
+alldata[alldata$Species=="MALI", "Species"] <- "MYCE"
+alldata[alldata$Species=="Mycetophyllia ferox", "Species"] <- "MYCE"
+# Change Orbicella annularis to OANN
+alldata[alldata$Species=="Orbicella annularis", "Species"] <- "OANN"
+# Change stephanocoenia intersepta to SINT
+alldata[alldata$Species=="stephanocoenia intersepta", "Species"] <- "SINT"
+
+# Strip whitespace from condition codes
+alldata$Condition.Codes <- lapply(alldata$Condition.Codes, trimws)
+
+# Add column for individual coral unique identifier
+alldata$coral <- with(alldata, interaction(Site, Transect, Coral.ID))
+alldata <- droplevels(alldata)
+
+# Write all data to spreadsheet (STILL CONTAINS UNCORRECTED SPP CONFLICTS)
+dd <- alldata %>% 
+  arrange(coral, Date) %>%
+  select(-Channel, -reef, -dir, -coral)
+
+dd$Condition.Codes <- vapply(dd$Condition.Codes, paste, collapse = ", ", character(1L))
+
+write.table(dd, file="alldatatable.txt", row.names = FALSE, quote = FALSE, sep = "\t")
+```
+
+#### Check for conflicting species assignments for individual corals
+
+```{r check_conflicts}
+# How many corals have multiple species assignments? (e.g., indicative of an error in data entry)
+spp <- with(alldata, aggregate(Species, by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
+                     FUN=function(x) unique(c(as.character(x)))))
+table(sapply(spp$x, length)>1)
+
+capture.output(spp, file="all_spp_conflicts.txt")
+```
+
+Out of 115 corals, 23 have multiple species IDs associated with them at different points in time, indicative of some (unidentifiable) error in data entry. These errors might be resolved by going back to the raw data collection sheets.
+
+#### Change conflicting species assignments to reflect most frequently assigned species
+
+We attempt to fix some of these conflicting species assignments by changing species assignments for each coral (defined as unique site-transect-coralID) to the most frequently assigned species.
+
+```{r fix_errors}
+# There are several instances where a given Site-Transect-Coral.ID has multiple spp. assignments...
+# Find which name was used most frequently for each Site-Transect-Coral.ID
+which.spp <- with(alldata, {
+  aggregate(data.frame(Species=Species), by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
+            FUN=function(x) {
+              names(table(c(as.character(x))))[which.max(table(c(as.character(x))))]
+            })
+})
+
+# Reassign all values of Species for each coral to the most freq used Species
+for (i in 1:nrow(which.spp)) {
+  alldata[alldata$Site==which.spp[i, "Site"] & 
+          alldata$Transect==which.spp[i, "Transect"] &
+          alldata$Coral.ID==which.spp[i, "Coral.ID"],
+          "Species"] <- which.spp[i, "Species"]
+}
+```
+
+#### Identify colonies that died after having WP
+
+```{r}
+wpbeforedead <- alldata %>%
+  group_by(coral) %>%
+  summarise(WP = as.character(min(Date[hasCond("^WP$", Condition.Codes)])),
+            DEAD = as.character(min(Date[hasCond("^DEAD$", Condition.Codes)]))) %>%
+  drop_na() %>%
+  mutate(WPbeforeDEAD = as.Date(WP) < as.Date(DEAD))
+
+# For these corals that had WP before DEAD, change DEAD to WPDEAD
+alldata[alldata$coral %in% wpbeforedead$coral & hasCond("DEAD", alldata$Condition.Codes), "Condition.Codes"] <- "WPDEAD"
+```
+
+#### Change *A. cervicornis* WP records to WB
+
+```{r}
+cond <- alldata[alldata$Species=="ACER" & hasCond("^WP$", alldata$Condition.Codes), "Condition.Codes"]
+alldata[alldata$Species=="ACER" & hasCond("^WP$", alldata$Condition.Codes), "Condition.Codes"] <- str_replace_all(cond, "WP", "WB")
+
+
+
+```
+
+
+## Analyze results reported in Precht et al. 2016
+
+```{r}
+# Subset sites and date range analyzed in Precht et al. 2016
+precht <- alldata %>%
+  filter(Date >= "2013-10-19" & Date <= "2015-07-13",
+         Site %in% c("R2NC1", "R2NC2", "R2SC1", "R2SC2")) %>%
+  droplevels()
+```
+
+Block quotes are statements taken directly from the paper, and are followed by analysis attempting to evaluate and reproduce the claim.
+
+------
+
+### Dataset summary
+
+> A total of 115 coral colonies, representing 13 coral species, were tagged for repeated monitoring at four sites on the inner reef tract in Miami-Dade County (Fig. 1). Coral colonies were monitored at least 40 times between October 19, 2013 and July 13, 2015.
+
+Number of tagged corals: 
+```{r n_tagged} 
+with(precht, nlevels(coral))
+
+precht %>%
+  group_by(Site) %>%
+  summarise(n_corals = length(unique(coral)))
+```
+
+Number of species:  
+```{r n_spp}
+with(precht, nlevels(factor(Species)))
+sort(unique(precht$Species))
+```
+
+Number of times monitored:  
+```{r n_times_monitored, fig.width=6, fig.height=2}
+n_times <- precht %>%
+  group_by(coral) %>%
+  summarise(n=nlevels(factor(Date)))
+# Plot histogram of times observed
+par(mar=c(3,3,1,1), mgp=c(1.5,0.25,0), tcl=-0.25)
+hist(n_times$n, xlab="Number of times monitored", ylab="Number of colonies", main="all data")
+```
+
+Within this dataset, individual colonies were monitored between `r min(n_times$n)` and `r max(n_times$n)` times each. This is inconsistent with the statement that colonies were observed at least 40 times, and could mean that the dataset is incomplete.
+
+------
+
+### Peak of coral bleaching
+
+------
+
+> The peak of coral bleaching was recorded in September 2014. Specifically, the highest recorded bleaching prevalence occurred on September 12, 2014, when 84% (21 of 25 corals surveyed that day) showed signs of coral bleaching (Fig. 2).  
+
+```{r peak_bleaching}
+# Quantify bleaching (condition code "BL") on 9/12/14
+precht %>%
+  filter(Date=="2014-09-12") %>%
+  summarise(Date=unique(Date), n=n(), BL=sum(hasCond("^BL$", Condition.Codes)), freq.BL=BL/n) %>%
+  knitr::kable()
+
+# Quantify bleaching or partial bleaching (condition codes "BL" or "PB") on 9/12/14
+precht %>%
+  filter(Date=="2014-09-12") %>%
+  summarise(Date=unique(Date), n=n(), `BL or PB`=sum(hasCond("^BL$|^PB$", Condition.Codes)), 
+            freq.BLorPB=`BL or PB`/n) %>%
+  knitr::kable()
+
+# Quantify bleaching, partial bleaching, or paling (condition codes "BL", "PB", or "P") on 9/12/14
+precht %>%
+  filter(Date=="2014-09-12") %>%
+  summarise(Date=unique(Date), n=n(), `BL, PB, or P`=sum(hasCond("^BL$|^PB$|^P$", Condition.Codes)), 
+            freq.BL_PB_P=`BL, PB, or P`/n) %>%
+  knitr::kable()
+```
+
+The number of corals recorded as BL on September 12, 2014 was only 4 out of 25 (16%). The number of corals recorded as BL or PB was 7 (28%), and the number recorded as BL, PB, or P was 21 (84%).
+
+```{r peak_bleaching2_precht, fig.width=10, fig.height=3}
+# When was the peak of bleaching?
+bleaching <- precht %>%
+  group_by(Date) %>%
+  summarise(n=n(),
+            freq.BL=sum(hasCond("^BL$", Condition.Codes))/n,
+            freq.BLorPB=sum(hasCond("^BL$|^PB$", Condition.Codes))/n,
+            freq.BLorPBorP=sum(hasCond("^BL$|^PB$|^P$", Condition.Codes))/n)
+
+# Plot frequency of bleaching codes recorded over time            
+ggplot(data=bleaching, mapping=aes(x=Date)) + ylab("Frequency") +
+  geom_bar(aes(y=freq.BLorPBorP), stat="identity", fill="green") +  # Green is BL, PB, or P
+  geom_bar(aes(y=freq.BLorPB), stat="identity", fill="blue") +  # Blue is BL or PB
+  geom_bar(aes(y=freq.BL), stat="identity", fill="red")  # Red is BL only
+
+# Maximum frequency of BL
+bleaching[which.max(bleaching$freq.BL), c("Date", "n", "freq.BL")] %>% knitr::kable()
+
+# Maximum frequency of BL or PB
+bleaching[which.max(bleaching$freq.BLorPB), c("Date", "n", "freq.BLorPB")] %>% knitr::kable()
+
+# Maximum frequency of BL or PB or P
+bleaching[which.max(bleaching$freq.BLorPBorP), c("Date", "n", "freq.BLorPBorP")] %>% knitr::kable()
+```
+
+------
+
+### First signs of white plague disease
+
+------
+
+> The first sign of a white-plague disease outbreak (prevalence > 5%) was noticed at the southern monitoring sites, near Virginia Key, on September 26, 2014...
+
+```{r wp_frequency}
+# Calculate frequency of WP at each Site on each Date
+wp_precht <- precht %>%
+  group_by(Site, Date) %>%
+  summarise(freq.WP=sum(hasCond("^WP$", Condition.Codes))/n())
+
+# What was the frequency of WP at the southern monitoring sites on September 26, 2014?
+wp_precht %>% filter(Date=="2014-09-26", Site %in% c("R2SC1", "R2SC2")) %>% knitr::kable()
+```
+
+These data show that the prevalence of WP on September 26, 2014 at the southern monitoring sites was 0% at R2SC1 and 4% at R2SC2.
+
+```{r first_wp_over5}
+# Find earliest Date with WP frequency greater than 5% at each Site
+wp_precht %>%
+  group_by(Site) %>%
+  summarise(`First WP > 5%`=min(Date[freq.WP > 0.05]),
+            freq.WP=freq.WP[Date==`First WP > 5%`]) %>%
+  knitr::kable()
+```
+
+We find that the first observation of ≥5% prevalence within the Precht et al. 2016 study sites was Oct 17 2014 at R2SC2, when the prevalence of WP was 8% of colonies.
+
+Using the full dataset (all sites monitored), what was the first date that WP was observed at greater than 5% prevalence?
+
+```{r first_wp_over5_allsites}
+# Calculate frequency of WP at each Site on each Date
+wp_all <- alldata %>%
+  group_by(Site, Date) %>%
+  summarise(freq.WP=sum(hasCond("^WP$", Condition.Codes))/n())
+
+# Find earliest Date WP was observed >5% across all sites
+wp_all %>%
+  group_by(Site) %>%
+  summarise(`First WP > 5%`=min(Date[freq.WP > 0.05], na.rm=T)) %>%
+  arrange(`First WP > 5%`) %>%
+  knitr::kable()
+
+# Find earliest Date WP was observed >0% across all sites
+wp_all %>%
+  group_by(Site) %>%
+  summarise(`First WP > 0%`=min(Date[freq.WP > 0], na.rm=T)) %>%
+  arrange(`First WP > 0%`) %>%
+  knitr::kable()
+# First observation at R2N1 on 10-23-2013
+alldata %>%
+  filter(Date=="2013-10-23",
+         hasCond("^WP$", Condition.Codes))
+```
+
+```{r first_wp}
+# Find earliest Date with WP observed at all
+wp_precht %>%
+  group_by(Site) %>%
+  summarise(`First WP > 0%`=min(Date[freq.WP > 0]),
+            freq.WP=freq.WP[Date==`First WP > 0%`]) %>%
+  knitr::kable()
+
+# Which coral had WP on June 20, 2014?
+precht %>%
+  filter(Date=="2014-06-20",
+         hasCond("^WP$", Condition.Codes))
+# It's a cervicornis... this is believed to be changed from WP to WB in later QC...
+
+precht %>%
+  filter(Date=="2014-08-13",
+         hasCond("^WP$", Condition.Codes))
+
+allwp <- alldata %>%
+  group_by(Date, WP = hasCond("^WP$", Condition.Codes), Species) %>%
+  summarise(n()) %>%
+  filter(WP) %>%
+  arrange(Date)
+```
+
+------
+
+### White plague disease prevalence and dynamics
+
+------
+
+> ...by November 18, 15% of the tagged colonies showed outward signs of white-plague disease (Fig. 2).
+
+```{r wp_2014-11-18}
+# How many colonies had WP on November 18th, 2015?
+precht %>%
+  filter(Date=="2014-11-18") %>%
+  summarise(Date=unique(Date),
+            n=n(),
+            WP=sum(hasCond("^WP$", Condition.Codes)),
+            freq.WP=WP/n) %>%
+  knitr::kable()
+```
+
+We find that only 6 of 55 colonies (10.9%) observed on November 18th were recorded with the WP condition code.
+
+```{r wp_or_dead_2014-11-18}
+# How many colonies had WP or were WPDEAD on November 18th, 2015?
+precht %>%
+  filter(Date=="2014-11-18") %>%
+  summarise(Date=unique(Date),
+            n=n(),
+            WPorDEAD=sum(hasCond("^WP$|^WPDEAD$", Condition.Codes)),
+            freq.WPorDEAD=WPorDEAD/n) %>%
+  knitr::kable()
+```
+
+If both WP or WPDEAD are counted on November 18th, 2015, the frequency is 12.7% (7 out of 55). We are unable to reproduce the 15% number reported in the study.
+
+------
+
+> White-plague disease did not impact the northern monitoring sites (14 km north) until June 2015.
+
+```{r wp_north}
+# When was WP first observed at ≥5% prevalence at the northern sites?
+wp_precht %>%
+  filter(Site %in% c("R2NC1", "R2NC2")) %>%
+  group_by(Site) %>%
+  summarise(`First WP > 5%`=min(Date[freq.WP > 0.05]),
+            freq.WP=freq.WP[Date==`First WP > 5%`]) %>%
+  knitr::kable()
+```
+
+We find that WP was first observed ≥5% at the northern sites in *May 2015*.
+
+------
+
+> During the week of June 17 [2015], 17% of the tagged coral colonies at the northern monitoring sites were infected with white-plague disease.
+
+```{r wp_2015-06-17}
+# How many corals at northern sites had WP on June 17, 2015?
+precht %>%
+  filter(Site %in% c("R2NC1", "R2NC2"), Date=="2015-06-17") %>%
+  summarise(Date=unique(Date),
+            n=n(),
+            WP=sum(hasCond("^WP$", Condition.Codes)),
+            freq.WP=WP/n) %>%
+  knitr::kable()
+
+# How many corals at northern sites had WP or WPDEAD on June 17, 2015?
+precht %>%
+  filter(Site %in% c("R2NC1", "R2NC2"), Date=="2015-06-17") %>%
+  summarise(Date=unique(Date),
+            n=n(),
+            WPorWPDEAD=sum(hasCond("^WP$|^WPDEAD$", Condition.Codes)),
+            freq.WPorWPDEAD=WPorWPDEAD/n) %>%
+  knitr::kable()
+
+```
+
+We find that out of 60 corals at the northern monitoring sites, 6 (10%) were observed with WP on June 17th, 2015. If WP and corals DEAD after WP are counted, it is 8 out of 60 (13%).
+
+------
+
+> In total, white-plague disease was observed on seven of the 13 coral species identified at the four permanent monitoring sites (Table 1). 
+
+```{wp_spp}
+# How many species were observed to ever have WP?
+precht %>%
+  group_by(Species) %>%
+  summarise(`WP observed`=any(hasCond("^WP$", Condition.Codes))) %>%
+  knitr::kable()
+```
+
+We find that 7 species were impacted by WP -- this includes A cervicornis which we believe later was changed during additional QC to distinguish this as a different disease. 
+
+------
+
+> The highest recorded prevalence of white-plague disease occurred on July 7, 2015, when 40% (22 of 55 corals surveyed that day) showed signs of white-plague disease infection (Fig. 2). 
+
+```{r wp_2015-07-07, fig.width=10, fig.height=3}
+# What is prevalence of WP on July 7th, 2015?
+precht %>%
+  filter(Date=="2015-07-07") %>%
+  summarise(Date=unique(Date), n=n(), 
+            WP=sum(hasCond("^WP$", Condition.Codes)), 
+            freq.WP=WP/n) %>%
+  knitr::kable()
+
+precht %>%
+  filter(Date=="2015-07-07") %>%
+  summarise(Date=unique(Date), n=n(), 
+            WPorWPDEAD=sum(hasCond("^WP$|^WPDEAD$", Condition.Codes)), 
+            freq.WPorWPDEAD=WPorWPDEAD/n) %>%
+  knitr::kable()
+```
+
+We find that on July 7, 2015, only 3 out of 55 corals observed (5.5%) were recorded as having WP. If we include corals that were recorded as having WP *and* corals that were previously recorded as having WP and are now recorded as dead (despite the fact the paper claims to be reporting corals that "showed signs of white-plague infection"), the total is 16 out of 55, or 29.1%. Therefore, we are unable to reproduce the result reported in the paper with the provided data.
+
+When was the highest recorded prevalence of WP?
+
+```{r precht_highest_wp_prevalence, fig.width=10, fig.height=3}
+# Graph white plague prevalence by Date (for all corals surveyed - may include multiple sites)
+precht_wp_by_date <- precht %>%
+  group_by(Date) %>%
+  summarise(n=n(), WP=sum(hasCond("^WP$", Condition.Codes)), freq.WP=WP/n)
+
+ggplot(data=precht_wp_by_date, aes(x=Date, y=freq.WP)) + ylim(0,0.4) + geom_bar(stat="identity")
+
+with(precht_wp_by_date, precht_wp_by_date[which.max(freq.WP), ]) %>% knitr::kable()
+```
+
+We find that the highest prevalence of WP on any Date (all sites observed) was 15% (9 of 60 colonies) on July 5th, 2015. 
+```{r}
+# Graph prevalence of WP or WPDEAD
+precht_wporwpdead_by_date <- precht %>%
+  group_by(Date) %>%
+  summarise(n=n(), WPorWPDEAD=sum(hasCond("^WP$|^WPDEAD$", Condition.Codes)), 
+            freq.WPorWPDEAD=WPorWPDEAD/n)
+
+ggplot(data=precht_wporwpdead_by_date, aes(x=Date, y=freq.WPorWPDEAD)) + ylim(0,0.4) + geom_bar(stat="identity")
+
+with(precht_wporwpdead_by_date, precht_wporwpdead_by_date[which.max(freq.WPorWPDEAD), ]) %>% knitr::kable()
+```
+
+If we count corals that have active white plauge disease (WP) *and* corals that previously had WP disease and are now dead, we find that the highest prevalence on any date is 16 out of 55 (29.1%) on July 7th, 2015.
+
+------
+
+> Of the white-plague impacted species, the overall disease prevalence was 51% (35 of 69 corals surveyed).
+
+```{r wp_freq_sus_spp}
+# Susceptible species:
+sus <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DSTR", "SBOU")
+
+precht_wp.corals <- precht %>%
+  filter(Species %in% sus) %>%
+  group_by(Species, coral) %>%
+  summarise(WP=any(hasCond("^WP$", Condition.Codes))) %>%
+  select(WP) %>% table()
+
+knitr::kable(rbind(precht_wp.corals, TOTAL=colSums(precht_wp.corals)))
+```
+
+We find that 30 out of 69 colonies (43.5%) were recorded as having WP at any point in time.
+
+------
+
+### Relationship between bleaching and disease
+
+------
+
+> The majority (81%) of white-plague susceptible corals bleached, prior to becoming infected with the disease (Table 1). *Meandrina meandrites*, *Dichocoenia stokesi*, *Colpophyllia natans*, and *Pseudodiploria strigosa* were the most heavily impacted coral species, with 100% of tagged colonies being afflicted with white-plague disease. All colonies that showed signs of disease died, regardless of species. 
+
+```{r precht_bleaching_disease}
+# Get list of WP-affected corals
+precht_wp.corals <- precht %>%
+  filter(Species %in% sus) %>%
+  group_by(coral) %>%
+  summarise(WP=any(hasCond("^WP$", Condition.Codes))) %>%
+  filter(WP==TRUE)
+
+# How many WP-affected corals bleached prior to becoming infected?
+precht_bleach_dis <- precht %>%
+  filter(coral %in% precht_wp.corals$coral) %>%
+  group_by(coral) %>%
+  summarise(`P date`=min(Date[hasCond("^P$", Condition.Codes)]),
+            `PB date`=min(Date[hasCond("^PB$", Condition.Codes)]),
+            `BL date`=min(Date[hasCond("^BL$", Condition.Codes)]),
+            `WP date`=min(Date[hasCond("^WP$", Condition.Codes)])) %>%
+  arrange(`BL date`, `PB date`, `P date`, `WP date`)
+
+knitr::kable(precht_bleach_dis)
+
+# Calculate number of corals with either BL, PB, or P prior to WP
+precht_bleach_dis %>%
+  summarise(`n with WP`=n(),
+            `BL first`=sum(`BL date` < `WP date`),
+            `PB first`=sum(`PB date` < `WP date`),
+            `P first`=sum(`P date` < `WP date`))
+```
+
+We find that only 3 out of 30 corals (10%) that had WP were recorded as bleached (BL) prior to becoming infected. 22 out of 30 (73.3%) were recorded as partially bleached (PB) prior to infection, while 30 out of 30 (100%) were recorded as pale (P) prior to infection. The designation of pale does not necessarily indicate bleaching, since corals typically pale in summer months even in the absence of bleaching.
+
+However, to properly and statistically assess whether there is a relationship between bleaching and disease, the number of corals that bleached and did NOT get disease must also be considered.
+
+```{r bleaching_nodisease}
+# How many corals bleached but did NOT get WP disease?
+blwp <- precht %>%
+  filter(Species %in% sus) %>%
+  group_by(coral) %>%
+  summarise(BL=any(hasCond("^BL$", Condition.Codes)),
+            BLorPB=any(hasCond("^BL$|^PB$", Condition.Codes)),
+            BLorPBorP=any(hasCond("^BL$|^PB$|^P$", Condition.Codes)),
+            WP=any(hasCond("^WP$", Condition.Codes)))
+
+# Note that this analysis needs to be improved by incorporating the time component -- currently, this code only looks at whether corals were recorded as BL/PB and WP, but not when.
+
+res <- with(blwp, table(BLorPB, WP))
+addmargins(res)
+
+fisher.test(res)
+```
+
+We find that 50 of the 69 disease-susceptible corals 'bleached' (BL or PB), and of these, 22 got WP disease (44%), but 28 did not (56%). We find a similar incidence of disease among corals that did not bleach, with 8 out of 19 (42%) having the disease, and 11 (58%) not having disease. With Fisher's exact test, we find no relationship between bleaching (BL or PB) and disease (WP) (p-value=1).
+
+------
+
+### Relationship between sedimentation stress and disease
+
+-----
+
+```{r sed_disease}
+# How many corals had sedimentation stress and disease?
+sedwp <- precht %>%
+  filter(Species %in% sus) %>%
+  group_by(coral) %>%
+  summarise(SED=any(hasCond("^SED$", Condition.Codes)),
+            SA=any(hasCond("^SA$", Condition.Codes)),
+            PBUR=any(hasCond("^PBUR$", Condition.Codes)),
+            BUR=any(hasCond("^BUR$", Condition.Codes)),
+            PBURorBUR=any(hasCond("^PBUR$|^BUR$", Condition.Codes)),
+            SAorPBUR=any(hasCond("^SA$|^PBUR$", Condition.Codes)),
+            WP=any(hasCond("^WP$", Condition.Codes)))
+
+# Note that this analysis needs to be improved by incorporating the time component -- currently, this code only looks at whether corals were recorded as SED/SA/PBUR/BUR and WP, but not when.
+
+res <- with(sedwp, table(SA, WP))
+addmargins(res)
+
+fisher.test(res)
+# There is no significant relationship between any of these factors and WP.
+```
+
+
+How many corals were recorded as WP but then did not die?
+```{r}
+# Get list of WP-affected corals prior to 07-13-2015
+all_wp.corals <- alldata %>%
+  filter(Species %in% sus, Date < "2015-07-15") %>%
+  group_by(coral) %>%
+  summarise(WP=any(hasCond("^WP$", Condition.Codes))) %>%
+  filter(WP==TRUE)
+all_wp.corals
+
+wp_dead <- alldata %>%
+  filter(Site %in% c("R2SC1", "R2SC2", "R2NC1", "R2NC2")) %>%
+  filter(coral %in% all_wp.corals$coral) %>%
+  group_by(coral) %>%
+  summarise(wpthendied = any(hasCond("DEAD", Condition.Codes)))
+wp_dead
+table(wp_dead$wpthendied)
+
+# corals that were recorded as WP but were not ever recorded as DEAD
+getCoral(alldata, "R2NC1", 2, 1) %>% arrange(Date)
+getCoral(alldata, "R2SC1", 3, 1) %>% arrange(Date)
+getCoral(alldata, "R2SC1", 1, 2) %>% arrange(Date)
+getCoral(alldata, "R2NC2", 3, 2) %>% arrange(Date)
+  
+```
+
+How many colonies died that were not among the 'susceptible' species?
+```{r}
+nonsusdead <- alldata %>%
+  filter(!(Species %in% sus),
+         Site %in% c("R2SC1", "R2SC2", "R2NC1", "R2NC2")) %>%
+  group_by(coral) %>%
+  mutate(died = any(hasCond("DEAD", Condition.Codes))) %>%
+  filter(died == TRUE)
+
+unique(nonsusdead$coral)  # 7 corals of non-susceptible species died (at the R2 control sites)
+  
+```
+
+how many corals WP or WPDEAD at all Sites by July 15 2015
+```{r}
+d1 <- alldata %>%
+  filter(Date <= "2015-07-15") %>%
+  group_by(Site, coral) %>%
+  summarise(WPorWPDEAD = any(hasCond("^WP$|^WPDEAD$", Condition.Codes))) %>%
+  ungroup() %>% group_by(Site) %>%
+  summarise(n = n(), WPorWPDEAD = sum(WPorWPDEAD), freq = WPorWPDEAD / n)
+d1
+write.table(d1, file="WPorWPDEAD_byJuly152015.txt", row.names=F, quote=F)
+```
+
+-----
+
+## Analyze dredging impacts
+
+```{r}
+alldata <- as_tibble(alldata)
+alldata
+```
+
+
