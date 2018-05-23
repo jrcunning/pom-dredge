@@ -1,0 +1,397 @@
+---
+title: "Import and tidy tagged coral data"
+author: "Ross Cunning, Rachel Silverstein"
+date: "3/07/2018"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    toc_depth: 4
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load packages
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(readxl)
+
+# Function for accessing data for a specific coral from full dataset
+getCoral <- function(d, s, t, c) {
+  with(d, d[Site==s & Transect==t & Coral.ID==c, ])
+}
+
+# Function for accessing corals with specific condition codes
+hasCond <- function(cond, Condition.Codes) {
+  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
+}
+```
+
+## Import data
+
+```{r load_data_baseline, include=F}
+# REEF 2
+# File: Reef2_Baseline_POM_2013_050714.xlsx
+# Worksheet: "Raw Data"
+bl_r2 <- read.csv("data/to_analyze/Reef2_Baseline_POM_2013_050714.csv")
+# Subset only tagged corals
+bl_r2 <- droplevels(subset(bl_r2, bl_r2$Tagged.Coral..Y.N=="Y"))
+bl_r2 <- within(bl_r2, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Condition.Code <- as.character(Condition.QA.QC)
+  MaxDiam <- Max.Diameter..cm.
+  Site <- factor(str_replace_all(SITE..e.g..R2N1.RR., "-..", ""))
+  Week <- "BL"
+  Transect <- str_extract(Transect..e.g..R2N1.RR.1., ".$")
+  Species <- str_replace_all(Subcategory,
+                             c("Stephanocoenia intersepta"="SINT",
+                               "Diploria strigosa"="DSTR",
+                               "Dichocoenia stokesii"="DSTO",
+                               "Solenastrea bournoni"="SBOU",
+                               "Montastraea cavernosa"="MCAV",
+                               "Siderastrea siderea"="SSID",
+                               "Meandrina meandrites"="MMEA",
+                               "Diploria clivosa"="DCLI",
+                               "Agaricia sp."="AGSP",
+                               "Madracis formosa"="MFOR",
+                               "Madracis decactis"="MDEC",
+                               "Porites astreoides"="PAST",
+                               "Diplora strigosa"="DSTR",
+                               "Colpophyllia natans"="CNAT",
+                               "Eusmilia fastigiata"="EFAS",
+                               "Orbicella faveolata"="OFAV",
+                               "Acropora cervicornis"="ACER",
+                               "Agaricia agaricites"="AAGA"))
+})
+bl_r2 <- bl_r2[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Condition.Code", "MaxDiam")]
+# Aggregate all conditions for each observed coral
+bl_r2 <- with(bl_r2, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
+            FUN=function(x) c(as.character(x)))
+})
+
+# Condition codes appear to have been all put together separated by slashes in the baseline data.
+# separate these into a list to match subsequent data points
+bl_r2$Condition.Codes <- lapply(bl_r2$Condition.Codes, function(x) {
+  c(unlist(strsplit(x, split = "/")))
+})
+
+####
+# REEF 3
+# File: Reef2_Baseline_POM_2013_050714.xlsx
+# Worksheet: "Raw Data"
+bl_r3 <- read.csv("data/to_analyze/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).csv")
+# Subset only tagged corals
+bl_r3 <- droplevels(subset(bl_r3, bl_r3$Tagged.Coral..Y.N=="Y"))
+bl_r3 <- within(bl_r3, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Condition.Code <- as.character(QA.QC.Condition.Code)
+  MaxDiam <- Max.Diameter
+  Site <- factor(str_replace_all(SITE..e.g..HBNC1.CP., "-..", ""))
+  Week <- "BL"
+  Transect <- str_extract(Transect..e.g..HBNA.1., ".$")
+  Species <- str_replace_all(Subcategory,
+                             c("Stephanocoenia intersepta"="SINT",
+                               "Diploria strigosa"="DSTR",
+                               "Dichocoenia stokesii"="DSTO",
+                               "Dichocenia stokesii"="DSTO",
+                               "Solenastrea bournoni"="SBOU",
+                               "Montastraea cavernosa"="MCAV",
+                               "Siderastrea siderea"="SSID",
+                               "Meandrina meandrites"="MMEA",
+                               "Diploria clivosa"="DCLI",
+                               "Agaricia sp."="AGSP",
+                               "Madracis formosa"="MFOR",
+                               "Madracis decactis"="MDEC",
+                               "Porites astreoides"="PAST",
+                               "Diplora strigosa"="DSTR",
+                               "Colpophyllia natans"="CNAT",
+                               "Eusmilia fastigiata"="EFAS",
+                               "Orbicella faveolata"="OFAV",
+                               "Acropora cervicornis"="ACER",
+                               "Agaricia agaricites"="AAGA",
+                               "Porites porites"="PPOR",
+                               "Agaricia lamarcki"="ALAM",
+                               "Diploria labyrinthiformis"="DLAB"))
+})
+bl_r3 <- bl_r3[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Condition.Code", "MaxDiam")]
+
+# Aggregate all conditions for each observed coral
+bl_r3 <- with(bl_r3, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
+            FUN=function(x) c(as.character(x)))
+})
+
+# Condition codes appear to have been all put together separated by slashes in the baseline data.
+# separate these into a list to match subsequent data points
+bl_r3$Condition.Codes <- lapply(bl_r3$Condition.Codes, function(x) {
+  c(unlist(strsplit(x, split = "/")))
+})
+
+bl <- rbind(bl_r2, bl_r3)
+bl$MaxDiam <- as.numeric(as.character(bl$MaxDiam))
+
+```
+
+```{r load_data_nov2013_mar2015, echo=FALSE, include=FALSE}
+### compliance monitoring during the project
+data <- read.csv("data/to_analyze/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.csv",
+                 stringsAsFactors = FALSE)
+data <- data[, 1:11]
+range(data$Date)
+
+data <- within(data, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Condition.Code <- as.character(Condition.Code)
+  Site <- factor(str_replace_all(Site, "-..", ""))
+})
+data <- droplevels(data)
+
+# Identify rows with missing values
+na_data <- data[rowSums(is.na(data)) > 0, ]
+na_data
+# Omit rows with missing data (only one row of all NAs...)
+data <- na.omit(data)
+
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# 2014-11-25 should be 2013-11-25 because it is Week #1
+data[data$Date=="2014-11-25", "Date"] <- as.Date("2013-11-25")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# 2013-04-02 should be 2014-04-02
+data[data$Date=="2013-04-02", "Date"] <- as.Date("2014-04-02")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# Why does "Week 27" include dates fom May 22 until July 23, 2014?
+# Looks like a mistake from filling down Date in Excel for Surveyor MLR 
+# Change all Week 27 dates greater than May 23, 2014 to May 23, 2014
+data[data$Date > "2014-05-23" & data$Week==27 & data$Surveyor=="MLR", "Date"] <- as.Date("2014-05-23")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# 2020-05-29 should be 2014-05-29
+data[data$Date=="2020-05-29", "Date"] <- as.Date("2014-05-29")
+# Look for errors in the data (date should correspond to week)
+levels(droplevels(interaction(data$Date, data$Week)))
+# Change Week '66/67' to 67
+data[data$Week=="66/67", "Week"] <- 67
+# Change Week '69/70' to 70
+data[data$Week=="69/70", "Week"] <- 70
+# Rows with dat 2013-12-10 say either Week 4 or Week 7... Week 7 appears to be wrong. 
+data[data$Date=="2013-12-10" & data$Week==7, "Week"] <- 4
+# 2014-01-15 should be Week 9, not Week 8. (both present in data)
+data[data$Date=="2014-01-15" & data$Week==8, "Week"] <- 9
+
+# Change "SBOU " to "SBOU"
+data[data$Species=="SBOU ", "Species"] <- "SBOU"
+
+data$Week <- as.integer(data$Week)
+data$Site <- factor(data$Site)
+levels(data$Site)
+data$Species <- factor(data$Species)
+levels(data$Species)
+head(data)
+data$unique.id <- interaction(data$Site, data$Transect, data$Coral.ID)
+levels(data$Site)
+sitesused <- c("R2NC1-LR", "R2NC2-RR", "R2NC3-LR", "R3NC1-LR", "HBNC1-CP", "HBN3-CP",
+               "HBS4-CR", "HBS3-CP", "HBSC1-CP", "R2SC1-RR", "R2SC2-LR", "R2S1-RR", 
+               "R2S2-LR", "R2N1-RR", "R2N2-LR", "R3SC2-LR", "R3SC3-SG", "R3S2-LR",
+               "R3N1-LR")
+## SUBSET ONLY THE 19 SITES IN THE REPORT?
+#data <- data[data$Site %in% sitesused, ]
+compliance_alldata <- data   # make a copy of all data including the hardbottom sites
+## SUBSET ONLY REEF 2 and 3 sites?
+data <- droplevels(data[grepl("^R", data$Site), ])
+##############
+
+# Aggregate all conditions for each observed coral
+data <- with(data, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+data <- data[with(data, order(Site, Transect, Coral.ID, Week)), ]
+
+data$MaxDiam <- NA    # Max Diameter data was not collected during compliance
+data <- data %>% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)
+```
+
+
+```{r load_data_aprmay2015, include=FALSE}
+# from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
+# worksheet name: IA TAGGED ONLY
+ia <- read.csv("data/to_analyze/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.csv")
+ia <- within(ia, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Site <- factor(str_replace_all(Site, "-..", ""))
+})
+ia <- ia[, c(2, 1, 5, 7, 9, 10, 11)]
+# Aggregate all conditions for each observed coral
+ia <- with(ia, {
+  aggregate(data.frame(Condition.Codes=Condition.Code), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species), 
+            FUN=function(x) c(as.character(x)))
+})
+ia$MaxDiam <- NA    # Max Diameter data was not collected at this time
+ia <- ia %>% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)
+```
+
+```{r load_data_junjuly2015, include=FALSE}
+# NEED TO ASSIGN CORRECT WEEK NUMBERS
+ia2 <- read.csv("data/to_analyze/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.csv")
+# Subset only tagged corals
+ia2 <- ia2[ia2$Tagged.coral..Y.N.=="Y",]
+# Subset only R2 R3
+ia2 <- droplevels(ia2[grepl("^R", ia2$Site), ])
+# Reformat date and site
+ia2 <- within(ia2, {
+  Date <- as.Date(Date, format="%m/%d/%y")
+  Site <- factor(str_replace_all(Site, "-..", ""))
+  Transect <- str_extract(Transect, ".$")
+  MaxDiam <- as.character(Max.Diameter)
+})
+# Subset columns of interest
+#ia2 <- ia2[, c(2,1,3,4,22,23,24)]
+ia2 <- ia2[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "MaxDiam", "Condition.Code.qaqc")]
+# Aggregate all conditions for each observed coral
+ia2 <- with(ia2, {
+  aggregate(data.frame(Condition.Codes=Condition.Code.qaqc), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
+            FUN=function(x) c(as.character(x)))
+})
+```
+
+```{r load_data_aug2016, include=FALSE}
+#### newer csi data - one year post-construction - permanent sites
+csi <- read.csv("data/to_analyze/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1)
+# Subset tagged corals only
+csi <- subset(csi, Tagged.coral..Y.N.=="Y")
+#csi <- csi[,c(2,1,3,4,21,22,23)]
+csi <- csi[,c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Max.Diameter", "Condition.Code.qaqc")]
+csi$Date <- as.Date(csi$Date, format="%m/%d/%y")
+csi$MaxDiam <- as.character(csi$Max.Diameter)
+csi$MaxDiam[is.na(csi$MaxDiam)] <- "-"
+# Subset only R2 and R3
+csi <- droplevels(csi[grepl("^R", csi$Site), ])
+
+
+# Aggregate all conditions for each observed coral
+csi <- with(csi, {
+  aggregate(data.frame(Condition.Codes=Condition.Code.qaqc), 
+            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
+                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
+            FUN=function(x) c(as.character(x)))
+})
+csi <- csi[with(csi, order(Site, Transect, Coral.ID, Week)), ]
+csi <- droplevels(csi)
+```
+
+```{r merge_data, include=FALSE}
+# Combine all data
+alldata <- rbind(bl, data, ia, ia2, csi)
+
+# Add grouping factors
+alldata$Channel <- ifelse(grepl("C", alldata$Site), "control", "channelside")
+alldata$reef <- substr(alldata$Site, 1, 2)
+alldata$dir <- substr(alldata$Site, 3, 3)
+
+# Find any remaining species names errors to fix
+levels(droplevels(factor(alldata$Species)))
+# Coral that was labele MDEC at all other time points was labeled MFOR once
+alldata[alldata$Species=="MFOR", "Species"] <- "MDEC"
+# Apparently MFER and MALI (Mycetolphyllia ferox vs. aliciae) were both used for some corals, rename to MYCE
+alldata[alldata$Species=="MFER", "Species"] <- "MYCE"
+alldata[alldata$Species=="MALI", "Species"] <- "MYCE"
+alldata[alldata$Species=="Mycetophyllia ferox", "Species"] <- "MYCE"
+# Change Orbicella annularis to OANN
+alldata[alldata$Species=="Orbicella annularis", "Species"] <- "OANN"
+# Change stephanocoenia intersepta to SINT
+alldata[alldata$Species=="stephanocoenia intersepta", "Species"] <- "SINT"
+
+# Strip whitespace from condition codes
+alldata$Condition.Codes <- lapply(alldata$Condition.Codes, trimws)
+
+# Add column for individual coral unique identifier
+alldata$coral <- with(alldata, interaction(Site, Transect, Coral.ID))
+alldata <- droplevels(alldata)
+
+# Write all data to spreadsheet (STILL CONTAINS UNCORRECTED SPP CONFLICTS)
+dd <- alldata %>% 
+  arrange(coral, Date) %>%
+  select(-Channel, -reef, -dir, -coral)
+
+dd$Condition.Codes <- vapply(dd$Condition.Codes, paste, collapse = ", ", character(1L))
+
+write.table(dd, file="alldatatable.txt", row.names = FALSE, quote = FALSE, sep = "\t")
+```
+
+#### Check for conflicting species assignments for individual corals
+
+```{r check_conflicts}
+# How many corals have multiple species assignments? (e.g., indicative of an error in data entry)
+spp <- with(alldata, aggregate(Species, by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
+                     FUN=function(x) unique(c(as.character(x)))))
+table(sapply(spp$x, length)>1)
+
+capture.output(spp, file="all_spp_conflicts.txt")
+```
+
+Out of 115 corals, 23 have multiple species IDs associated with them at different points in time, indicative of some (unidentifiable) error in data entry. These errors might be resolved by going back to the raw data collection sheets.
+
+#### Change conflicting species assignments to reflect most frequently assigned species
+
+We attempt to fix some of these conflicting species assignments by changing species assignments for each coral (defined as unique site-transect-coralID) to the most frequently assigned species.
+
+```{r fix_errors}
+# There are several instances where a given Site-Transect-Coral.ID has multiple spp. assignments...
+# Find which name was used most frequently for each Site-Transect-Coral.ID
+which.spp <- with(alldata, {
+  aggregate(data.frame(Species=Species), by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
+            FUN=function(x) {
+              names(table(c(as.character(x))))[which.max(table(c(as.character(x))))]
+            })
+})
+
+# Reassign all values of Species for each coral to the most freq used Species
+for (i in 1:nrow(which.spp)) {
+  alldata[alldata$Site==which.spp[i, "Site"] & 
+          alldata$Transect==which.spp[i, "Transect"] &
+          alldata$Coral.ID==which.spp[i, "Coral.ID"],
+          "Species"] <- which.spp[i, "Species"]
+}
+```
+
+#### Identify colonies that died after having WP
+
+```{r}
+wpbeforedead <- alldata %>%
+  group_by(coral) %>%
+  summarise(WP = as.character(min(Date[hasCond("^WP$", Condition.Codes)])),
+            DEAD = as.character(min(Date[hasCond("^DEAD$", Condition.Codes)]))) %>%
+  drop_na() %>%
+  mutate(WPbeforeDEAD = as.Date(WP) < as.Date(DEAD))
+
+# For these corals that had WP before DEAD, change DEAD to WPDEAD
+alldata[alldata$coral %in% wpbeforedead$coral & hasCond("DEAD", alldata$Condition.Codes), "Condition.Codes"] <- "WPDEAD"
+```
+
+#### Change *A. cervicornis* WP records to WB
+
+```{r}
+cond <- alldata[alldata$Species=="ACER" & hasCond("^WP$", alldata$Condition.Codes), "Condition.Codes"]
+alldata[alldata$Species=="ACER" & hasCond("^WP$", alldata$Condition.Codes), "Condition.Codes"] <- str_replace_all(cond, "WP", "WB")
+```
+
+# Save tagged coral data as .RData
+```{r}
+save(alldata, file = "data/tagged_corals.RData")
+```
