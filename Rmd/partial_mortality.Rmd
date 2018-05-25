@@ -3,6 +3,8 @@ title: "partial_mortality.Rmd"
 author: "Ross Cunning"
 date: "5/23/2018"
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 ```{r setup, include=FALSE}
@@ -23,10 +25,10 @@ hasCond <- function(cond, Condition.Codes) {
 # Import data
 ```{r}
 # Import tidy tagged coral data (does not include visual estimates of partial mortality extent)
-load("data/tagged_corals.RData")
+load("../data/tagged_corals.RData")
 
 # Import 2016 visual estimate of extent of partial mortality data
-ia <- read_csv("data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
+ia <- read_csv("../data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
   select("Date", "Site", "Transect", "Tagged coral (Y/N)", "Coral ID", "Species", "Visual Estimate % Mortality") %>%
   filter(`Tagged coral (Y/N)` == "Y") %>%
   rename("pct.mort" = "Visual Estimate % Mortality") %>%
@@ -68,11 +70,17 @@ pmor.mod1 <- pmor %>%
 # Get lsmeans
 pmor.lsm1 <- lsmeans(pmor.mod1, specs = c("Channel", "reef", "dir"), type = "response")
 
-# Test for differences between channelside and control for each reef/direction
-rbind(pairs(pmor.lsm1, by = c("reef", "dir")), adjust = "none")
+# Test channelside vs. control mortality for each reef/direction
+sig <- rbind(pairs(pmor.lsm1, by = c("reef", "dir")), adjust = "none")
+sig
 
-# Plot lsmeans
-plot(pmor.lsm1, main = "% partial mortality (non-disease-susceptible corals)")
+# Plot mortality rates
+ggplot(summary(pmor.lsm1), aes(x = Channel, y = prob, fill = Channel)) + 
+  facet_grid(dir ~ reef) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
+  geom_text(data = data.frame(summary(sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 0.6, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
 Non-disease-susceptible corals on the northern middle reef (R2 N) showed increased percent partial mortality at channelside sites (48.3%) relative to control sites (17.5%). There was also a significant difference for the southern middle reef, but control sites had higher partial mortality (35.8%) than the channelside sites (8.5%).
@@ -87,10 +95,16 @@ pmor.mod2 <- pmor %>%
 pmor.lsm2 <- lsmeans(pmor.mod2, specs = c("Channel", "Species"), type = "response")
 
 # Pairwise comparisons (channelside vs. control) for each species
-rbind(pairs(pmor.lsm2, by = c("Species")), adjust = "none")
+sig <- rbind(pairs(pmor.lsm2, by = c("Species")), adjust = "none")
+sig
 
 # Plot lsmeans
-plot(pmor.lsm2)
+ggplot(summary(pmor.lsm2), aes(x = Channel, y = prob, fill = Channel)) + 
+  facet_wrap(~Species) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
+  geom_text(data = data.frame(summary(sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 0.75, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
 *Siderastrea siderea* has significantly higher partial mortality at channelside sites (53.6%) compared to control sites (8.3%) on the northern middle reef. For *Stephanocoenia intersepta*, partial mortality is also higher at channelside relative to control sites (41.0% vs. 7.5%), but this difference was not significant. For *P. astreoides*, there were no tagged corals at the channelside sites at the northern middle reef.
@@ -112,7 +126,7 @@ pm.summ <- pm %>%
 
 pm.summ
 
-ggplot(PM, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel))) +
+ggplot(pm.summ, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel))) +
   facet_grid(~ reef + dir, scales = "free_x") +
   geom_bar(stat = "identity")
 ```
@@ -124,22 +138,18 @@ pm.mod1 <- glmer(PM ~ Channel * reef * dir + (1|Site), family = "binomial", data
 
 # Generate lsmeans for each reef/direction/channelside
 pm.lsm1 <- lsmeans(pm.mod1, specs = c("Channel", "reef", "dir"), type = "response")
-pm.lsm1  # Why is probability of PM for R2N control sites 0.455????
-pm %>% 
-  filter(reef=="R2", dir=="N", Channel=="control") %>%
-  group_by(Site) %>%
-  summarise(n = n(), pm = sum(PM))
 
 # Test channelside vs. control mortality for each reef/direction
-rbind(pairs(pm.lsm1, by = c("reef", "dir")), adjust = "none")
+pm.lsm1.sig <- rbind(pairs(pm.lsm1, by = c("reef", "dir")), adjust = "none")
+pm.lsm1.sig
 
 # Plot mortality rates
-plot(pm.lsm1)
-
 ggplot(summary(pm.lsm1), aes(x = Channel, y = prob, fill = Channel)) + 
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3)
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
+  geom_text(data = data.frame(summary(pm.lsm1.sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 0.8, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
 
