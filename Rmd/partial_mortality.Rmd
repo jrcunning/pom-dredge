@@ -23,10 +23,10 @@ hasCond <- function(cond, Condition.Codes) {
 # Import data
 ```{r}
 # Import tidy tagged coral data (does not include visual estimates of partial mortality extent)
-load("../data/tagged_corals.RData")
+load("data/tagged_corals.RData")
 
 # Import 2016 visual estimate of extent of partial mortality data
-ia <- read_csv("../data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
+ia <- read_csv("data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
   select("Date", "Site", "Transect", "Tagged coral (Y/N)", "Coral ID", "Species", "Visual Estimate % Mortality") %>%
   filter(`Tagged coral (Y/N)` == "Y") %>%
   rename("pct.mort" = "Visual Estimate % Mortality") %>%
@@ -95,4 +95,73 @@ plot(pmor.lsm2)
 
 *Siderastrea siderea* has significantly higher partial mortality at channelside sites (53.6%) compared to control sites (8.3%) on the northern middle reef. For *Stephanocoenia intersepta*, partial mortality is also higher at channelside relative to control sites (41.0% vs. 7.5%), but this difference was not significant. For *P. astreoides*, there were no tagged corals at the channelside sites at the northern middle reef.
 
-# Analyze PM condition code over time
+# Analyze prevalence of PM condition code
+```{r}
+# The November 2015 report (page 14) indicates that the "PM" condition code is used to indicate partial mortality associated with sedimentation. Quantify occurrence of PM during compliance and post-con:
+pm <- alldata %>%
+  filter(Date < "2015-07-31") %>%     # Filter up to July 2015 (post-construction monitoring)
+  group_by(reef, dir, Channel, Site, Transect, Species, coral) %>%
+  summarise(PM = any(hasCond("^PM$", Condition.Codes)))
+
+# Summarize proportion of tagged corals at each site that experienced PM
+pm.summ <- pm %>%
+  group_by(Site, Channel, reef, dir) %>%
+  summarise(n = n(),
+            pm = sum(PM),
+            prop = pm / n)
+
+pm.summ
+
+ggplot(PM, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel))) +
+  facet_grid(~ reef + dir, scales = "free_x") +
+  geom_bar(stat = "identity")
+```
+
+# Test if channelside vs. control sites have different rates of partial mortality
+```{r}
+# Fit generalized linear mixed model
+pm.mod1 <- glmer(PM ~ Channel * reef * dir + (1|Site), family = "binomial", data = pm)
+
+# Generate lsmeans for each reef/direction/channelside
+pm.lsm1 <- lsmeans(pm.mod1, specs = c("Channel", "reef", "dir"), type = "response")
+pm.lsm1  # Why is probability of PM for R2N control sites 0.455????
+pm %>% 
+  filter(reef=="R2", dir=="N", Channel=="control") %>%
+  group_by(Site) %>%
+  summarise(n = n(), pm = sum(PM))
+
+# Test channelside vs. control mortality for each reef/direction
+rbind(pairs(pm.lsm1, by = c("reef", "dir")), adjust = "none")
+
+# Plot mortality rates
+plot(pm.lsm1)
+
+ggplot(summary(pm.lsm1), aes(x = Channel, y = prob, fill = Channel)) + 
+  facet_grid(dir ~ reef) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3)
+```
+
+
+# Plot PM over time
+```{r}
+pm.time <- alldata %>%
+  filter(Date < "2015-07-31") %>%     # Filter up to July 2015 (post-construction monitoring)
+  group_by(Date, reef, dir, Channel, coral) %>%
+  summarise(PM = any(hasCond("^PM$|^UMP$", Condition.Codes))) %>%
+  group_by(Date, reef, dir, Channel) %>%
+  summarise(n = n(),
+            pm = sum(PM), 
+            freq = pm / n)
+
+ggplot(pm.time, aes(x = Date, y = freq, fill = interaction(reef, dir, Channel))) + 
+  geom_bar(stat = "identity")
+```
+
+
+
+
+# Connection btw SED/SA and PM
+
+# Max diameter data
+
