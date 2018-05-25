@@ -4,7 +4,7 @@ author: "Ross Cunning"
 date: "5/23/2018"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -55,6 +55,7 @@ pmor <- filter(pmor, !Species %in% sus.spp)  # exclude susceptible corals
 ```
 
 # Analyze 2016 visual estimates of partial mortality
+
 ### Extent of partial mortality for each coral by site
 ```{r, fig.width = 10, fig.height = 3}
 # Analyze loss of tissue
@@ -151,27 +152,4 @@ ggplot(summary(pm.lsm1), aes(x = Channel, y = prob, fill = Channel)) +
   geom_text(data = data.frame(summary(pm.lsm1.sig)), inherit.aes = FALSE,
             aes(x = 1.5, y = 0.8, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
-
-
-# Plot PM over time
-```{r}
-pm.time <- alldata %>%
-  filter(Date < "2015-07-31") %>%     # Filter up to July 2015 (post-construction monitoring)
-  group_by(Date, reef, dir, Channel, coral) %>%
-  summarise(PM = any(hasCond("^PM$|^UMP$", Condition.Codes))) %>%
-  group_by(Date, reef, dir, Channel) %>%
-  summarise(n = n(),
-            pm = sum(PM), 
-            freq = pm / n)
-
-ggplot(pm.time, aes(x = Date, y = freq, fill = interaction(reef, dir, Channel))) + 
-  geom_bar(stat = "identity")
-```
-
-
-
-
-# Connection btw SED/SA and PM
-
-# Max diameter data
 
