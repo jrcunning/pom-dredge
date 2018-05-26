@@ -79,7 +79,7 @@ This plot of the proportion of tagged corals at each site show that channelside 
 # Test if channelside vs. control sites have different rates of partial mortality
 ```{r}
 # Fit generalized linear mixed model
-pm.mod1 <- glmer(PM ~ Channel * reef * dir + (1|Site), family = "binomial", data = pm)
+pm.mod1 <- glmer(PM ~ Channel * reef * dir + (1|Site) + (1|Species), family = "binomial", data = pm)
 
 # Generate lsmeans for each reef/direction/channelside
 pm.lsm1 <- lsmeans(pm.mod1, specs = c("Channel", "reef", "dir"), type = "response")
@@ -97,7 +97,7 @@ ggplot(summary(pm.lsm1), aes(x = Channel, y = prob, fill = Channel)) +
             aes(x = 1.5, y = 0.8, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
-**We find a significantly higher probability of partial mortality for corals at channelside sites relative to controls for the northern middle reef (77% vs. 4%), the southern middle reef (60% vs. 20%), and the southern outer reef (25% vs. 10%).**
+**We find a significantly higher probability of partial mortality for corals at channelside sites relative to controls for the northern middle reef (77% vs. 4%), the southern middle reef (62% vs. 19%), and the southern outer reef (26% vs. 9%).**
 There was no difference in partial mortality for corals at northern outer reef channelside and controls.
 
 # Visual estimates of tissue loss for each coral
