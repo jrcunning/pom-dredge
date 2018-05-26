@@ -76,7 +76,7 @@ ggplot(pm.summ, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel)))
 
 This plot of the proportion of tagged corals at each site show that channelside sites generally showed higher levels of partial mortality. We can test for a statistical effect of location using a generalized linear mixed model.
 
-# Test if channelside vs. control sites have different rates of partial mortality
+# Was partial mortality due to sedimentation more common at channelside sites?
 ```{r}
 # Fit generalized linear mixed model
 pm.mod1 <- glmer(PM ~ Channel * reef * dir + (1|Site) + (1|Species), family = "binomial", data = pm)
@@ -97,8 +97,32 @@ ggplot(summary(pm.lsm1), aes(x = Channel, y = prob, fill = Channel)) +
             aes(x = 1.5, y = 0.8, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
-**We find a significantly higher probability of partial mortality for corals at channelside sites relative to controls for the northern middle reef (77% vs. 4%), the southern middle reef (62% vs. 19%), and the southern outer reef (26% vs. 9%).**
+**We find a significantly higher probability of partial mortality due to sedimentation for corals at channelside sites relative to controls for the northern middle reef (77% vs. 4%), the southern middle reef (62% vs. 19%), and the southern outer reef (26% vs. 9%).**
 There was no difference in partial mortality for corals at northern outer reef channelside and controls.
+
+```{r, fig.height = 3, fig.width = 3}
+# Average across all reefs
+# Fit generalized linear mixed model
+pm.mod2 <- glmer(PM ~ Channel + (1|Site) + (1|Species), family = "binomial", data = pm)
+
+# Generate lsmeans
+pm.lsm2 <- lsmeans(pm.mod1, specs = "Channel", type = "response")
+
+# Test channelside vs. control
+pm.lsm2.sig <- rbind(pairs(pm.lsm2), adjust = "none")
+knitr::kable(summary(pm.lsm2.sig))
+
+# Plot partial mortality prevalence
+ggplot(summary(pm.lsm2), aes(x = Channel, y = prob, fill = Channel)) + 
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
+  geom_text(data = data.frame(summary(pm.lsm2.sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 0.65, label = ifelse(p.value < 0.05, "*", NA)), cex = 10) +
+  theme(legend.position="none")
+
+```
+
+**When all reef locations are analyzed together, partial mortality due to sediment occurred in 53% of corals at channelside sites compared to only 10% at control sites (p = 0.0001).**
 
 # Visual estimates of tissue loss for each coral
 
@@ -112,7 +136,7 @@ sus.spp <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DS
 pmor <- filter(pmor, !Species %in% sus.spp)  # exclude susceptible corals
 ```
 
-### Test differences in tissue loss between channelside and control sites
+### Was tissue loss greater for corals at channelside sites?
 ```{r}
 # Fit model
 pmor.mod1 <- pmor %>%
@@ -137,7 +161,7 @@ ggplot(summary(pmor.lsm1), aes(x = Channel, y = prob, fill = Channel)) +
 **Corals on the northern middle reef (R2 N) showed increased tissue loss at channelside sites (48.3%) relative to control sites (17.5%).**
 There was also a significant difference for the southern middle reef, but control sites had higher tissue loss (35.8%) than the channelside sites (8.5%).
 
-### Test individual species at the northern middle reef
+### Individual species at the northern middle reef
 
 The northern middle reef showed higher tissue loss for corals at channelside sites relative to controls. We can see what this looked like for individual species. Note that we are only looking at disease-resistant species.
 
