@@ -1,5 +1,5 @@
 ---
-title: "total_mortality.Rmd"
+title: "Total mortality of coral colonies during PortMiami dredge"
 author: "Ross Cunning"
 date: "5/22/2018"
 output: html_document
@@ -7,10 +7,13 @@ editor_options:
   chunk_output_type: inline
 ---
 
+# Setup
 ```{r setup, include=FALSE}
 # Set knitr options
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
 
+```{r setup2}
 # Load packages
 library(tidyverse)
 library(lme4)
@@ -28,19 +31,27 @@ hasCond <- function(cond, Condition.Codes) {
 load("../data/tagged_corals.RData")
 ```
 
-# Analyze mortality
-```{r}
-# Summarize proportion of corals at each site that died at any point (total mortality)
-alldata %>%
-  group_by(Site, Channel, reef, coral) %>%
+# Prevalence of total colony mortality
+
+Total colony mortality was recorded using the condition code "DEAD". Here, we summarize the number of corals at each site that died at any point.
+
+```{r, fig.width = 10, fig.height = 3}
+dead.summ <- alldata %>%
+  group_by(Site, Channel, reef, dir, coral) %>%
   summarise(DEAD = any(hasCond("DEAD", Condition.Codes))) %>%
-  group_by(Site, Channel, reef) %>%
+  group_by(Site, Channel, reef, dir) %>%
   summarise(n = n(),
             dead = sum(DEAD),
             prop = dead / n)
+
+knitr::kable(dead.summ)
+
+ggplot(dead.summ, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel))) +
+  facet_grid(~ reef + dir, scales = "free_x") +
+  geom_bar(stat = "identity")
 ```
 
-# Test if channelside vs. control sites have different rates of total mortality
+# Did total mortality differ between channelside and control sites?
 ```{r}
 # Get data frame for each coral and whether it died or not
 dead <- alldata %>%
@@ -48,27 +59,28 @@ dead <- alldata %>%
   summarise(DEAD = any(hasCond("DEAD", Condition.Codes)))
 
 # Fit generalized linear mixed model
-dead.mod1 <- glmer(DEAD ~ Channel * reef * dir + (1|Site), family = "binomial", data = dead)
+dead.mod1 <- glmer(DEAD ~ Channel * reef * dir + (1|Site) + (1|Species), 
+                   family = "binomial", data = dead)
 
 # Generate lsmeans for each reef/direction/channelside
 dead.lsm1 <- lsmeans(dead.mod1, specs = c("Channel", "reef", "dir"), type = "response")
 
 # Test channelside vs. control mortality for each reef/direction
-sig <- rbind(pairs(dead.lsm1, by = c("reef", "dir")), adjust = "none")
-sig
+dead.lsm1.sig <- rbind(pairs(dead.lsm1, by = c("reef", "dir")), adjust = "none")
+knitr::kable(summary(dead.lsm1.sig))
 
 # Plot mortality rates
 ggplot(summary(dead.lsm1), aes(x = Channel, y = prob, fill = Channel)) + 
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
-  geom_text(data = data.frame(summary(sig)), inherit.aes = FALSE,
+  geom_text(data = data.frame(summary(dead.lsm1.sig)), inherit.aes = FALSE,
             aes(x = 1.5, y = 0.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
-There is significantly higher mortality at channelside sites relative to control sites for Reef 2 North. However, this does not account for differences in species composition -- the higher mortality at channelside sites could be due to a higher relative abundance of disease-susceptible corals at channelside sites. We can address this by fitting a model the includes coral species as a predictor, but there are too few tagged corals of any individual species to detect any statistically significant differences. We can pool all disease-susceptible vs. non-susceptible corals to carry out this test with higher numbers of corals.
+There are no differences in total colony mortality between channelside and control sites at any reef location. However, total mortality overall is high, and the majority of this mortality may be attributable to white plague disease. Therefore, to assess mortality that may be associated with sedimentation, it may be more informative to analyze only disease-resistant corals.
 
-# Tally susceptible and non-susceptible species
+# Total mortality of disease-resistant corals 
 ```{r}
 # WP disease-susceptible species
 sus.spp <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DSTR", "SBOU")
@@ -76,49 +88,27 @@ sus.spp <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DS
 # Add grouping factor for susceptibility
 dead <- mutate(dead, sus = factor(ifelse(Species %in% sus.spp, "sus", "nonsus")))
 
-# Count number of susceptible and non-susceptible corals at each site
-dead %>%
-  group_by(reef, dir, Channel, sus) %>%
-  summarise(n = n()) %>%
-  spread(sus, n)
-```
+# Subset only disease-resistant corals
+dead.nonsus <- filter(dead, sus == "nonsus")
 
-Reef 2 north does have a high number of susceptible species, so this needs to be accounted for in the model.
+# Fit generalized linear mixed model for disease-resistant corals
+dead.mod4 <- glmer(DEAD ~ Channel * reef * dir + (1|Site) + (1|Species), 
+                   family = "binomial", data = dead.nonsus)
 
-# Re-fit model accounting for composition of susceptible vs. non-susceptible corals
-```{r}
-# Fit generalized linear mixed model with susceptibility as a covariate
-dead.mod2 <- glmer(DEAD ~ Channel * reef * dir * sus + (1|Site), family = "binomial", data = dead)
+# Generate lsmeans for each reef and direction
+dead.lsm4 <- lsmeans(dead.mod4, specs = c("Channel", "reef", "dir"), type = "response")
 
-# Generate lsmeans for each reef/direction/channelside
-dead.lsm2 <- lsmeans(dead.mod2, specs = c("Channel", "reef", "dir", "sus"), type = "response")
+# Test for differences in mortality at channelside vs. control sites
+dead.lsm4.sig <- rbind(pairs(dead.lsm4, by = c("reef", "dir")), adjust = "none")
+knitr::kable(summary(dead.lsm4.sig))
 
-# Test channelside vs. control mortality for each reef/direction
-rbind(pairs(dead.lsm2, by = c("reef", "dir", "sus")), adjust = "none")
-```
-
-No significant differences between channelside and control sites are detected for non-susceptible corals at either reef in either direction, although it is almost significant for reef 2 north. This could be due to low statistical power. We can increase power by combining reef 2 and reef 3 sites and looking at all north sites and only south sites. There is evidence that the south control sites were heavily impacted by dredging, so the north direction may be the best place to look for a potential effect.
-
-# Re-fit model combining Reef 2 and Reef 3 for higher replication
-```{r}
-# Fit glmer with channelside and direction and disease-susceptibility as factors
-dead.mod3 <- glmer(DEAD ~ Channel * dir * sus + (1|Site), data = dead, family = "binomial")
-
-# Generate lsmeans
-dead.lsm3 <- lsmeans(dead.mod3, specs = c("Channel", "sus", "dir"), type = "response")
-
-# Test channelside vs. control mortality for each direction
-sig <- rbind(pairs(dead.lsm3, by = c("dir", "sus")), adjust = "none")
-sig
-
-# Plot mortality rates
-ggplot(summary(dead.lsm3), aes(x = Channel, y = prob, fill = Channel)) + 
-  facet_grid(dir ~ sus) +
+# Plot
+ggplot(summary(dead.lsm4), aes(x = Channel, y = prob, fill = Channel)) + 
+  facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
-  geom_text(data = data.frame(summary(sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 0.65, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
+  geom_text(data = data.frame(summary(dead.lsm4.sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 0.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
-**For non-disease-susceptible corals north of the channel, there is significantly higher mortality (20.5%) at channelside sites relative to controls (3%). This can be considered a permanent impact of dredging.**
-There are no differences between channelside and control sites for non-susceptible corals to the south of the channel, and there are no differences for disease-susceptible corals (higher mortality rates overall at all sites due to disease).
+**For disease-resistant corals, there was significantly higher total mortality at channelside sites (37%) relative to control sites (7%) on the northern middle reef.** For the southern middle reef and the outer reef, there was no significant difference in total mortality of disease-resistant corals detected between channelside and control sites.
