@@ -51,7 +51,7 @@ ggplot(dead.summ, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel)
   geom_bar(stat = "identity")
 ```
 
-# Did total mortality differ between channelside and control sites?
+# Was total mortality more common at channelside sites?
 ```{r}
 # Get data frame for each coral and whether it died or not
 dead <- alldata %>%
