@@ -1,0 +1,195 @@
+---
+title: "Sedimentation stress on tagged corals during PortMiami dredge"
+author: "Ross Cunning"
+date: "5/27/2018"
+output: html_document
+---
+
+# Setup
+```{r setup, include = FALSE}
+# Set knitr options
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+# Load packages
+library(tidyverse)
+library(lubridate)
+library(lme4)
+library(lsmeans)
+
+# Define function for accessing corals with specific condition codes
+hasCond <- function(cond, Condition.Codes) {
+  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
+}
+```
+
+# Import data
+```{r}
+# Import tidy tagged coral data
+load("data/tagged_corals.RData")
+```
+
+#### Aggregate all data by week number
+```{r}
+# Assign week number for all observations based on number of weeks since earliest data
+alldata <- alldata %>%
+  mutate(weekn = trunc((Date - min(Date)) / dweeks(1)))
+
+# Some of the the corals were observed multiple times per "week" - need to aggregate condition codes
+allweeks <- alldata %>%
+  group_by(Site, reef, dir, Channel, Species, coral, weekn) %>%
+  do(Condition.Codes = unique(unlist(c(.$Condition.Codes)))) %>%
+  ungroup()
+```
+
+# Plot sedimentation stress over time 
+```{r}
+# Set variables for occurrence of sedimentation stress
+allweeks <- allweeks %>%
+  filter(!hasCond("DEAD", Condition.Codes)) %>%       # Only look at living corals
+  mutate(  SA = hasCond("^SA$", Condition.Codes),     # Did coral have sediment accumulation?
+         PBUR = hasCond("^PBUR$", Condition.Codes),   # Was coral partially buried in sediment?
+          BUR = hasCond("^BUR$", Condition.Codes),    # Was coral fully buried in sediment?
+    SEDSTRESS = hasCond("^SA$|^PBUR$|^BUR$", Condition.Codes))  # Any of these conditions?  
+
+# Fit model
+mod <- glm(SEDSTRESS ~ factor(weekn) * Channel * reef * dir,
+             data = allweeks, family = "binomial")
+
+# Get lsmeans
+lsm <- lsmeans(mod, specs = c("weekn", "Channel", "reef", "dir"), type = "response")
+
+# Plot
+ggplot(summary(lsm), aes(x = weekn, y = prob, color = Channel)) + 
+  facet_wrap(dir ~ reef) +
+  geom_point() +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL)) +
+  geom_smooth(method = "loess", se = FALSE)
+```
+
+Try a gamm model
+```{r}
+# Fit gamm
+#mod2 <- gam(SEDSTRESS ~ s(weekn, by = interaction(Channel, reef, dir)) + Channel + reef + dir, 
+#             data = allweeks, family = "binomial")
+mod2 <- gamm4(SEDSTRESS ~ s(weekn, by = interaction(Channel, reef, dir)) + Channel + reef + dir,
+             random = ~ (1|Site),
+             data = allweeks, family = "binomial")
+
+summary(mod2$gam)
+
+# Get fitted values
+pdat <- expand.grid(weekn=seq(0,148,1), 
+                    Channel=c("channelside", "control"), 
+                    reef = c("R2", "R3"),
+                    dir = c("N", "S"))
+
+mod2.pred <- data.frame(cbind(pdat, fit=predict(mod2$gam, pdat, type = "response")))
+mod2.pred
+
+# Simulate from multivariate normal distribution of fitted model
+set.seed(789)
+Rbeta <- mvrnorm(n = 1000, coef(mod2), vcov(mod2))
+Xp <- predict(mod2, newdata = pdat, type = "lpmatrix")
+sim <- Xp %*% t(Rbeta)
+# Extract 84% confidence intervals from simulation
+mod2.pred$lci <- apply(sim, 1, quantile, 0.08)
+mod2.pred$uci <- apply(sim, 1, quantile, 0.92)
+mod2.pred
+
+ggplot(mod2.pred, aes(x = weekn, y = fit, color = Channel)) +
+  facet_grid(dir ~ reef) + geom_line() +
+  geom_point(data = summary(lsm), aes(y = prob))
+
+```
+
+The model is doing weird things during the period between compliance and post-con where there is no data. Re-fit model just during compliance.
+```{r}
+compliance <- filter(allweeks, weekn < 100)     # Get subset of data
+mod2 <- gamm4(SEDSTRESS ~ s(weekn, by = interaction(Channel, reef, dir)) + Channel + reef + dir,
+               random = ~ (1|Site), family = "binomial", data = compliance)
+
+summary(mod2$gam)
+
+# Get fitted values
+pdat <- compliance %>%
+  nest(-reef, -dir, -Channel) %>%
+  mutate(weekn = map(data, ~ seq(min(.$weekn), max(.$weekn)))) %>%
+  unnest(weekn)
+
+mod2.pred <- data.frame(cbind(pdat, fit=predict(mod2$gam, pdat, type = "response")))
+mod2.pred
+
+mod2preds <- data.frame(cbind(pdat, resp=predict(mod2$gam, pdat, type = "response"),
+                              logi=predict(mod2$gam, pdat)))
+
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
+}
+
+# Simulate from multivariate normal distribution of fitted model
+set.seed(789)
+Rbeta <- mvrnorm(n = 1000, coef(mod2$gam), vcov(mod2$gam))
+Xp <- predict(mod2$gam, newdata = pdat, type = "lpmatrix")
+sim <- Xp %*% t(Rbeta)
+# Extract 84% confidence intervals from simulation
+mod2.pred$lci <- logit2prob(apply(sim, 1, quantile, 0.08))
+mod2.pred$uci <- logit2prob(apply(sim, 1, quantile, 0.92))
+mod2.pred
+
+ggplot(summary(lsm), aes(x = weekn, color = Channel)) +
+  facet_grid(dir ~ reef) +
+  geom_point(data = summary(lsm), aes(y = prob)) +
+  geom_line(data = mod2.pred, aes(y = fit)) +
+  geom_ribbon(data = mod2.pred, aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3)
+  
+
+```
+
+Reef 3 still has some weird artifacts because there are no data between weeks ~ 10 and 30. Remove this chunk of time by fitting separate gamm models for each reef?
+```{r}
+# Filter dataset to only fit over regions with less than 20-week gaps between data points
+allweeks.f <- allweeks %>%
+  nest(-reef, -dir, -Channel) %>%                                            # For each reef
+  mutate(weeks = map(data, ~ sort(unique(.$weekn))),                         # Which weeks have data
+          runs = map(weeks, ~ split(.x, cumsum(c(TRUE, diff(.x) > 20)))),    # Find runs w/o 20wk gaps
+       longest = map(runs, ~ .x[[which.max(sapply(.x, length))]]),           # Get longest run
+        data.f = map2(data, longest, ~ filter(.x, .$weekn %in% .y))) %>%     # Get data from those weeks
+  unnest(data.f)
+
+# Fit GAMMs for each reef
+dd <- allweeks.f %>%
+  # For each reef (R2N, R2S, R3N, R3S)
+  nest(-reef, -dir) %>%
+  mutate(
+    # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
+    mod = map(data, ~ gamm4(SEDSTRESS ~ s(weekn, by = factor(Channel), k = 5) + Channel,
+                                 random = ~ (1|Site), family = "binomial", data = .)$gam),
+    # Get newdata frame for predict() using the appropriate range of weeks
+    newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
+                                      Channel = c("channelside", "control"))),
+    # Get fitted values from GAMM using newdata frame
+    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
+    # Get confidence intervals by simulation
+    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
+    Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
+    sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
+    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
+    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
+  )
+
+# Plot
+dd %>% unnest(newdata, fit, lci, uci) %>%
+  ggplot(aes(x = weekn, y = fit, color = Channel)) +
+    facet_grid(dir ~ reef) +
+    geom_point(data = summary(lsm), aes(y = prob)) +
+    geom_line() +
+    geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3) +
+    theme_bw()
+  
+```
+
+
