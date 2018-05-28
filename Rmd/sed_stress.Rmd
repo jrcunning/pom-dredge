@@ -19,10 +19,18 @@ library(lme4)
 library(lsmeans)
 library(mgcv)
 library(gamm4)
+library(MASS)
 
 # Define function for accessing corals with specific condition codes
 hasCond <- function(cond, Condition.Codes) {
   unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
+}
+
+# Convert logit to probability
+logit2prob <- function(logit){
+  odds <- exp(logit)
+  prob <- odds / (1 + odds)
+  return(prob)
 }
 ```
 
@@ -32,7 +40,13 @@ We will analyze the complete tagged coral dataset.
 
 ```{r}
 # Import tidy tagged coral data
-load("data/tagged_corals.RData")
+load("../data/tagged_corals.RData")
+
+# Define start and end of dredging (for plotting)
+dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
+dredge.start.wk <- (dredge.start.date - min(alldata$Date)) / dweeks(1)
+dredge.end.date <- as.Date("2014-12-31")                    # DCA report August 2015, page 3
+dredge.end.wk <- (dredge.end.date - min(alldata$Date)) / dweeks(1)
 ```
 
 #### Aggregate all data by week number
@@ -120,16 +134,90 @@ dd <- allweeks.f %>%
     sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
     lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
     uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
-  )
+  ) %>% unnest(newdata, fit, lci, uci)
 
 # Plot
-dd %>% unnest(newdata, fit, lci, uci) %>%
+fig <- dd %>%
   ggplot(aes(x = weekn, y = fit, color = Channel)) +
     facet_grid(dir ~ reef) +
     geom_point(data = sedstress.summ, aes(y = prop, size = n)) +
     scale_size(range = c(0.1, 2.5)) +
     geom_line() +
-    geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3)
+    geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3) + 
+    geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25)
+
+fig 
+```
+
+Why is there so much sediment stress at control sites? Either some of these condition codes (e.g., SA) don't really reflect dredging sediment, or the control sites were actually impacted by dredging sediment.
+
+# Look at just PBUR and BUR
+```{r}
+# Get proportion of corals with sedimentation stress for each reef/dir at each week
+sedstress.summ <- allweeks %>%
+  group_by(reef, dir, Channel, weekn) %>%
+  summarise(n = n(),
+            SEDSTRESS = sum(PBUR|BUR),
+            prop = SEDSTRESS / n)
+
+# Plot proportions
+ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
+  facet_grid(dir ~ reef) +
+  geom_point(aes(size = n)) +
+  scale_size(range = c(0.1, 2.5)) +
+  geom_smooth(method = "loess", se = FALSE)
+
+# Fit GAMMs for each reef
+dd <- allweeks.f %>%
+  # For each reef (R2N, R2S, R3N, R3S)
+  nest(-reef, -dir) %>%
+  mutate(
+    # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
+    mod = map(data, ~ gamm4(PBUR|BUR ~ s(weekn, by = factor(Channel), k = 5) + Channel,
+                                 random = ~ (1|Site), family = "binomial", data = .)$gam),
+    # Get newdata frame for predict() using the appropriate range of weeks
+    newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
+                                      Channel = c("channelside", "control"))),
+    # Get fitted values from GAMM using newdata frame
+    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
+    # Get confidence intervals by simulation
+    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
+    Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
+    sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
+    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
+    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
+  ) %>% unnest(newdata, fit, lci, uci)
+
+# Plot
+fig <- dd %>%
+  ggplot(aes(x = weekn, y = fit, color = Channel)) +
+    facet_grid(dir ~ reef) +
+    geom_point(data = sedstress.summ, aes(y = prop, size = n), alpha = 0.3) +
+    scale_size(range = c(0.1, 2.5)) +
+    geom_line() +
+    geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3) +
+    geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25)
+
+fig
+```
+
+##### Break this down by site for the northern middle reef
+
+```{r}
+# Get proportion of corals with sedimentation stress for each reef/dir at each week
+sedstress.summ <- allweeks %>%
+  filter(reef=="R2", dir == "N") %>%
+  group_by(reef, dir, Channel, Site, weekn) %>%
+  summarise(n = n(),
+            SEDSTRESS = sum(PBUR|BUR),
+            prop = SEDSTRESS / n)
+
+# Plot proportions
+ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
+  facet_wrap(Site ~ .) +
+  geom_point(aes(size = n)) +
+  scale_size(range = c(0.1, 2.5)) +
+  geom_smooth(method = "loess", se = FALSE)
 ```
 
 
