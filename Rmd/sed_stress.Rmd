@@ -3,6 +3,8 @@ title: "Coral sedimentation stress during PortMiami dredge"
 author: "Ross Cunning"
 date: "5/27/2018"
 output: html_document
+editor_options: 
+  chunk_output_type: inline
 ---
 
 # Setup
@@ -85,7 +87,7 @@ allweeks <- allweeks %>%
     SEDSTRESS = hasCond("^SA$|^PBUR$|^BUR$", Condition.Codes))  # Any of these conditions?  
 ```
 
-# Sedimentation stress over time
+# Sedimentation stress over time (SA, PBUR, or BUR)
 ```{r}
 # Get proportion of corals with sedimentation stress for each reef/dir at each week
 sedstress.summ <- allweeks %>%
@@ -97,14 +99,16 @@ sedstress.summ <- allweeks %>%
 # Plot proportions
 ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
   facet_grid(dir ~ reef) +
-  geom_point(aes(size = n)) +
+  geom_point(aes(size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
-  geom_smooth(method = "loess", se = FALSE)
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(title = "Sedimentation stress (SA, PBUR, or BUR)",
+       xlab = "Time (weeks)", ylab = "Proportion of corals")
 ```
 
 These plots with local regression smoothing show that sedimentation stress was much greater at channelside sites relative to controls. However, there are some gaps in the data that are causing some artifacts in the smoothing. To eliminate these artifacts, and generate more robust statistical fits for the dataset, we can fit generalized additive mixed models (GAMMs) and use only the regions in the data without large gaps in time.
 
-# Model sedimentation stress using GAMMs
+### Model sedimentation stress using GAMMs
 ```{r}
 # Filter dataset to only fit over regions with less than 20-week gaps between data points
 allweeks.f <- allweeks %>%
@@ -137,38 +141,36 @@ dd <- allweeks.f %>%
   ) %>% unnest(newdata, fit, lci, uci)
 
 # Plot
-fig <- dd %>%
-  ggplot(aes(x = weekn, y = fit, color = Channel)) +
-    facet_grid(dir ~ reef) +
-    geom_point(data = sedstress.summ, aes(y = prop, size = n)) +
-    scale_size(range = c(0.1, 2.5)) +
-    geom_line() +
-    geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3) + 
-    geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25)
+fig1 <- ggplot(dd, aes(x = weekn, y = fit, color = Channel)) +
+  facet_grid(dir ~ reef) +
+  geom_point(data = sedstress.summ, aes(y = prop, size = n), alpha = 0.4) +
+  scale_size(range = c(0.1, 2.5)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
+  geom_line(lwd = 1) +
+  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
+  labs(title = "Sedimentation stress (SA, PBUR, or BUR)",
+       xlab = "Time (weeks)", ylab = "Proportion of corals")
+    
 
-fig 
+fig1
 ```
 
 Why is there so much sediment stress at control sites? Either some of these condition codes (e.g., SA) don't really reflect dredging sediment, or the control sites were actually impacted by dredging sediment.
 
-# Look at just PBUR and BUR
+# Analyze sedimentation stress as PBUR or BUR (exclude SA)
+
+If we assume that control sites are far enough from dredging activity that they are not impacted by dredging sediments, then the "SA" condition code, which was observed frequently at control sites, may not be indicative of actual dredging impact. Therefore, PBUR and BUR may be more appropriate indicators of sedimentation stress due to dredging.
+
 ```{r}
-# Get proportion of corals with sedimentation stress for each reef/dir at each week
+# Get proportion of corals with PBUR or BUR for each reef/dir at each week
 sedstress.summ <- allweeks %>%
   group_by(reef, dir, Channel, weekn) %>%
   summarise(n = n(),
             SEDSTRESS = sum(PBUR|BUR),
             prop = SEDSTRESS / n)
 
-# Plot proportions
-ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
-  facet_grid(dir ~ reef) +
-  geom_point(aes(size = n)) +
-  scale_size(range = c(0.1, 2.5)) +
-  geom_smooth(method = "loess", se = FALSE)
-
 # Fit GAMMs for each reef
-dd <- allweeks.f %>%
+dd2 <- allweeks.f %>%
   # For each reef (R2N, R2S, R3N, R3S)
   nest(-reef, -dir) %>%
   mutate(
@@ -189,17 +191,20 @@ dd <- allweeks.f %>%
   ) %>% unnest(newdata, fit, lci, uci)
 
 # Plot
-fig <- dd %>%
-  ggplot(aes(x = weekn, y = fit, color = Channel)) +
-    facet_grid(dir ~ reef) +
-    geom_point(data = sedstress.summ, aes(y = prop, size = n), alpha = 0.3) +
-    scale_size(range = c(0.1, 2.5)) +
-    geom_line() +
-    geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.3) +
-    geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25)
+fig2 <- ggplot(dd2, aes(x = weekn, y = fit, color = Channel)) +
+  facet_grid(dir ~ reef) +
+  geom_point(data = sedstress.summ, aes(y = prop, size = n), alpha = 0.4) +
+  scale_size(range = c(0.1, 2.5)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
+  geom_line(lwd = 1) +
+  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
+  labs(title = "Sedimentation stress (PBUR or BUR)",
+       xlab = "Time (weeks)", ylab = "Proportion of corals")
 
-fig
+fig2
 ```
+
+Analysis of PBUR or BUR only shows much lower prevalence of these condition codes at control sites, yet their prevalence at channelside sites remains very high.
 
 ##### Break this down by site for the northern middle reef
 
@@ -215,9 +220,11 @@ sedstress.summ <- allweeks %>%
 # Plot proportions
 ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
   facet_wrap(Site ~ .) +
-  geom_point(aes(size = n)) +
+  geom_point(aes(size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
-  geom_smooth(method = "loess", se = FALSE)
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(title = "Sedimentation stress (PBUR or BUR)",
+       xlab = "Time (weeks)", ylab = "Proportion of corals")
 ```
 
 
