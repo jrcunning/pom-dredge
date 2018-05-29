@@ -278,7 +278,6 @@ all_counts <- all_counts %>%
 
 # Save count data as .RData object
 ```{r}
-all_counts
 save(all_counts, file = "data/all_counts.RData")
 ```
 
