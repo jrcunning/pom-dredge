@@ -38,6 +38,7 @@ dens2009 <- readxl::read_xlsx(
          date = ymd("2009-11-15"),   # add date (collected btw Oct 28 and Nov 24 2009)
          transect_area_m2 = 10)      # each transect was 10 square meters
 
+
 # Subset octocorals and calculate density
 octo2010 <- dens2010 %>%
   filter(category == "octocoral") %>%
@@ -60,6 +61,7 @@ dens2013r2 <- readxl::read_xlsx(
   path  = "data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx", sheet = "Raw Data") %>%
   clean_names() %>%
   rename(site = site_e_g_r2n1_rr, transect = transect_e_g_r2n1_rr_1, count = total_count) %>%
+  separate(site, into = c("site", "site2")) %>%
   select(site, transect, category, subcategory, count)
 
 # Reef 3
@@ -67,6 +69,7 @@ dens2013r3 <- readxl::read_xlsx(
   path  = "data/Density_Data/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx", sheet = "Raw Data") %>%
   clean_names() %>%
   rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, count = total_count) %>%
+  separate(site, into = c("site", "site2")) %>%
   select(site, transect, category, subcategory, count)
 
 # Combine reef 2 and reef 3 data
@@ -84,11 +87,9 @@ octo2013 <- dens2013 %>%
   summarise(n.transects = length(unique(transect)),       # Get number of transects performed per site
                   nocto = sum(total_count),               # Add total Octocoral counts for each site
                 dens.m2 = nocto / (20 * n.transects))     # Calculate total density (each transect = 20x1m)
-
-octo2013
 ```
 
-### Data from 2016
+### Data from 2016 - permanent sites
 ```{r}
 # Data collected August 2016
 ## Sponges and octocorals are in one spreadsheet
@@ -132,21 +133,89 @@ octo2016 <- dens2016 %>%
 
 ```
 
+### Data from 2016 -- cross sites
+```{r}
+# find all file names ending in .xlsx 
+files <- list.files(path = "data/Density_Data/2016 cross-transect data/Entered Data/",
+                    pattern = "^[^~].*.xlsx", recursive = TRUE, full.names = TRUE)
+# remove files manually if multiple files for a given transect
+files <- files[-c(24,25,28,30,32,33,36)]
+
+
+# read in OCTOCORALS sheet from each xlsx file
+cs2016octo <- files %>%
+  map(readxl::read_xlsx, sheet = "OCTOCORALS") %>%    # read in all the files individually
+  reduce(bind_rows)                                   # reduce with rbind into one dataframe
+# Tidy data
+cs2016octo <- cs2016octo %>%
+  clean_names() %>%
+  filter(grepl("^R2|^R3", station)) %>%               # get only R2 and R3 survey sites
+  rename(site = station, transect = transect_ns_or_ew,
+         category = organism_type_scl_spo_octo, 
+         subcategory = species_scl_genera_octo_morph_spo) %>%
+  mutate(count = 1) %>%                               # single observation per row
+  mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
+                                      transect == "NS" ~ 20)) %>%  
+  separate(site, into = c("site", "dist", "site2")) %>%
+  select(site, dist, transect, transect_area_m2, category, subcategory, count)
+
+
+# read in CORALS sheet from each xlsx file
+cs2016scler <- files %>%
+  map(readxl::read_xlsx, sheet = "CORALS") %>%    # read in all the files individually
+  reduce(bind_rows)                                   # reduce with rbind into one dataframe
+# Tidy data
+cs2016scler <- cs2016scler %>%
+  clean_names() %>%
+  filter(grepl("^R2|^R3", station)) %>%               # get only R2 and R3 survey sites
+  rename(site = station, transect = transect_ns_or_ew,
+         category = organism_type_scl_spo_octo, 
+         subcategory = species_scl_genera_octo_morph_spo) %>%
+  mutate(count = 1) %>%                               # single observation per row
+  mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
+                                      transect == "NS" ~ 20)) %>%  
+  separate(site, into = c("site", "dist", "site2")) %>%
+  select(site, dist, transect, transect_area_m2, category, subcategory, count)
+
+# Combine octocoral and scleractinian data
+cs2016 <- bind_rows(cs2016octo, cs2016scler) %>%
+  mutate(dist = as.numeric(dist))
+```
+
 # Merge all count data together
 ```{r}
 # Combine all count data
-all_counts <- data_frame(date = c("2009", "2013", "2016")) %>%
-  mutate(data = list(dens2009, dens2013, dens2016)) %>%
+all_counts <- data_frame(data = list(dens2009, dens2013, dens2016, cs2016)) %>%
   unnest(data)
 
-# Subset octocorals
-octo_counts <- all_counts %>%
-  filter(category == "octocoral")
-
-
-unique(all_counts$site)   # need to fix site names for consistency
+# Add distance from channel for each permanent site
+all_counts <- all_counts %>%
+  mutate(dist = case_when(           
+    site=="R2N1" ~ "28",
+    site=="R2NC2" ~ "9380",
+    site=="R2N2" ~ "18",
+    site=="R2NC1" ~ "9380",
+    site=="R2NC3" ~ "9380",
+    site=="R2S1" ~ "23",
+    site=="R2SC1" ~ "1270",
+    site=="R2S2" ~ "21",
+    site=="R2SC2" ~ "1270",
+    site=="R3N1" ~ "23",
+    site=="R3NC1" ~ "9380",
+    site=="R3S2" ~ "21",
+    site=="R3SC2" ~ "1300",
+    site=="R3S1" ~ "",       # GET DISTANCE
+    site=="R3S3" ~ "",       # GET DISTANCE
+    site=="R3SC3" ~ "",      # GET DISTANCE
+    site=="R3SC1" ~ "",      # GET DISTANCE
+    TRUE ~ str_extract(dist, "[[:digit:]]{2,3}"))) %>%
+  type_convert()
 ```
 
+```{r}
+all_counts
+# need to make species names consistent
+```
 
 
 
@@ -202,8 +271,7 @@ cs2016octo <- cs2016octo %>%
     station=="R3N1-LR" ~ "23",
     station=="R3NC1-LR" ~ "9380",
     station=="R3S2-LR" ~ "21",
-    station=="R3SC2-LR" ~ "1300",
-    TRUE ~ str_extract(station, "[[:digit:]]{2,3}"))) %>%
+    station=="R3SC2-LR" ~ "1300") %>%
   mutate(area = str_extract(station, "^R.."),
          type = str_extract(station, ".R$")) %>%
   type_convert()
