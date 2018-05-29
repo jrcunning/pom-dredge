@@ -26,8 +26,6 @@ dens2009 <- readxl::read_xlsx(
   path = "data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
   clean_names() %>%
   rename(site = area_e_g_r2n, transect = transect_e_g_r2n_10) %>%
-  mutate(category = str_replace_all(category, "Octocoral", "octocoral")) %>% # Fix capitalization error
-  mutate(category = str_replace_all(category, "Scleractinian", "scleractinian")) %>%
   select(site, transect, category, subcategory) %>%
   filter(!grepl("D", transect)) %>%  # Remove transects that contain a "D". These were 'direct impact'
                                      # areas where reef was removed, so no later data for comparison
@@ -74,8 +72,6 @@ dens2013r3 <- readxl::read_xlsx(
 
 # Combine reef 2 and reef 3 data
 dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
-  mutate(category = str_replace_all(category, "Octocoral", "octocoral")) %>% # Fix capitalization error
-  mutate(category = str_replace_all(category, "Scleractinian", "scleractinian")) %>%
   mutate(dist = NA,
          date = ymd("2013-11-01"),
          transect_area_m2 = 20)   # each transect was 20 square meters
@@ -99,8 +95,6 @@ dens2016octo <- readxl::read_xlsx(
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
          count = octo_sponge_zoanthid_count_qaqc) %>%
-  mutate(category = str_replace_all(category, "Octocoral", "octocoral")) %>% # Fix capitalization error
-  mutate(category = str_replace_all(category, "Scleractinian", "scleractinian")) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
   select(site, transect, category, subcategory, count)
 
@@ -110,7 +104,6 @@ dens2016scler <- readxl::read_xlsx(
   sheet = "Raw Data", skip = 1)  %>%
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = species) %>%
-  mutate(category = str_replace_all(category, "Scleractinian", "scleractinian")) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
   select(site, transect, category, subcategory) %>%
   mutate(count = 1)  # 1 coral per row
@@ -184,9 +177,75 @@ cs2016 <- bind_rows(cs2016octo, cs2016scler) %>%
 
 # Merge all count data together
 ```{r}
-# Combine all count data
-all_counts <- data_frame(data = list(dens2009, dens2013, dens2016, cs2016)) %>%
-  unnest(data)
+# Combine all count data and select octocorals and corals
+all_counts <- data_frame(data = list(dens2009, dens2013, dens2016, cs2016)) %>% unnest(data)
+
+# Tidy category names and filter only scleractinians and octocorals
+all_counts <- all_counts %>%
+  mutate(category = str_replace_all(category, 
+           c("Scleractinian" = "scleractinian",
+             "Octocoral" = "octocoral",
+             "Ocotocoral" = "octocoral",
+             "Coral" = "scleractinian",
+             "CORAL" = "scleractinian"))) %>%
+  filter(category == "scleractinian" | category == "octocoral")
+
+# Tidy taxonomy
+all_counts <- all_counts %>%
+  mutate(subcategory = str_replace_all(subcategory,     # replace abbreviations with full names
+           c("SINT" = "Stephanocoenia intersepta",
+             "DSTO" = "Dichocoenia stokesii",
+             "SBOU" = "Solenastrea bournoni",
+             "MCAV" = "Montastraea cavernosa",
+             "SSID" = "Siderastrea siderea",
+             "SRAD" = "Siderastrea radians",
+             "MMEA" = "Meandrina meandrites",
+             "DCLI" = "Pseudodiploria clivosa",
+             "AGSP" = "Agaricia sp.",
+             "MFOR" = "Madracis formosa",
+             "MDEC" = "Madracis decactis",
+             "PAST" = "Porites astreoides",
+             "DSTR" = "Pseudodiploria strigosa",
+             "CNAT" = "Colpophyllia natans",
+             "EFAS" = "Eusmilia fastigiata",
+             "OFAV" = "Orbicella faveolata",
+             "ACER" = "Acropora cervicornis",
+             "AAGA" = "Agaricia agaricites",
+             "MALI" = "Mycetophyllia aliciae",
+             "SCUB" = "Scolymia cubensis",
+             "DLAB" = "Diploria labyrinthiformis",
+             "PPOR" = "Porites porites",
+             "MFAV" = "Orbicella faveolata",
+             "PCLI" = "Pseudodiplora clivosa",
+             "AHUM" = "Agaricia humilis",
+             "PSTR" = "Pseudodiploria strigosa",
+             "ALAM" = "Agaricia lamarcki"))) %>%
+  separate(subcategory, into = c("genus", "species")) %>%    # separate into genus and species
+  mutate(genus = str_replace_all(genus,                      # fix genus spelling errors
+           c("Briarieum" = "Briareum",
+             "Dichocenia" = "Dichocoenia",
+             "Diplora" = "Diploria",
+             "Montastrea" = "Montastraea",
+             "Muriceposis" = "Muriceopsis",
+             "Pseudodiplora" = "Pseudodiploria",
+             "Pseudoplexaua" = "Pseudoplexaura",
+             "Pseudplexaura" = "Pseudoplexaura",
+             "Psuedoplexaura" = "Pseudoplexaura",
+             "^pterogorgia" = "Pterogorgia",
+             "SID" = "Siderastrea",
+             "siderastrea" = "Siderastrea",
+             "stephanocoenia" = "Stephanocoenia",
+             "Coral" = "no_id",
+             "CORAL" = "no_id",
+             "Octocoral" = "no_id",
+             "OCTOCORAL" = "no_id")),
+         species = str_replace_all(species,                   # fix species spelling errors
+           c("annuliris" = "annularis",
+             "Cavernosa" = "cavernosa",
+             "fasitgiata" = "fastigiata",
+             "Intersepta" = "intersepta",
+             "spp" = "sp", "SPP" = "sp", "species" = "sp",
+             "stokesi$" = "stokesii")))
 
 # Add distance from channel for each permanent site
 all_counts <- all_counts %>%
@@ -204,17 +263,34 @@ all_counts <- all_counts %>%
     site=="R3NC1" ~ "9380",
     site=="R3S2" ~ "21",
     site=="R3SC2" ~ "1300",
-    site=="R3S1" ~ "",       # GET DISTANCE
+    site=="R3S1" ~ "30",       # GET DISTANCE
     site=="R3S3" ~ "",       # GET DISTANCE
     site=="R3SC3" ~ "",      # GET DISTANCE
     site=="R3SC1" ~ "",      # GET DISTANCE
     TRUE ~ str_extract(dist, "[[:digit:]]{2,3}"))) %>%
   type_convert()
+
+
+
+# there are still some missing dates
+
 ```
 
 ```{r}
-all_counts
-# need to make species names consistent
+# Count corals
+df <- all_counts %>%
+  filter(category == "scleractinian") %>%
+  group_by(date, site, transect, transect_area_m2) %>%
+  summarise(n = n()) %>%
+  mutate(dens = n / transect_area_m2) %>%
+  group_by(date, site) %>%
+  summarise(dens.mean = mean(dens),
+            dens.sd = sd(dens))
+
+# Plot
+ggplot(df, aes(x = date, y = dens.mean, color = site, group = site)) + 
+  geom_point() +
+  geom_line()
 ```
 
 
