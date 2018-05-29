@@ -1,0 +1,84 @@
+---
+title: "coral_density.Rmd"
+author: "Ross Cunning"
+date: "5/29/2018"
+output: html_document
+---
+
+# Setup
+
+```{r setup, include = FALSE}
+# Set knitr options
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+# Load packages
+library(tidyverse)
+library(lubridate)
+library(lme4)
+library(lsmeans)
+```
+
+# Import data
+
+We will analyze the complete count dataset
+
+```{r}
+# Import tidy count data
+load("data/all_counts.RData")
+```
+
+# Calculate coral density
+```{r}
+# Scleractinian count data
+scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleractinians only
+  select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
+         transect, transect_area_m2, genus, species, count, perm)
+
+scler
+
+# Summarize density of all corals per transect
+scler_dens_transect <- scler %>%
+  group_by(reef, dir, channel, site, site2, dist, date, year, transect, transect_area_m2, perm) %>%
+  summarise(n = sum(count)) %>%
+  mutate(dens = n / transect_area_m2) %>%
+  ungroup()
+
+scler_dens_transect
+
+# Summarize average density of corals per site and timepoint (average across transects)
+df <- scler_dens_transect %>%
+  group_by(reef, dir, dist, site, site2, year) %>%
+  summarise(n.transects = n(),
+            dens.mean = mean(dens),
+            dens.sd = sd(dens))
+
+
+ggplot(filter(scler_dens_transect, dist < 1000), 
+       aes(x = dist, y = dens, color = factor(year < 2014), shape = factor(year))) + 
+  facet_wrap(reef ~ dir) +
+  geom_point() +
+  geom_smooth(method="lm", aes(group = factor(year < 2014)))
+```
+
+```{r}
+# Reproduce figure 26
+r2summ <- scler_dens_transect %>%
+  filter(year == 2013 | year == 2015,        # subset "baseline" and post-construction
+         reef == "R2",        # subset reef 2
+         perm == "yes") %>%   # subset permanent sites
+  group_by(site, site2, year) %>%
+  summarise(n.transect = n(),
+            meandens = mean(dens),
+            sd = sd(dens),
+            se = sd / sqrt(n.transect))
+
+
+ggplot(r2summ, aes(x = site, y = meandens, fill = factor(year), group = factor(year))) + 
+  geom_bar(stat = "identity", position = "dodge") +
+  geom_errorbar(aes(ymin = meandens - se, ymax = meandens + se), position = "dodge")
+
+# this looks different than figure 26. I think they may have averaged first across the three transects for each date, and then averaged across the four dates. see Table 13 "N=4" for most sites...
+```
+
