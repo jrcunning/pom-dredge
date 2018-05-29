@@ -19,7 +19,7 @@ library(janitor)
 ```
 
 
-# Baseline data from 2010
+# Import baseline data from 2009
 ```{r}
 # Import and tidy baseline density data from 2009 (10m transects)
 dens2009 <- readxl::read_xlsx(
@@ -30,27 +30,15 @@ dens2009 <- readxl::read_xlsx(
   filter(!grepl("D", transect)) %>%  # Remove transects that contain a "D". These were 'direct impact'
                                      # areas where reef was removed, so no later data for comparison
   mutate(site = substr(transect, 1, ifelse(nchar(transect) == 6, 3, 4)),   # Get site name
+         site2 = "RR",               # 2009 R2N transects match up with 2016 R2N-RR (see maps in report)
          dist = as.numeric(substr(transect, ifelse(nchar(transect) == 6, 4, 5), # Get dist from channel
                                   ifelse(nchar(transect) == 6, 6, 7))),
          count = 1,                  # single observation per row
          date = ymd("2009-11-15"),   # add date (collected btw Oct 28 and Nov 24 2009)
          transect_area_m2 = 10)      # each transect was 10 square meters
-
-
-# Subset octocorals and calculate density
-octo2010 <- dens2010 %>%
-  filter(category == "octocoral") %>%
-  group_by(site, dist) %>%
-  summarise(nocto = n(), dens.m2 = nocto / 10)     # Each transect was 10x1 m
-
-# Subset scleractinians and calculate density
-scler2010 <- dens2010 %>%
-  filter(category == "scleractinian") %>%
-  group_by(site, dist) %>%
-  summarise(nocto = n(), dens.m2 = nocto / 10)     # Each transect was 10x1 m
 ```
 
-### Data from 2013
+# Import "baseline" data from 2013
 ```{r}
 # Data from Oct - Dec 2013 (three 20m long transects (x1m wide))
 
@@ -75,17 +63,9 @@ dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
   mutate(dist = NA,
          date = ymd("2013-11-01"),
          transect_area_m2 = 20)   # each transect was 20 square meters
-
-# Subset octocorals and calculate density
-octo2013 <- dens2013 %>%
-  filter(category == "Octocoral") %>%
-  group_by(site) %>%
-  summarise(n.transects = length(unique(transect)),       # Get number of transects performed per site
-                  nocto = sum(total_count),               # Add total Octocoral counts for each site
-                dens.m2 = nocto / (20 * n.transects))     # Calculate total density (each transect = 20x1m)
 ```
 
-### Data from 2016 - permanent sites
+# Import data from 2016 - permanent sites
 ```{r}
 # Data collected August 2016
 ## Sponges and octocorals are in one spreadsheet
@@ -114,19 +94,9 @@ dens2016 <- bind_rows(dens2016octo, dens2016scler) %>%
          date = ymd("2016-08-01"),
          transect = as.character(transect),
          transect_area_m2 = 20)     # each transect was 20 square meters
-
-# Subset octocorals and calculate density
-# Table 45 in April 2017 report
-octo2016 <- dens2016 %>%
-  filter(category == "Octocoral") %>%
-  group_by(site) %>%
-  summarise(n.transects = length(unique(transect)),       # Get number of transects performed per site
-                  nocto = sum(count, na.rm = TRUE),       # Add total Octocoral counts for each site
-                dens.m2 = nocto / (20 * n.transects))     # Calculate total density (each transect = 20x1m)
-
 ```
 
-### Data from 2016 -- cross sites
+# Import data from 2016 - cross sites
 ```{r}
 # find all file names ending in .xlsx 
 files <- list.files(path = "data/Density_Data/2016 cross-transect data/Entered Data/",
@@ -149,8 +119,10 @@ cs2016octo <- cs2016octo %>%
   mutate(count = 1) %>%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
-  separate(site, into = c("site", "dist", "site2")) %>%
-  select(site, dist, transect, transect_area_m2, category, subcategory, count)
+  mutate(dist = str_extract(site, "[[:digit:]]{2,3}")) %>%      # extract distance from site name
+  mutate(site2 = str_extract(site, "LR|RR")) %>%                 # extract LR or RR from site name
+  mutate(site = str_extract(site, "R[^-|_]*")) %>%                 # extract base site form site name
+  select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
 
 # read in CORALS sheet from each xlsx file
@@ -167,19 +139,38 @@ cs2016scler <- cs2016scler %>%
   mutate(count = 1) %>%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
-  separate(site, into = c("site", "dist", "site2")) %>%
-  select(site, dist, transect, transect_area_m2, category, subcategory, count)
+  mutate(dist = str_extract(site, "[[:digit:]]{2,3}")) %>%      # extract distance from site name
+  mutate(site2 = str_extract(site, "LR|RR")) %>%                 # extract LR or RR from site name
+  mutate(site = str_extract(site, "R[^-|_]*")) %>%                 # extract base site form site name
+  select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
 # Combine octocoral and scleractinian data
 cs2016 <- bind_rows(cs2016octo, cs2016scler) %>%
-  mutate(dist = as.numeric(dist))
+  mutate(dist = as.numeric(dist),
+         date = as.Date(date))
 ```
 
-# Merge all count data together
+# Combine all count data and add site metadata
 ```{r}
 # Combine all count data and select octocorals and corals
 all_counts <- data_frame(data = list(dens2009, dens2013, dens2016, cs2016)) %>% unnest(data)
 
+# Add site metadata
+all_counts <- all_counts %>%
+  mutate(year = year(date),                                      # add year column
+         reef = str_sub(site, 1, 2),                             # add reef column (R2 or R3)
+          dir = str_sub(site, 3, 3),                             # add direction (N or S)
+         perm = case_when(nchar(site) == 3 | year == 2009 ~ "no",   # add permanent site (yes or no)
+                          nchar(site) >= 4 & year != 2009 ~ "yes"),
+      channel = ifelse(perm == "yes",
+                       case_when(grepl("C", site) ~ "control",          # add control vs. channelside
+                                !grepl("C", site) ~ "channelside"),
+                       NA))
+
+```
+
+# Tidy and filter data
+```{r}
 # Tidy category names and filter only scleractinians and octocorals
 all_counts <- all_counts %>%
   mutate(category = str_replace_all(category, 
@@ -235,8 +226,8 @@ all_counts <- all_counts %>%
              "SID" = "Siderastrea",
              "siderastrea" = "Siderastrea",
              "stephanocoenia" = "Stephanocoenia",
-             "Coral" = "no_id",
-             "CORAL" = "no_id",
+             "^Coral" = "no_id",
+             "^CORAL" = "no_id",
              "Octocoral" = "no_id",
              "OCTOCORAL" = "no_id")),
          species = str_replace_all(species,                   # fix species spelling errors
@@ -249,7 +240,7 @@ all_counts <- all_counts %>%
 
 # Add distance from channel for each permanent site
 all_counts <- all_counts %>%
-  mutate(dist = case_when(           
+  mutate(dist = ifelse(is.na(dist), case_when(           
     site=="R2N1" ~ "28",
     site=="R2NC2" ~ "9380",
     site=="R2N2" ~ "18",
@@ -266,153 +257,16 @@ all_counts <- all_counts %>%
     site=="R3S1" ~ "30",       # GET DISTANCE
     site=="R3S3" ~ "",       # GET DISTANCE
     site=="R3SC3" ~ "",      # GET DISTANCE
-    site=="R3SC1" ~ "",      # GET DISTANCE
-    TRUE ~ str_extract(dist, "[[:digit:]]{2,3}"))) %>%
+    site=="R3SC1" ~ ""),    # GET DISTANCE
+    dist)) %>%
   type_convert()
 
-
-
-# there are still some missing dates
-
+# remove "tag not found"
+all_counts <- filter(all_counts, genus != "Tag")
 ```
 
+# Save count data as .RData object
 ```{r}
-# Count corals
-df <- all_counts %>%
-  filter(category == "scleractinian") %>%
-  group_by(date, site, transect, transect_area_m2) %>%
-  summarise(n = n()) %>%
-  mutate(dens = n / transect_area_m2) %>%
-  group_by(date, site) %>%
-  summarise(dens.mean = mean(dens),
-            dens.sd = sd(dens))
-
-# Plot
-ggplot(df, aes(x = date, y = dens.mean, color = site, group = site)) + 
-  geom_point() +
-  geom_line()
-```
-
-
-
-
-==========
-# Merge permanent site data together
-```{r}
-dens2010octo <- dens2010octo %>% mutate(year = 2010)
-dens2013octo <- dens2013octo %>% mutate(year = 2013)
-dens2016octo <- dens2016octo %>% mutate(year = 2016)
-
-octo <- bind_rows(dens2013octo, dens2016octo)
-octo
-ggplot(octo, aes(x = site, y = dens.m2, color = year)) + geom_point()
-```
-
-### Data for octocoral density from 2016 (April 2017 report) at increasing distance from channel
-```{r}
-# find all file names ending in .xlsx 
-files <- list.files(path = "data/Density_Data/2016 cross-transect data/Entered Data/",
-                    pattern = "^[^~].*.xlsx", recursive = TRUE, full.names = TRUE)
-files
-# remove files manually if multiple files for a given transect
-files <- files[-c(24,25,28,30,32,33,36)]
-
-
-# read in OCTOCORALS sheet from each xlsx file
-cs2016 <- files %>%
-  map(readxl::read_xlsx, sheet = "OCTOCORALS") %>%    # read in all the files individually
-  reduce(bind_rows)                                   # reduce with rbind into one dataframe
-
-cs2016 <- cs2016 %>% select(1, 2, 3, 8, 9, 11)
-names(cs2016) <- c("area", "station", "date", "transect", "position.m", "genus")
-
-cs2016octo <- cs2016 %>%
-  filter(grepl("^R2|^R3", station)) %>%  # get only R2 and R3 survey sites
-  group_by(station) %>%
-  summarise(nocto   = n(),
-            dens.m2 = nocto / 50) %>%    # Total of 50m2 surveyed, according to Oct2017 report p. 23
-  arrange(station)
-
-cs2016octo <- cs2016octo %>%
-  mutate(distance = case_when(           # Add distances from channel for each station
-    station=="R2N1-RR" ~ "28",
-    station=="R2NC2-RR" ~ "9380",
-    station=="R2N2-LR" ~ "18",
-    station=="R2NC1-LR" ~ "9380",
-    station=="R2NC3-LR" ~ "9380",
-    station=="R2S1-RR" ~ "23",
-    station=="R2SC1-RR" ~ "1270",
-    station=="R2S2-LR" ~ "21",
-    station=="R2SC2-LR" ~ "1270",
-    station=="R3N1-LR" ~ "23",
-    station=="R3NC1-LR" ~ "9380",
-    station=="R3S2-LR" ~ "21",
-    station=="R3SC2-LR" ~ "1300") %>%
-  mutate(area = str_extract(station, "^R.."),
-         type = str_extract(station, ".R$")) %>%
-  type_convert()
-  
-
-cs2016octo %>%
-  filter(distance < 1000) %>%
-  ggplot(aes(x = distance, y = dens.m2)) + facet_wrap(~area) +
-  geom_point() + geom_smooth(method = "lm")
-
-ggplot(dens2010octo, aes(x=dist, y=dens.m2)) +
-  facet_wrap(~ site) +
-  geom_point() +
-  geom_smooth(method = "lm")
-
-# combine data together
-# 2010 R2N transects match up with 2016 R2N-RR
-R2N2016 <- cs2016octo %>%
-  filter(area=="R2N", type=="RR") %>%
-  select(area, distance, dens.m2) %>%
-  mutate(year = "2016")
-R2N2010 <- dens2010octo %>%
-  filter(site=="R2N") %>%
-  select(site, dist, dens.m2) %>%
-  rename(area = site, distance = dist) %>%
-  mutate(year = "2010")
-
-R2N <- bind_rows(R2N2010, R2N2016)
-ggplot(filter(R2N, distance < 2500), aes(x = distance, y = dens.m2, color = year)) + 
-  geom_point() +
-  geom_smooth(method="lm", aes(group = year))
-##### THIS REPRODUCES FIGURE 54 IN THE OCT2017 REPORT AND IT LOOKS EXACTLY THE SAME
-
-```
-
-
-# Just look at R2N channelside and control permanent sites data from 2013 and 2016 (not cross-site dataset)
-```{r}
-
-R2Nps <- bind_rows(
-  dens2013octo %>%
-    filter(grepl("R2N", site)) %>%
-    mutate(year = "2013"),
-  dens2016octo %>%
-    filter(grepl("R2N", site)) %>%
-    mutate(year = "2016")
-) %>% filter(site != "R2NC2")  # bc decrease in octo dens at this site attributed to lobster fishing damage
-
-R2Nps
-perm <- ggplot(R2Nps, aes(x = site, y = dens.m2, fill = year)) + 
-  geom_bar(stat = "identity", position = "dodge") + ylim(0,20)
-perm
-# permanent site data (2013, 2016) show everything goes DOWN in 2016
-
-# but cross-site data (2010, 2016) show everything goes UP in 2016.
-cross <- R2N %>% ungroup %>%
-  filter(distance < 500) %>%                                 # because 2010 data doesn't go past 500m
-  group_by(year, interv = cut_width(distance, 100)) %>%      # bin because distances are diff 2010vs2016
-  summarise(mean.dens.m2 = mean(dens.m2)) %>%                # average densities measured in bins
-  ggplot(aes(x = interv, y = mean.dens.m2, fill = year)) + 
-    geom_bar(stat = "identity", position = "dodge") + ylim(0,20)
-cross
-    
-    
-plot_grid(perm, cross, labels = c("permanent site data",
-                                  "cross-site dataset\n(corresponds to R2N1)"))
+save(all_counts, file = "data/all_counts.RData")
 ```
 
