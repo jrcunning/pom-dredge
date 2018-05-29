@@ -30,12 +30,19 @@ dens2009 <- readxl::read_xlsx(
   filter(!grepl("D", transect)) %>%  # Remove transects that contain a "D". These were 'direct impact'
                                      # areas where reef was removed, so no later data for comparison
   mutate(site = substr(transect, 1, ifelse(nchar(transect) == 6, 3, 4)),   # Get site name
-         site2 = "RR",               # 2009 R2N transects match up with 2016 R2N-RR (see maps in report)
+         site2 = case_when(site == "R2N" ~ "RR",  # 2009 R2N transects match up with 2016 R2N-RR
+                           site == "R2S" ~ "",     # GET THIS INFO
+                           site == "R3N" ~ "",     # GET THIS INFO
+                           site == "R3S1" ~ "CP",
+                           site == "R3S2" ~ "LR",
+                           site == "R3S3" ~ "SG"),
          dist = as.numeric(substr(transect, ifelse(nchar(transect) == 6, 4, 5), # Get dist from channel
                                   ifelse(nchar(transect) == 6, 6, 7))),
          count = 1,                  # single observation per row
          date = ymd("2009-11-15"),   # add date (collected btw Oct 28 and Nov 24 2009, but not in data)
          transect_area_m2 = 10)      # each transect was 10 square meters
+
+unique(dens2009$site)
 ```
 
 # Import "baseline" data from 2013
