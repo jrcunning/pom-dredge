@@ -73,6 +73,25 @@ dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
   mutate(count = ifelse(is.na(count), 1, count))            # ASSUME MISSING COUNTS ARE 1
 ```
 
+# Import data from 2015 - permanent sites
+```{r}
+dens2015 <- readxl::read_xlsx(
+  path = "data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx") %>%
+  clean_names() %>%
+  rename(category = category_scleractinian_etc,
+         subcategory = subcategory_species_or_genus,
+         count = total_count) %>%
+  separate(site, into = c("site", "site2")) %>%
+  mutate(date = as.Date(date),                                # convert to Date
+         dist = NA) %>%                                       # add dist column (NAs filled in later)
+  filter(grepl("^R", site)) %>%                                    # select R2 and R3
+  select(date, site, transect, category, subcategory, count) %>%
+  mutate(count = ifelse(is.na(count), 1, count)) %>%                # ASSUME MISSING COUNTS ARE 1
+  mutate(date = if_else(is.na(date), as.Date("2015-06-22"), date))   # fill in missing date
+```
+
+# Import data from 2015 - other sites / distances from channel (where is this?)
+
 # Import data from 2016 - permanent sites
 ```{r}
 # Data collected August 2016
@@ -163,7 +182,7 @@ cs2016 <- bind_rows(cs2016octo, cs2016scler) %>%
 # Combine all count data and add site metadata
 ```{r}
 # Combine all count data and select octocorals and corals
-all_counts <- data_frame(data = list(dens2009, dens2013, dens2016, cs2016)) %>% unnest(data)
+all_counts <- data_frame(data = list(dens2009, dens2013, dens2015, dens2016, cs2016)) %>% unnest(data)
 
 # Add site metadata
 all_counts <- all_counts %>%
