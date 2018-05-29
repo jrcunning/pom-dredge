@@ -48,6 +48,7 @@ unique(dens2009$site)
 # Import "baseline" data from 2013
 ```{r}
 # Data from Oct - Dec 2013 (three 20m long transects (x1m wide))
+# SOME SITES/transects DONE MORE THAN ONCE -- NEED TO INCLUDE DATE
 
 # Reef 2
 dens2013r2 <- readxl::read_xlsx(
@@ -55,7 +56,8 @@ dens2013r2 <- readxl::read_xlsx(
   clean_names() %>%
   rename(site = site_e_g_r2n1_rr, transect = transect_e_g_r2n1_rr_1, count = total_count) %>%
   separate(site, into = c("site", "site2")) %>%
-  select(site, transect, category, subcategory, count)
+  select(date, site, transect, category, subcategory, count)
+
 
 # Reef 3
 dens2013r3 <- readxl::read_xlsx(
@@ -63,12 +65,12 @@ dens2013r3 <- readxl::read_xlsx(
   clean_names() %>%
   rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, count = total_count) %>%
   separate(site, into = c("site", "site2")) %>%
-  select(site, transect, category, subcategory, count)
+  select(date, site, transect, category, subcategory, count)
 
 # Combine reef 2 and reef 3 data
 dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
   mutate(dist = NA,
-         date = ymd("2013-11-01"),
+         date = as.Date(date),
          transect_area_m2 = 20) %>%  # each transect was 20 square meters 
   mutate(count = ifelse(is.na(count), 1, count))            # ASSUME MISSING COUNTS ARE 1
 ```
@@ -96,6 +98,8 @@ dens2015 <- readxl::read_xlsx(
 # Import data from 2016 - permanent sites
 ```{r}
 # Data collected August 2016
+# need to include dat
+
 ## Sponges and octocorals are in one spreadsheet
 dens2016octo <- readxl::read_xlsx(
   path = "data/Density_Data/permanent_sites_impact_assessment_sponges_octocorals_2016_CSI_QAQC.xlsx",
@@ -104,9 +108,9 @@ dens2016octo <- readxl::read_xlsx(
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
          count = octo_sponge_zoanthid_count_qaqc) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
-  select(site, transect, category, subcategory, count) %>%
-  mutate(count = ifelse(is.na(count), 1, count))            # ASSUME MISSING COUNTS ARE 1
-
+  select(date, site, transect, category, subcategory, count) %>%
+  mutate(count = ifelse(is.na(count), 1, count),            # ASSUME MISSING COUNTS ARE 1
+         date = as.Date(date))
 
 ## Corals are in another spreadsheet
 dens2016scler <- readxl::read_xlsx(
@@ -115,13 +119,13 @@ dens2016scler <- readxl::read_xlsx(
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = species) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
-  select(site, transect, category, subcategory) %>%
-  mutate(count = 1)  # 1 coral per row
-
+  select(date, site, transect, category, subcategory) %>%
+  mutate(count = 1,  # 1 coral per row (no count data in sheet)
+         date = as.Date(date))
+         
 ## Combine sponge, octocoral, and scleractinian data
 dens2016 <- bind_rows(dens2016octo, dens2016scler) %>%
   mutate(dist = NA,
-         date = ymd("2016-08-01"),
          transect = as.character(transect),
          transect_area_m2 = 20)     # each transect was 20 square meters
 ```
