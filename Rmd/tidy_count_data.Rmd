@@ -69,7 +69,8 @@ dens2013r3 <- readxl::read_xlsx(
 dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
   mutate(dist = NA,
          date = ymd("2013-11-01"),
-         transect_area_m2 = 20)   # each transect was 20 square meters
+         transect_area_m2 = 20) %>%  # each transect was 20 square meters 
+  mutate(count = ifelse(is.na(count), 1, count))            # ASSUME MISSING COUNTS ARE 1
 ```
 
 # Import data from 2016 - permanent sites
@@ -83,7 +84,9 @@ dens2016octo <- readxl::read_xlsx(
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
          count = octo_sponge_zoanthid_count_qaqc) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
-  select(site, transect, category, subcategory, count)
+  select(site, transect, category, subcategory, count) %>%
+  mutate(count = ifelse(is.na(count), 1, count))            # ASSUME MISSING COUNTS ARE 1
+
 
 ## Corals are in another spreadsheet
 dens2016scler <- readxl::read_xlsx(
@@ -262,9 +265,9 @@ all_counts <- all_counts %>%
     site=="R3S2" ~ "21",
     site=="R3SC2" ~ "1300",
     site=="R3S1" ~ "30",       # GET DISTANCE
-    site=="R3S3" ~ "",       # GET DISTANCE
-    site=="R3SC3" ~ "",      # GET DISTANCE
-    site=="R3SC1" ~ ""),    # GET DISTANCE
+    site=="R3S3" ~ "30",       # GET DISTANCE
+    site=="R3SC3" ~ "1300",      # GET DISTANCE
+    site=="R3SC1" ~ "1300"),    # GET DISTANCE
     dist)) %>%
   type_convert()
 
