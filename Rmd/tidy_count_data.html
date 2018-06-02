@@ -193,6 +193,7 @@ dens2013 &lt;- bind_rows(dens2013r2, dens2013r3) %&gt;%
   mutate(date = as.Date(date),                                # convert to Date
          dist = NA) %&gt;%                                       # add dist column (NAs filled in later)
   filter(grepl(&quot;^R&quot;, site)) %&gt;%                                    # select R2 and R3
+  filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, category, subcategory, count) %&gt;%
   mutate(count = ifelse(is.na(count), 1, count)) %&gt;%                # ASSUME MISSING COUNTS ARE 1
   mutate(date = if_else(is.na(date), as.Date(&quot;2015-06-22&quot;), date)) %&gt;%  # fill in missing date
@@ -214,6 +215,7 @@ dens2016octo &lt;- readxl::read_xlsx(
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
          count = octo_sponge_zoanthid_count_qaqc) %&gt;%
   filter(grepl(&quot;^R&quot;, site)) %&gt;%     # filter reef 2 and reef 3 only
+  filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, category, subcategory, count) %&gt;%
   mutate(count = ifelse(is.na(count), 1, count),            # ASSUME MISSING COUNTS ARE 1
          date = as.Date(date))
@@ -225,6 +227,7 @@ dens2016scler &lt;- readxl::read_xlsx(
   clean_names() %&gt;%
   rename(category = category_scleractinian_etc, subcategory = species) %&gt;%
   filter(grepl(&quot;^R&quot;, site)) %&gt;%     # filter reef 2 and reef 3 only
+  filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, category, subcategory) %&gt;%
   mutate(count = 1,  # 1 coral per row (no count data in sheet)
          date = as.Date(date))
@@ -261,6 +264,7 @@ cs2016octo &lt;- cs2016octo %&gt;%
   mutate(dist = str_extract(site, &quot;[[:digit:]]{2,3}&quot;)) %&gt;%      # extract distance from site name
   mutate(site2 = str_extract(site, &quot;LR|RR&quot;)) %&gt;%                 # extract LR or RR from site name
   mutate(site = str_extract(site, &quot;R[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
+  filter(!grepl(&quot;DEAD&quot;, condition_codes_all)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
 
@@ -281,7 +285,11 @@ cs2016scler &lt;- cs2016scler %&gt;%
   mutate(dist = str_extract(site, &quot;[[:digit:]]{2,3}&quot;)) %&gt;%      # extract distance from site name
   mutate(site2 = str_extract(site, &quot;LR|RR&quot;)) %&gt;%                 # extract LR or RR from site name
   mutate(site = str_extract(site, &quot;R[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
+  filter(!grepl(&quot;DEAD&quot;, condition_codes_all)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
+
+# Some of the CORALS are DEAD -- omit these
+
 
 # Combine octocoral and scleractinian data
 cs2016 &lt;- bind_rows(cs2016octo, cs2016scler) %&gt;%
