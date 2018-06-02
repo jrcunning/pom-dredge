@@ -10,6 +10,7 @@ output: html_document
 ```{r setup, include = FALSE}
 # Set knitr options
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath(".."))
 ```
 
 ```{r}
@@ -21,8 +22,6 @@ library(lsmeans)
 ```
 
 # Import data
-
-We will analyze the complete count dataset
 
 ```{r}
 # Import tidy count data
@@ -36,16 +35,12 @@ scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleract
   select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
          transect, transect_area_m2, genus, species, count, perm)
 
-scler
-
 # Summarize density of all corals per transect
 scler_dens_transect <- scler %>%
   group_by(reef, dir, channel, site, site2, dist, date, year, transect, transect_area_m2, perm) %>%
   summarise(n = sum(count)) %>%
   mutate(dens = n / transect_area_m2) %>%
   ungroup()
-
-scler_dens_transect
 
 # Summarize average density of corals per site and timepoint (average across transects)
 df <- scler_dens_transect %>%
@@ -54,7 +49,7 @@ df <- scler_dens_transect %>%
             dens.mean = mean(dens),
             dens.sd = sd(dens))
 
-
+# Plot
 ggplot(filter(scler_dens_transect, dist < 1000), 
        aes(x = dist, y = dens, color = factor(year < 2014), shape = factor(year))) + 
   facet_wrap(reef ~ dir) +
@@ -79,6 +74,6 @@ ggplot(r2summ, aes(x = site, y = meandens, fill = factor(year), group = factor(y
   geom_bar(stat = "identity", position = "dodge") +
   geom_errorbar(aes(ymin = meandens - se, ymax = meandens + se), position = "dodge")
 
-# this looks different than figure 26. I think they may have averaged first across the three transects for each date, and then averaged across the four dates. see Table 13 "N=4" for most sites...
+# this looks different than figure 26.
 ```
 
