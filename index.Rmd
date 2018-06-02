@@ -22,11 +22,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### [Partial coral mortality](Rmd/partial_mortality.html)
 
-##### [Sedimentation stress](Rmd/sed_stress.Rmd)
+##### [Sedimentation stress](Rmd/sed_stress.html)
 
 ### Count data
 
-##### [Scleractinian density](Rmd/scler_density.Rmd)
+##### [Scleractinian density](Rmd/scler_density.html)
 
 ##### [Octocoral density]
 
