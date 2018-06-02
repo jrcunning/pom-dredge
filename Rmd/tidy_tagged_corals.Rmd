@@ -2,16 +2,15 @@
 title: "Import and tidy tagged coral data"
 author: "Ross Cunning, Rachel Silverstein"
 date: "3/07/2018"
-output:
-  html_document:
-    toc: true
-    toc_float: true
-    toc_depth: 4
+output: html_document
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
 
+```{r setup2}
 # Load packages
 library(tidyverse)
 library(stringr)
@@ -31,7 +30,7 @@ hasCond <- function(cond, Condition.Codes) {
 
 ## Import data
 
-```{r load_data_baseline, include=F}
+```{r load_data_baseline}
 # REEF 2
 # File: Reef2_Baseline_POM_2013_050714.xlsx
 # Worksheet: "Raw Data"
@@ -139,7 +138,7 @@ bl$MaxDiam <- as.numeric(as.character(bl$MaxDiam))
 
 ```
 
-```{r load_data_nov2013_mar2015, echo=FALSE, include=FALSE}
+```{r load_data_nov2013_mar2015}
 ### compliance monitoring during the project
 data <- read.csv("data/to_analyze/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.csv",
                  stringsAsFactors = FALSE)
@@ -223,8 +222,7 @@ data$MaxDiam <- NA    # Max Diameter data was not collected during compliance
 data <- data %>% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)
 ```
 
-
-```{r load_data_aprmay2015, include=FALSE}
+```{r load_data_aprmay2015}
 # from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
 # worksheet name: IA TAGGED ONLY
 ia <- read.csv("data/to_analyze/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.csv")
@@ -244,7 +242,7 @@ ia$MaxDiam <- NA    # Max Diameter data was not collected at this time
 ia <- ia %>% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)
 ```
 
-```{r load_data_junjuly2015, include=FALSE}
+```{r load_data_junjuly2015}
 # NEED TO ASSIGN CORRECT WEEK NUMBERS
 ia2 <- read.csv("data/to_analyze/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.csv")
 # Subset only tagged corals
@@ -270,7 +268,7 @@ ia2 <- with(ia2, {
 })
 ```
 
-```{r load_data_aug2016, include=FALSE}
+```{r load_data_aug2016}
 #### newer csi data - one year post-construction - permanent sites
 csi <- read.csv("data/to_analyze/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1)
 # Subset tagged corals only
@@ -295,7 +293,7 @@ csi <- csi[with(csi, order(Site, Transect, Coral.ID, Week)), ]
 csi <- droplevels(csi)
 ```
 
-```{r merge_data, include=FALSE}
+```{r merge_data}
 # Combine all data
 alldata <- rbind(bl, data, ia, ia2, csi)
 
