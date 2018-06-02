@@ -7,12 +7,17 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+-----
+
 ## Data import
 
-##### [Tidy tagged coral data](Rmd/tidy_tagged_corals.html)
+##### [Tagged coral data](Rmd/tidy_tagged_corals.html)
 
-##### [Tidy count data](Rmd/tidy_count_data.html)
+##### [Count data](Rmd/tidy_count_data.html)
 
+##### [Benthic cover data]
+
+-----
 
 ## Data analysis
 
@@ -32,5 +37,15 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Habitat
 
+##### [Sediment cover]
+
 ##### [Sediment depth]
+
+##### [Sediment texture]
+
+-----
+
+## Other documents
+
+##### [Review of Precht et al. 2016](Rmd/scirep_analysis.html)
 
