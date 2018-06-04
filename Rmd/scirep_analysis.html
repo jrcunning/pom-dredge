@@ -11,7 +11,7 @@
 
 <meta name="author" content="Rachel N. Silverstein, Ross Cunning, Andrew C. Baker" />
 
-<meta name="date" content="2018-06-02" />
+<meta name="date" content="2018-06-03" />
 
 <title>Review of: Unprecedented disease-related coral mortality in Southeastern Florida</title>
 
@@ -121,14 +121,18 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Review of: Unprecedented disease-related coral mortality in Southeastern Florida</h1>
 <h4 class="author"><em>Rachel N. Silverstein, Ross Cunning, Andrew C. Baker</em></h4>
-<h4 class="date"><em>2018-06-02</em></h4>
+<h4 class="date"><em>2018-06-03</em></h4>
 
 </div>
 
 
-<p>In this document, we attempt to reproduce the results reported by Precht et al. (2016) in <em>Scientific Reports</em> <a href="http://doi.org/10.1038/srep31374">(doi:10.1038/srep31374)</a>. Data were provided by the authors by request on March 8th, 2018 in an Excel sheet named “POM_R2_ControlData_Baseline_Post_construction.xlsx”.</p>
-<p>After importing the data, we proceed line by line through the ‘Tagged corals’ subheading in the ‘Results’ section of the paper, with block quotes taken directly from the paper followed by our attempt to reproduce each result.</p>
-<p>For full transparency and reproducibility, this document contains all of the R code we used to analyze this dataset to evaluate the results of the paper. Output of these analyses, including tables and figures as well as narrative text describing our rationale and findings, are integrated in this single document.</p>
+<p>This document attempts to replicate results presented in Precht et al. (2016) in <em>Scientific Reports</em> <a href="http://doi.org/10.1038/srep31374">(doi:10.1038/srep31374)</a> using the dataset provided to us by the authors upon request on March 8, 2018. After importing the data, we proceed line by line through the ‘Tagged-coral colonies’ section of the results, with block quotes taken directly from the paper, followed by our attempt to reproduce each result. For full transparency and reproducibility, this document contains the R code we used in each attempt to reproduce reported results, along with output in the form of figures and tables. Finally, we describe and explain the outcome of our attempt to reproduce the authors’ reported findings.</p>
+<p>In short, we are unable to reproduce many findings reported in the tagged coral Results section of the manuscript using the dataset provided by the authors. Some discrepancies in the data are more dramatic than others. Upon inquiry with the authors, we now understand a major factor in our inability to reproduce the disease prevalence data was that the data was further changed by the authors in a manner not described in the Methods – and which differs from the dataset initially provided to us. A “revision” of this data was subsequently provided to us on April 4, 2018. In this subsequent dataset, disease prevalence data is altered to also include (1) corals that died possibly weeks to months prior than the date in question but that previously had white plague disease or was assumed to have white plague disease, and (2) “assumed” disease mortality, in which the authors, through a set of criteria not described in the methods, assume that corals died from white plague disease without direct observation. These assumptions made by the authors in the data is not described in the manuscript, is irreproducible by other authors, and is not consistent with the standards of the field. Furthermore, even with this “updated” additional data, we still cannot reproduce all of Precht et al’s reported findings. Data issues are described in detail below.</p>
+<div id="background-on-data-and-sampling-design" class="section level5">
+<h5>Background on data and sampling design</h5>
+<p>Precht et al. 2016 includes coral condition observation data from both timed swims and tagged corals. The tagged coral data is the focus of our analysis as it was collected as a part of a Florida Department of Environmental Protection (FDEP) permit-mandated compliance monitoring connected to the Port of Miami dredging project, which took place from October 2013 through September 2015. Three of four authors are also employees of Dial Cordy and Associates, subcontractors of the dredging company Great Lakes Dredging and Dock, who conducted this compliance monitoring. Compliance monitoring was triggered whenever dredging activity was within 750m of the monitoring locations—located north and south of the shipping channel at the hardbottom area (closest inshore), the middle reef, and the outer reef areas (together these reefs comprise the Florida Reef Tract). Compliance monitoring stations were located within 100ft of the shipping channel where dredging was occurring (“channel-side”) and paired control sites, located several hundred to several thousand meters north and south of the channel. Paired control sites to the north and south of the channel on the middle reef (but not on the inshore hardbottom or outer reef locations, which were also monitored by the authors) are the only sites that the authors included in their published study, ending observations in July 2015, just post-dredging. The control locations from which they report data to the south of the channel were impacted by dredging sediment (Swart 28 June 2016, “Report on the Mineralogy and the Stable Carbon and Oxygen Isotopic Composition of Samples Supplied by NOAA”). However, authors do not mention the nearby dredging project in their paper.</p>
+<p>A full dataset from all 26 reef &amp; hardbottom sites (northern and southern, middle and outer reefs, channel-side and control locations) was also submitted to FDEP for permit compliance monitoring. We requested the full monitoring dataset in a public records request from FDEP (“FDEP-provided data”). We find many discrepancies between the data that the authors submitted to FDEP and in the dataset that they provided to us for to support their findings. Analysis of these discrepancies is available upon request.</p>
+</div>
 <div id="import-and-organize-data" class="section level2">
 <h2>1. Import and organize data</h2>
 <pre class="r"><code>scirep &lt;- read_xlsx(&quot;../data/raw/POM_R2_ControlData_Baseline_Post_construction.xlsx&quot;)
