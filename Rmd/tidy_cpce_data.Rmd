@@ -1,0 +1,77 @@
+---
+title: "Import and tidy CPCe data"
+author: "Ross Cunning"
+date: "6/3/2018"
+output: html_document
+---
+
+# Import CPCe data
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+
+# Load packages
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(readxl)
+library(janitor)
+```
+
+
+```{r}
+# Find all file names ending in .xlsx 
+files <- list.files(path = "data/CPCe", pattern = "^[^~].*.xlsx", 
+                    recursive = TRUE, full.names = TRUE)
+
+categories <- c("C", "G", "S", "Z", "MA", "CTB", "OL", "DCA", "CA", "DC", "SA", "R", "U")
+
+# Import data
+dd <- data_frame(file = files) %>%
+  mutate(DCAfile = as.character(map(file, readxl::read_xlsx, 
+                    sheet = "Data Summary", 
+                    range = "B4", col_names = FALSE))) %>%
+  mutate(data = map(file, readxl::read_xlsx, 
+                    sheet = "Data Summary", 
+                    range = cell_rows(6:23))) %>%
+  mutate(data2 = map(data, select, -1, -starts_with("X"))) %>%       # get rid of empty columns
+  mutate(data3 = map(data2, ~slice(., -(1:4)))) %>%                  # get rid of summary rows
+  mutate(data4 = map(data3, ~as_tibble(t(.)))) %>%                   # transpose
+  mutate(data5 = map(data4, ~setNames(., categories))) %>%           # set new colnames
+  unnest(data5)
+```
+
+# Tidy data
+
+```{r}
+# Add site, week, transect information
+ddt <- dd %>%
+  mutate(basename = tools::file_path_sans_ext(basename(file))) %>%
+  mutate(basename = gsub("CPCe.", "", basename)) %>%
+  mutate(basename = gsub("-RR", "", basename)) %>%
+  mutate(basename = gsub("-LR", "", basename)) %>%
+  separate(basename, into = c("site", "week", "transect"), sep = "\ |_|-") %>%
+  #mutate(weekn = str_extract(week, "[[:digit:]]{1,2}")) %>%
+  mutate(reef = str_sub(site, 1, 2),
+         dir  = str_sub(site, 3, 3),
+         channel = if_else(grepl("C", site), "control", "channelside"))
+
+# Add date information
+
+## DCA filenames (inside xlsx) indicate different dates for different files with "BW4" in filename
+## the dates cannot be trusted from the filename alone... can this be solved?
+ddt2 <- ddt %>%
+  mutate(date = case_when(week == "IA" ~ as.Date("2016-08-20"),     # confirm?
+                          week == "PC3" ~ as.Date("2015-07-07"),    # confirm?
+                          grepl("^B", week) ~ as.Date("2013-12-01"),    # 'baseline' confirm?
+                          grepl("^C", week) ~ as.Date("2013-11-20") +  # compliance weeks since start
+                            dweeks(as.numeric(str_extract(week, "[[:digit:]]{1,2}")))))
+
+```
+
+# Save as .RData object
+```{r}
+save(ddt2, file = "data/cpce.RData")
+```
+
