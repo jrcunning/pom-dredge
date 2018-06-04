@@ -37,7 +37,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ### Habitat
 
-##### [Sediment cover]
+##### [Sediment cover](Rmd/sed_cover.html)
 
 ##### [Sediment depth and type](Rmd/sed_depth_type.html)
 
