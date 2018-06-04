@@ -1,0 +1,44 @@
+---
+title: "sediment_cover.Rmd"
+author: "Ross Cunning"
+date: "6/3/2018"
+output: html_document
+---
+
+```{r, setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+
+# Load packages
+library(tidyverse)
+library(stringr)
+library(lubridate)
+library(readxl)
+library(janitor)
+```
+
+# Load data
+```{r}
+load("data/cpce.RData")
+```
+
+# Analyze
+```{r}
+df <- ddt2 %>%
+  group_by(reef, dir, channel, site, date, transect) %>%
+  summarise(meanSA = mean(SA)) %>%
+  ungroup()
+
+
+ggplot(df, aes(x = date, y = meanSA, color = channel)) +
+  facet_wrap(dir ~ reef) +
+  geom_point() +
+  geom_smooth()
+
+ggplot(df, aes(x = date, y = meanSA, color = channel)) +
+  facet_wrap(~ site) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+
