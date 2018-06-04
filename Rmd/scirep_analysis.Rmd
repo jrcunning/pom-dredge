@@ -9,6 +9,8 @@ editor_options:
 
 In this document, we attempt to reproduce the results reported by Precht et al. (2016) in *Scientific Reports* [(doi:10.1038/srep31374)](http://doi.org/10.1038/srep31374). Data were provided by the authors by request on March 8th, 2018 in an Excel sheet named "POM_R2_ControlData_Baseline_Post_construction.xlsx". 
 
+RACHEL TEXT TEST   
+
 After importing the data, we proceed line by line through the 'Tagged corals' subheading in the 'Results' section of the paper, with block quotes taken directly from the paper followed by our attempt to reproduce each result.
 
 For full transparency and reproducibility, this document contains all of the R code we used to analyze this dataset to evaluate the results of the paper. Output of these analyses, including tables and figures as well as narrative text describing our rationale and findings, are integrated in this single document.
