@@ -52,6 +52,8 @@ cpce <- data_frame(file = files) %>%
   mutate(data = map(data, ~ mutate_at(., -1, funs(./100 * total_points_minus_tape_wand_shadow)))) %>%
   # Round all numbers to nearest whole number (some slightly different due to DCA rounding)
   mutate(data = map(data, ~ mutate_all(., funs(round)))) %>%
+  # Convert all columns to integer
+  mutate(data = map(data, ~ mutate_all(., funs(as.integer)))) %>%
   # Remove first column (total number of points column) - all columns are now categories
   mutate(data = map(data, ~ select(., -1)))
 ```

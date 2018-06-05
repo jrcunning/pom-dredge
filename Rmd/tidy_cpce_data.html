@@ -158,6 +158,8 @@ cpce &lt;- data_frame(file = files) %&gt;%
   mutate(data = map(data, ~ mutate_at(., -1, funs(./100 * total_points_minus_tape_wand_shadow)))) %&gt;%
   # Round all numbers to nearest whole number (some slightly different due to DCA rounding)
   mutate(data = map(data, ~ mutate_all(., funs(round)))) %&gt;%
+  # Convert all columns to integer
+  mutate(data = map(data, ~ mutate_all(., funs(as.integer)))) %&gt;%
   # Remove first column (total number of points column) - all columns are now categories
   mutate(data = map(data, ~ select(., -1)))</code></pre>
 </div>
