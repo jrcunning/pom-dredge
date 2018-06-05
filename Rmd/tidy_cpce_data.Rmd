@@ -74,16 +74,23 @@ cpce <- cpce %>%
          channel = if_else(grepl("C", site), "control", "channelside"))
 
 # Add date information
+# Use information from "POM PERM SITE INVENTORY (5 29 18).xlsx" to add date information
 cpce <- cpce %>%
-  mutate(date = case_when(week == "IA" ~ as.Date("2016-08-20"),     # confirm?
-                          week == "PC3" ~ as.Date("2015-07-01"),    # confirm?
-                          grepl("^B", week) ~ as.Date("2013-12-01"),    # 'baseline' confirm?
-                          grepl("^C", week) ~ as.Date("2013-11-20") +  # compliance weeks since start
-                            dweeks(as.numeric(str_extract(week, "[[:digit:]]{1,2}")))))
-
-# SHEET with dates corresponding to each week:
-# POM PERM SITE INVENTORY (5 29 18).xlsx
-### BW# is different date for different reefs... e.g., BW3 for R2 is novermber, BW3 for R3 is december
+  mutate(date = case_when(
+    # Baseline week 3 is a different date for reef 2 and reef 3
+    week == "BW3" ~ case_when(reef == "R2" ~ as.Date("2013-11-25"),
+                              reef == "R3" ~ as.Date("2013-12-23")),
+    # Baseline week 4 is a different date for reef 2 and reef 3
+    week == "BW4" ~ case_when(reef == "R2" ~ as.Date("2013-12-02"),
+                              reef == "R3" ~ as.Date("2013-12-20")),
+    # Compliance weeks are the same for all reefs, number of weeks since 2013-11-20
+    grepl("^C", week) ~ as.Date("2013-11-20") + 
+      dweeks(as.numeric(str_extract(week, "[[:digit:]]{1,2}"))),
+    # Postconstruction weeks
+    week == "PC3" ~ as.Date("2015-07-01"),
+    # Impact assessment
+    week == "IA" ~ as.Date("2016-08-20")     ### THESE DATES NEED CONFIRMATION
+  ))
 
 ```
 

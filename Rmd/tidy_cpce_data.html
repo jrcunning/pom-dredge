@@ -177,16 +177,23 @@ cpce &lt;- cpce %&gt;%
          channel = if_else(grepl(&quot;C&quot;, site), &quot;control&quot;, &quot;channelside&quot;))
 
 # Add date information
+# Use information from &quot;POM PERM SITE INVENTORY (5 29 18).xlsx&quot; to add date information
 cpce &lt;- cpce %&gt;%
-  mutate(date = case_when(week == &quot;IA&quot; ~ as.Date(&quot;2016-08-20&quot;),     # confirm?
-                          week == &quot;PC3&quot; ~ as.Date(&quot;2015-07-01&quot;),    # confirm?
-                          grepl(&quot;^B&quot;, week) ~ as.Date(&quot;2013-12-01&quot;),    # 'baseline' confirm?
-                          grepl(&quot;^C&quot;, week) ~ as.Date(&quot;2013-11-20&quot;) +  # compliance weeks since start
-                            dweeks(as.numeric(str_extract(week, &quot;[[:digit:]]{1,2}&quot;)))))
-
-# SHEET with dates corresponding to each week:
-# POM PERM SITE INVENTORY (5 29 18).xlsx
-### BW# is different date for different reefs... e.g., BW3 for R2 is novermber, BW3 for R3 is december</code></pre>
+  mutate(date = case_when(
+    # Baseline week 3 is a different date for reef 2 and reef 3
+    week == &quot;BW3&quot; ~ case_when(reef == &quot;R2&quot; ~ as.Date(&quot;2013-11-25&quot;),
+                              reef == &quot;R3&quot; ~ as.Date(&quot;2013-12-23&quot;)),
+    # Baseline week 4 is a different date for reef 2 and reef 3
+    week == &quot;BW4&quot; ~ case_when(reef == &quot;R2&quot; ~ as.Date(&quot;2013-12-02&quot;),
+                              reef == &quot;R3&quot; ~ as.Date(&quot;2013-12-20&quot;)),
+    # Compliance weeks are the same for all reefs, number of weeks since 2013-11-20
+    grepl(&quot;^C&quot;, week) ~ as.Date(&quot;2013-11-20&quot;) + 
+      dweeks(as.numeric(str_extract(week, &quot;[[:digit:]]{1,2}&quot;))),
+    # Postconstruction weeks
+    week == &quot;PC3&quot; ~ as.Date(&quot;2015-07-01&quot;),
+    # Impact assessment
+    week == &quot;IA&quot; ~ as.Date(&quot;2016-08-20&quot;)     ### THESE DATES NEED CONFIRMATION
+  ))</code></pre>
 </div>
 <div id="save-as-.rdata-object" class="section level1">
 <h1>Save as .RData object</h1>
