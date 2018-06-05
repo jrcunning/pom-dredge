@@ -94,11 +94,28 @@ cpce <- cpce %>%
 
 ```
 
-# Save as .RData object
-```{r}
-cpce <- cpce %>% unnest(data)
+# Additional QC
 
-save(cpce, file = "data/cpce.RData")
+Categories were not all the same for all CPCe analyses. In some of the analyses, "Sand, Pavement, Rubble (SPR)" was used instead of using separate categories for "Sand" and "Rubble". In these cases, we could assume all SPR is sand, or we could exclude these timepoints altogether.
+
+```{r}
+# Count all records of spr as sand
+cpce_spr_as_sand <- cpce %>%
+  unnest(data) %>%
+  mutate(sand_sa = sum(sand_sa, sand_pavement_rubble_spr, na.rm = TRUE)) %>%
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
+
+# Remove all frames for which sand was not an explicit category
+cpce_omit_nosand <- cpce %>%
+  unnest(data) %>%
+  filter(!is.na(sand_sa)) %>%
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
+```
+
+# Save both versions of CPCe data as .RData objects
+```{r}
+save(cpce_spr_as_sand, file = "data/cpce_spr_as_sand.RData")
+save(cpce_omit_nosand, file = "data/cpce_omit_nosand.RData")
 ```
 
 

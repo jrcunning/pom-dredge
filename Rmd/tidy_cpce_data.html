@@ -195,11 +195,25 @@ cpce &lt;- cpce %&gt;%
     week == &quot;IA&quot; ~ as.Date(&quot;2016-08-20&quot;)     ### THESE DATES NEED CONFIRMATION
   ))</code></pre>
 </div>
-<div id="save-as-.rdata-object" class="section level1">
-<h1>Save as .RData object</h1>
-<pre class="r"><code>cpce &lt;- cpce %&gt;% unnest(data)
+<div id="additional-qc" class="section level1">
+<h1>Additional QC</h1>
+<p>Categories were not all the same for all CPCe analyses. In some of the analyses, “Sand, Pavement, Rubble (SPR)” was used instead of using separate categories for “Sand” and “Rubble”. In these cases, we could assume all SPR is sand, or we could exclude these timepoints altogether.</p>
+<pre class="r"><code># Count all records of spr as sand
+cpce_spr_as_sand &lt;- cpce %&gt;%
+  unnest(data) %&gt;%
+  mutate(sand_sa = sum(sand_sa, sand_pavement_rubble_spr, na.rm = TRUE)) %&gt;%
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
 
-save(cpce, file = &quot;data/cpce.RData&quot;)</code></pre>
+# Remove all frames for which sand was not an explicit category
+cpce_omit_nosand &lt;- cpce %&gt;%
+  unnest(data) %&gt;%
+  filter(!is.na(sand_sa)) %&gt;%
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)</code></pre>
+</div>
+<div id="save-both-versions-of-cpce-data-as-.rdata-objects" class="section level1">
+<h1>Save both versions of CPCe data as .RData objects</h1>
+<pre class="r"><code>save(cpce_spr_as_sand, file = &quot;data/cpce_spr_as_sand.RData&quot;)
+save(cpce_omit_nosand, file = &quot;data/cpce_omit_nosand.RData&quot;)</code></pre>
 </div>
 
 
