@@ -106,8 +106,8 @@ One frame (R3SC2 IA T2 frame 9) contained no data -- drop from dataset.
 # Count all records of spr as sand
 cpce_spr_as_sand <- cpce %>%
   unnest(data) %>%
-  mutate( sand_sa = rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE),
-         rubble_r = pmax(rubble_r, 0, na.rm = TRUE)) %>%
+  mutate( sand_sa = as.integer(rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE)),
+         rubble_r = as.integer(pmax(rubble_r, 0, na.rm = TRUE))) %>%
   select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %>%
   drop_na()   # single row (frame) contained no data -- drop
 
