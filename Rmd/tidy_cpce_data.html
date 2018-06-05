@@ -200,18 +200,21 @@ cpce &lt;- cpce %&gt;%
 <div id="additional-qc" class="section level1">
 <h1>Additional QC</h1>
 <p>Categories were not all the same for all CPCe analyses. In some of the analyses, “Sand, Pavement, Rubble (SPR)” was used instead of using separate categories for “Sand” and “Rubble”. In these cases, we could assume all SPR is sand, or we could exclude these timepoints altogether.</p>
+<p>One frame (R3SC2 IA T2 frame 9) contained no data – drop from dataset.</p>
 <pre class="r"><code># Count all records of spr as sand
 cpce_spr_as_sand &lt;- cpce %&gt;%
   unnest(data) %&gt;%
   mutate( sand_sa = rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE),
          rubble_r = pmax(rubble_r, 0, na.rm = TRUE)) %&gt;%
-  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %&gt;%
+  drop_na()   # single row (frame) contained no data -- drop
 
 # Omit all frames for which sand was not an explicit category
 cpce_omit_nosand &lt;- cpce %&gt;%
   unnest(data) %&gt;%
   filter(!is.na(sand_sa)) %&gt;%
-  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)</code></pre>
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %&gt;%
+  drop_na()   # single row (frame) contained no data -- drop</code></pre>
 </div>
 <div id="save-both-versions-of-cpce-data-as-.rdata-objects" class="section level1">
 <h1>Save both versions of CPCe data as .RData objects</h1>

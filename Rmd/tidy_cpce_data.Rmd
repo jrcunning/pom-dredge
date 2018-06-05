@@ -100,19 +100,23 @@ cpce <- cpce %>%
 
 Categories were not all the same for all CPCe analyses. In some of the analyses, "Sand, Pavement, Rubble (SPR)" was used instead of using separate categories for "Sand" and "Rubble". In these cases, we could assume all SPR is sand, or we could exclude these timepoints altogether.
 
+One frame (R3SC2 IA T2 frame 9) contained no data -- drop from dataset.
+
 ```{r}
 # Count all records of spr as sand
 cpce_spr_as_sand <- cpce %>%
   unnest(data) %>%
   mutate( sand_sa = rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE),
          rubble_r = pmax(rubble_r, 0, na.rm = TRUE)) %>%
-  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %>%
+  drop_na()   # single row (frame) contained no data -- drop
 
 # Omit all frames for which sand was not an explicit category
 cpce_omit_nosand <- cpce %>%
   unnest(data) %>%
   filter(!is.na(sand_sa)) %>%
-  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
+  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %>%
+  drop_na()   # single row (frame) contained no data -- drop
 ```
 
 # Save both versions of CPCe data as .RData objects
