@@ -125,32 +125,47 @@ $(document).ready(function () {
 </div>
 
 
-<div id="import-cpce-data" class="section level1">
-<h1>Import CPCe data</h1>
+<div id="import-data" class="section level1">
+<h1>Import data</h1>
+<p>Data sheets include percentages of each category in each frame. Multiply these by number of points (excluding tape, wand, and shadow) per frame to get number of points of each category.</p>
 <pre class="r"><code># Find all file names ending in .xlsx 
 files &lt;- list.files(path = &quot;data/CPCe&quot;, pattern = &quot;^[^~].*.xlsx&quot;, 
                     recursive = TRUE, full.names = TRUE)
 
-categories &lt;- c(&quot;C&quot;, &quot;G&quot;, &quot;S&quot;, &quot;Z&quot;, &quot;MA&quot;, &quot;CTB&quot;, &quot;OL&quot;, &quot;DCA&quot;, &quot;CA&quot;, &quot;DC&quot;, &quot;SA&quot;, &quot;R&quot;, &quot;U&quot;)
-
-# Import data
-dd &lt;- data_frame(file = files) %&gt;%
-  mutate(DCAfile = as.character(map(file, readxl::read_xlsx, 
-                    sheet = &quot;Data Summary&quot;, 
-                    range = &quot;B4&quot;, col_names = FALSE))) %&gt;%
+# Import and tidy data from each file
+cpce &lt;- data_frame(file = files) %&gt;%
+  # Extract original DCA CPCe data filepath from cell B4
+  mutate(DCAfile = as.character(map(file, readxl::read_xlsx,      
+                   sheet = &quot;Data Summary&quot;, range = &quot;B4&quot;, col_names = FALSE))) %&gt;%
+  # Read in data from rows 6 to 23 -- contains percent of each category for each frame
   mutate(data = map(file, readxl::read_xlsx, 
-                    sheet = &quot;Data Summary&quot;, 
-                    range = cell_rows(6:23))) %&gt;%
-  mutate(data2 = map(data, select, -1, -starts_with(&quot;X&quot;))) %&gt;%       # get rid of empty columns
-  mutate(data3 = map(data2, ~slice(., -(1:4)))) %&gt;%                  # get rid of summary rows
-  mutate(data4 = map(data3, ~as_tibble(t(.)))) %&gt;%                   # transpose
-  mutate(data5 = map(data4, ~setNames(., categories))) %&gt;%           # set new colnames
-  unnest(data5)</code></pre>
+                    sheet = &quot;Data Summary&quot;, range = cell_rows(6:23))) %&gt;%
+  # Transpose data so each category is a column, each frame a row
+  mutate(data = map(data, ~ as_tibble(t(.)))) %&gt;%
+  # Set first row of transposed data to column names
+  mutate(data = map(data, function(x) rename_at(x, vars(names(x)), funs(slice(x, 1))))) %&gt;%
+  # Remove first row (old column names)
+  mutate(data = map(data, ~ slice(., -1))) %&gt;%
+  # Clean column names
+  mutate(data = map(data, ~ janitor::clean_names(.))) %&gt;%
+  # Remove rows at end that summarize frames (has NA for number_of_frames)
+  mutate(data = map(data, ~ filter(., !is.na(number_of_frames)))) %&gt;%
+  # Remove unneeded columns
+  mutate(data = map(data, ~ select(., -c(1, 2, 4)))) %&gt;%
+  # Convert all columns to numeric
+  mutate(data = map(data, ~ mutate_all(., funs(as.numeric)))) %&gt;%
+  # Convert all category colummns from percent to number of points of each category
+  mutate(data = map(data, ~ mutate_at(., -1, funs(./100 * total_points_minus_tape_wand_shadow)))) %&gt;%
+  # Round all numbers to nearest whole number (some slightly different due to DCA rounding)
+  mutate(data = map(data, ~ mutate_all(., funs(round)))) %&gt;%
+  # Remove first column (total number of points column) - all columns are now categories
+  mutate(data = map(data, ~ select(., -1)))</code></pre>
 </div>
-<div id="tidy-data" class="section level1">
-<h1>Tidy data</h1>
+<div id="add-additional-metadata-site-and-date" class="section level1">
+<h1>Add additional metadata (site and date)</h1>
+<p>Use information contained within the filenames to get site and date.</p>
 <pre class="r"><code># Add site, week, transect information
-ddt &lt;- dd %&gt;%
+cpce &lt;- cpce %&gt;%
   mutate(basename = tools::file_path_sans_ext(basename(file))) %&gt;%
   mutate(basename = gsub(&quot;CPCe.&quot;, &quot;&quot;, basename)) %&gt;%
   mutate(basename = gsub(&quot;-RR&quot;, &quot;&quot;, basename)) %&gt;%
@@ -162,19 +177,22 @@ ddt &lt;- dd %&gt;%
          channel = if_else(grepl(&quot;C&quot;, site), &quot;control&quot;, &quot;channelside&quot;))
 
 # Add date information
-
-## DCA filenames (inside xlsx) indicate different dates for different files with &quot;BW4&quot; in filename
-## the dates cannot be trusted from the filename alone... can this be solved?
-ddt2 &lt;- ddt %&gt;%
+cpce &lt;- cpce %&gt;%
   mutate(date = case_when(week == &quot;IA&quot; ~ as.Date(&quot;2016-08-20&quot;),     # confirm?
-                          week == &quot;PC3&quot; ~ as.Date(&quot;2015-07-07&quot;),    # confirm?
+                          week == &quot;PC3&quot; ~ as.Date(&quot;2015-07-01&quot;),    # confirm?
                           grepl(&quot;^B&quot;, week) ~ as.Date(&quot;2013-12-01&quot;),    # 'baseline' confirm?
                           grepl(&quot;^C&quot;, week) ~ as.Date(&quot;2013-11-20&quot;) +  # compliance weeks since start
-                            dweeks(as.numeric(str_extract(week, &quot;[[:digit:]]{1,2}&quot;)))))</code></pre>
+                            dweeks(as.numeric(str_extract(week, &quot;[[:digit:]]{1,2}&quot;)))))
+
+# SHEET with dates corresponding to each week:
+# POM PERM SITE INVENTORY (5 29 18).xlsx
+### BW# is different date for different reefs... e.g., BW3 for R2 is novermber, BW3 for R3 is december</code></pre>
 </div>
 <div id="save-as-.rdata-object" class="section level1">
 <h1>Save as .RData object</h1>
-<pre class="r"><code>save(ddt2, file = &quot;data/cpce.RData&quot;)</code></pre>
+<pre class="r"><code>cpce &lt;- cpce %&gt;% unnest(data)
+
+save(cpce, file = &quot;data/cpce.RData&quot;)</code></pre>
 </div>
 
 
