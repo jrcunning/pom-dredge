@@ -201,10 +201,11 @@ cpce &lt;- cpce %&gt;%
 <pre class="r"><code># Count all records of spr as sand
 cpce_spr_as_sand &lt;- cpce %&gt;%
   unnest(data) %&gt;%
-  mutate(sand_sa = sum(sand_sa, sand_pavement_rubble_spr, na.rm = TRUE)) %&gt;%
+  mutate( sand_sa = rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE),
+         rubble_r = pmax(rubble_r, 0, na.rm = TRUE)) %&gt;%
   select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws)
 
-# Remove all frames for which sand was not an explicit category
+# Omit all frames for which sand was not an explicit category
 cpce_omit_nosand &lt;- cpce %&gt;%
   unnest(data) %&gt;%
   filter(!is.na(sand_sa)) %&gt;%
