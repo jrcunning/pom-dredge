@@ -7,6 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
 #Introduction
+
 This document attempts to replicate results presented in Precht et al. (2016) in *Scientific Reports* [(doi:10.1038/srep31374)](http://doi.org/10.1038/srep31374) using the dataset provided to us by the authors upon request on March 8, 2018. After importing the data, we proceed line by line through the 'Tagged-coral colonies' section of the results, with block quotes taken directly from the paper, followed by our attempt to reproduce each result. For full transparency and reproducibility, this document contains the R code we used in each attempt to reproduce reported results, along with output in the form of figures and tables. Finally, we describe and explain the outcome of our attempt to reproduce the authors' reported findings.
 
 In short, we are unable to reproduce many findings reported in the tagged coral Results section of the manuscript using the dataset provided by the authors. Some discrepancies in the data are more dramatic than others. Upon inquiry with the authors, we now understand a major factor in our inability to reproduce the disease prevalence data was that the data was further changed by the authors in a manner not described in the Methods -- and which differs from the dataset initially provided to us. An extra spreadsheet indicating additional corals that authors had deemed as "white plague mortality" post hoc was subsequently provided to us on April 4, 2018. Communication with authors and information provided in the additional spreadsheet indicates that changes were made to the data based on a set of assumptions that are not reflected in the dataset initially provided, and therefore cannot be reproduced. The data for disease prevalence reported in the Results, for example, were modified to include (1) corals that died possibly weeks to months prior than the date in question but that previously had white plague disease or was assumed to have white plague disease, and (2) "assumed" disease mortality. The authors, through a set of criteria not described in the Methods, assume that corals died from white plague disease without ever being observed with disease symptoms. Even with this additional spreadsheet, however, we still cannot reproduce all of Precht et al's reported findings. Data issues are described in detail below.
@@ -22,6 +23,20 @@ Precht et al. only reports data from 2 paired control sites on the northern and 
 Authors do not mention additional tagged coral data or the nearby dredging project. Observations reported in Precht et al. span the entire course of the dredging project from October 2013 through July 2015, a few months after dredging concluded. The control locations from which they report data to the south of the channel were impacted by dredging sediment (P. Swart, 28 June 2016, "Report on the Mineralogy and the Stable Carbon and Oxygen Isotopic Composition of Samples Supplied by NOAA"). 
  
 A full dataset from all 26 monitoring locations including reef & hardbottom sites (northern and southern, middle and outer reefs, channel-side and control locations) was also submitted to the FDEP for permit compliance monitoring. We requested the full monitoring dataset in a public records request from FDEP (“FDEP-provided data”). We find many discrepancies between the data that the authors submitted to FDEP and in the dataset that they provided to us for to support their findings. Analysis of these discrepancies is available upon request.
+
+# Attachments
+
+1. [POM_R2_ControlData_Baseline_Post_construction.xlsx](POM_R2_ControlData_Baseline_Post_construction.xlsx)
+2. [precht_spp_conflicts.txt](precht_spp_conflicts.txt)
+3. [Response to Sci Rep questions from RS.pdf](Response to Sci Rep questions from RS.pdf)
+4. [Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf](Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf)
+5. [Addl Comments on Response to Rachel Silverstein - Part 2.pdf](Addl Comments on Response to Rachel Silverstein - Part 2.pdf)
+6. [Copy of Conflicting Coral IDs verified.xlsx](Copy of Conflicting Coral IDs verified.xlsx)
+7. [Copy of R2_Ctrls_PCWK4_Verify.xlsx](Copy of R2_Ctrls_PCWK4_Verify.xlsx)
+8. [Copy of WP_and_Mortality for week7_7_2015.xlsx](Copy of WP_and_Mortality for week7_7_2015.xlsx)
+9. [Precht DCA Coral ID SBOU vs SINT.pdf](Precht DCA Coral ID SBOU vs SINT.pdf)
+10. [allFDEPdatatable.xls](allFDEPdatatable.xls)
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
