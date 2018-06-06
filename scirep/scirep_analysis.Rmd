@@ -24,6 +24,8 @@ Authors do not mention additional tagged coral data or the nearby dredging proje
  
 A full dataset from all 26 monitoring locations including reef & hardbottom sites (northern and southern, middle and outer reefs, channel-side and control locations) was also submitted to the FDEP for permit compliance monitoring. We requested the full monitoring dataset in a public records request from FDEP (“FDEP-provided data”). We find many discrepancies between the data that the authors submitted to FDEP and in the dataset that they provided to us for to support their findings. Analysis of these discrepancies is available upon request.
 
+![Map of all 26 reef sites monitored during the dredging project, and the 4 sites included in the Precht et al. *Scientific Reports* paper.](map_figure.jpg)
+
 # Attachments
 
 1. [POM_R2_ControlData_Baseline_Post_construction.xlsx](POM_R2_ControlData_Baseline_Post_construction.xlsx)
