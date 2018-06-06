@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### [Count data](Rmd/tidy_count_data.html)
 
-##### [Benthic cover data]
+##### [Benthic cover data](Rmd/tidy_cpce_data.html)
 
 -----
 
@@ -40,10 +40,3 @@ knitr::opts_chunk$set(echo = TRUE)
 ##### [Sediment cover](Rmd/sed_cover.html)
 
 ##### [Sediment depth and type](Rmd/sed_depth_type.html)
-
------
-
-## Other documents
-
-##### [Review of Precht et al. 2016](Rmd/scirep_analysis.html)
-
