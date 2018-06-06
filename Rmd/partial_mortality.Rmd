@@ -4,18 +4,20 @@ author: "Ross Cunning"
 date: "5/23/2018"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 # Setup
 ```{r setup, include = FALSE}
 # Set knitr options
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = normalizePath(".."))
 ```
 
 ```{r}
 # Load packages
 library(tidyverse)
+library(lubridate)
 library(lme4)
 library(lsmeans)
 
@@ -28,10 +30,10 @@ hasCond <- function(cond, Condition.Codes) {
 # Import data
 ```{r}
 # Import tidy tagged coral data (does not include visual estimates of partial mortality extent)
-load("../data/tagged_corals.RData")
+load("data/tagged_corals.RData")
 
 # Import 2016 visual estimate of extent of partial mortality data
-ia <- read_csv("../data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
+ia <- read_csv("data/DEP_responsive_records_May_2017/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv", skip=1) %>%
   select("Date", "Site", "Transect", "Tagged coral (Y/N)", "Coral ID", "Species", "Visual Estimate % Mortality") %>%
   filter(`Tagged coral (Y/N)` == "Y") %>%
   rename("pct.mort" = "Visual Estimate % Mortality") %>%
@@ -47,11 +49,45 @@ ia <- read_csv("../data/DEP_responsive_records_May_2017/permanent_sites_impact_a
 pmor <- left_join(ia, alldata, by=c("Date", "coral", "Species")) %>%
   select(Date, reef, dir, Site, Channel, Transect, Coral.ID, Species, pct.mort, coral)
 pmor <- pmor[!is.na(pmor$Channel),]  # A couple of spp IDs didn't match (data entry error?), so other columns did not merge. omit these rows.
+
+# Aggregate all data by week number
+## Different sites were observed on different dates. For this reason, we will bin dates by week number 
+## starting at the earliest date on which data were collected.
+alldata <- alldata %>%
+  mutate(weekn = trunc((Date - min(Date)) / dweeks(1)))
+
+allweeks <- alldata %>%
+  group_by(Site, reef, dir, Channel, Species, coral, weekn) %>%
+  do(Condition.Codes = unique(unlist(c(.$Condition.Codes)))) %>%
+  ungroup()
+
 ```
 
 # Prevalence of partial mortality due to sedimentation
 
 The DCA November 2015 report (page 14) indicates that the "PM" condition code is used to indicate partial mortality associated with sedimentation. Analysis of the prevalence of "PM" codes recorded for all tagged corals will test the hypothesis that corals at channelside sites were more likely to experience partial mortality due to sedimentation than corals at control sites.
+
+Show the cumulative proportion of corals experiencing partial mortality at each site over time.
+
+```{r}
+cumpm <- allweeks %>%
+  mutate(PM = hasCond("^PM$", Condition.Codes)) %>%             # Did coral have PM recorded?
+  group_by(coral) %>%
+  mutate(PM = ifelse(any(PM) & weekn > min(weekn[PM]), TRUE, PM)) %>%
+  group_by(reef, dir, Channel, Site, weekn) %>%
+  summarise(prop = sum(PM) / n())
+
+ggplot(cumpm, aes(x = weekn, y = prop, color = Channel)) + 
+  facet_wrap(~ Site) +
+  geom_line() +
+  labs(title = "Cumulative PM", x = "Time (weeks)", y = "Proportion of corals")
+
+ggplot(cumpm, aes(x = weekn, y = prop, color = Channel, group = Site)) + 
+  geom_line() +
+  labs(title = "Cumulative PM", x = "Time (weeks)", y = "Proportion of corals")
+```
+
+Calculate the total number of corals at each site that experienced partial mortality (up to July 2015), and plot as a barplot.
 
 ```{r, fig.width = 10, fig.height = 3}
 # Quantify occurrence of PM during compliance and post-con:
@@ -188,4 +224,8 @@ ggplot(summary(pmor.lsm2), aes(x = Channel, y = prob, fill = Channel)) +
 
 **_Siderastrea siderea_ has significantly higher tissue loss at channelside sites (53.6%) compared to control sites (8.3%) on the northern middle reef.**
 For *Stephanocoenia intersepta*, tissue loss is also higher at channelside relative to control sites (41.0% vs. 7.5%), but this difference was not significant. For *P. astreoides*, there were no tagged corals at the channelside sites at the northern middle reef.
+
+
+
+
 
