@@ -22,6 +22,7 @@ library(lsmeans)
 library(mgcv)
 library(gamm4)
 library(MASS)
+library(furrr)
 
 # Define function for accessing corals with specific condition codes
 hasCond <- function(cond, Condition.Codes) {
@@ -125,7 +126,7 @@ dd <- allweeks.f %>%
   nest(-reef, -dir) %>%
   mutate(
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
-    mod = map(data, ~ gamm4(SEDSTRESS ~ s(weekn, by = factor(Channel), k = 5) + Channel,
+    mod = future_map(data, ~ gamm4(SEDSTRESS ~ s(weekn, by = factor(Channel), k = 8) + Channel,
                                  random = ~ (1|Site), family = "binomial", data = .)$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
@@ -175,7 +176,7 @@ dd2 <- allweeks.f %>%
   nest(-reef, -dir) %>%
   mutate(
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
-    mod = map(data, ~ gamm4(PBUR|BUR ~ s(weekn, by = factor(Channel), k = 5) + Channel,
+    mod = future_map(data, ~ gamm4(PBUR|BUR ~ s(weekn, by = factor(Channel), k = 8) + Channel,
                                  random = ~ (1|Site), family = "binomial", data = .)$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
