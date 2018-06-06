@@ -46,7 +46,7 @@ hasCond <- function(cond, Condition.Codes) {
 
 ## 1. Import and organize data
 ```{r load_scirep_data}
-scirep <- read_xlsx("../data/raw/POM_R2_ControlData_Baseline_Post_construction.xlsx")
+scirep <- read_xlsx("POM_R2_ControlData_Baseline_Post_construction.xlsx")
 
 # Tidy data
 names(scirep) <- c("Date", "Week", "Visit", "Transect", "Category", "Species",
