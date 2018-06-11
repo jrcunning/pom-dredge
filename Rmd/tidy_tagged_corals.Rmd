@@ -30,113 +30,78 @@ hasCond <- function(cond, Condition.Codes) {
 
 ## Import data
 
-```{r load_data_baseline}
-# REEF 2
-# File: Reef2_Baseline_POM_2013_050714.xlsx
-# Worksheet: "Raw Data"
-bl_r2 <- read.csv("data/to_analyze/Reef2_Baseline_POM_2013_050714.csv")
-# Subset only tagged corals
-bl_r2 <- droplevels(subset(bl_r2, bl_r2$Tagged.Coral..Y.N=="Y"))
-bl_r2 <- within(bl_r2, {
-  Date <- as.Date(Date, format="%m/%d/%y")
-  Condition.Code <- as.character(Condition.QA.QC)
-  MaxDiam <- Max.Diameter..cm.
-  Site <- factor(str_replace_all(SITE..e.g..R2N1.RR., "-..", ""))
-  Week <- "BL"
-  Transect <- str_extract(Transect..e.g..R2N1.RR.1., ".$")
-  Species <- str_replace_all(Subcategory,
-                             c("Stephanocoenia intersepta"="SINT",
-                               "Diploria strigosa"="DSTR",
-                               "Dichocoenia stokesii"="DSTO",
-                               "Solenastrea bournoni"="SBOU",
-                               "Montastraea cavernosa"="MCAV",
-                               "Siderastrea siderea"="SSID",
-                               "Meandrina meandrites"="MMEA",
-                               "Diploria clivosa"="DCLI",
-                               "Agaricia sp."="AGSP",
-                               "Madracis formosa"="MFOR",
-                               "Madracis decactis"="MDEC",
-                               "Porites astreoides"="PAST",
-                               "Diplora strigosa"="DSTR",
-                               "Colpophyllia natans"="CNAT",
-                               "Eusmilia fastigiata"="EFAS",
-                               "Orbicella faveolata"="OFAV",
-                               "Acropora cervicornis"="ACER",
-                               "Agaricia agaricites"="AAGA"))
-})
-bl_r2 <- bl_r2[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Condition.Code", "MaxDiam")]
-# Aggregate all conditions for each observed coral
-bl_r2 <- with(bl_r2, {
-  aggregate(data.frame(Condition.Codes=Condition.Code), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
-            FUN=function(x) c(as.character(x)))
-})
+### Baseline
 
-# Condition codes appear to have been all put together separated by slashes in the baseline data.
-# separate these into a list to match subsequent data points
-bl_r2$Condition.Codes <- lapply(bl_r2$Condition.Codes, function(x) {
-  c(unlist(strsplit(x, split = "/")))
-})
+##### Hardbottom
+```{r baseline_hb}
+# Import data from file: Hardbottom_Baseline_POM_050714.xlsx
+bl_hb <- readxl::read_xlsx(path = "data/to_analyze/Hardbottom_Baseline_POM_050714.xlsx",
+                           sheet = "Raw Data")
+# Tidy data
+bl_hb <- bl_hb %>%
+  clean_names() %>%
+  filter(tagged_coral_y_n == "Y") %>%         # Tagged corals only
+  rename(site = site_e_g_hbnc1_cp,
+         transect = transect_e_g_hbna_1,
+         species = subcategory) %>%
+  select(date, site, transect, coral_id, species, condition_qa_qc)
 
-####
-# REEF 3
-# File: Reef2_Baseline_POM_2013_050714.xlsx
-# Worksheet: "Raw Data"
-bl_r3 <- read.csv("data/to_analyze/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).csv")
-# Subset only tagged corals
-bl_r3 <- droplevels(subset(bl_r3, bl_r3$Tagged.Coral..Y.N=="Y"))
-bl_r3 <- within(bl_r3, {
-  Date <- as.Date(Date, format="%m/%d/%y")
-  Condition.Code <- as.character(QA.QC.Condition.Code)
-  MaxDiam <- Max.Diameter
-  Site <- factor(str_replace_all(SITE..e.g..HBNC1.CP., "-..", ""))
-  Week <- "BL"
-  Transect <- str_extract(Transect..e.g..HBNA.1., ".$")
-  Species <- str_replace_all(Subcategory,
-                             c("Stephanocoenia intersepta"="SINT",
-                               "Diploria strigosa"="DSTR",
-                               "Dichocoenia stokesii"="DSTO",
-                               "Dichocenia stokesii"="DSTO",
-                               "Solenastrea bournoni"="SBOU",
-                               "Montastraea cavernosa"="MCAV",
-                               "Siderastrea siderea"="SSID",
-                               "Meandrina meandrites"="MMEA",
-                               "Diploria clivosa"="DCLI",
-                               "Agaricia sp."="AGSP",
-                               "Madracis formosa"="MFOR",
-                               "Madracis decactis"="MDEC",
-                               "Porites astreoides"="PAST",
-                               "Diplora strigosa"="DSTR",
-                               "Colpophyllia natans"="CNAT",
-                               "Eusmilia fastigiata"="EFAS",
-                               "Orbicella faveolata"="OFAV",
-                               "Acropora cervicornis"="ACER",
-                               "Agaricia agaricites"="AAGA",
-                               "Porites porites"="PPOR",
-                               "Agaricia lamarcki"="ALAM",
-                               "Diploria labyrinthiformis"="DLAB"))
-})
-bl_r3 <- bl_r3[, c("Week", "Date", "Site", "Transect", "Coral.ID", "Species", "Condition.Code", "MaxDiam")]
-
-# Aggregate all conditions for each observed coral
-bl_r3 <- with(bl_r3, {
-  aggregate(data.frame(Condition.Codes=Condition.Code), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
-            FUN=function(x) c(as.character(x)))
-})
-
-# Condition codes appear to have been all put together separated by slashes in the baseline data.
-# separate these into a list to match subsequent data points
-bl_r3$Condition.Codes <- lapply(bl_r3$Condition.Codes, function(x) {
-  c(unlist(strsplit(x, split = "/")))
-})
-
-bl <- rbind(bl_r2, bl_r3)
-bl$MaxDiam <- as.numeric(as.character(bl$MaxDiam))
-
+# Collapse condition codes to single row
+bl_hb <- bl_hb %>%
+  group_by(date, site, transect, coral_id, species) %>%
+  summarise(condition = list(c(unlist(strsplit(condition_qa_qc, "/")))))
 ```
+
+##### Middle reef
+```{r baseline_r2}
+# Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
+bl_r2 <- readxl::read_xlsx(path = "data/raw/Reef2_Baseline_POM_2013_050714.xlsx",
+                           sheet = "Raw Data", guess_max = 3000)
+
+# Tidy data
+bl_r2 <- bl_r2 %>%
+  clean_names() %>%
+  filter(tagged_coral_y_n == "Y") %>%
+  rename(site = site_e_g_r2n1_rr,
+         transect = transect_e_g_r2n1_rr_1,
+         species = subcategory) %>%
+  select(date, site, transect, coral_id, species, condition_qa_qc)
+
+# Collapse condition codes to single row
+bl_r2 <- bl_r2 %>%
+  group_by(date, site, transect, coral_id, species) %>%
+  summarise(condition = list(c(unlist(strsplit(condition_qa_qc, "/")))))
+```
+
+##### Outer reef
+```{r baseline_r3}
+# Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
+bl_r3 <- readxl::read_xlsx(path = "data/raw/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx",
+                           sheet = "Raw Data", guess_max = 3000)
+
+# Tidy data
+bl_r3 <- bl_r3 %>%
+  clean_names() %>%
+  filter(tagged_coral_y_n == "Y") %>%
+  rename(site = site_e_g_hbnc1_cp,
+         transect = transect_e_g_hbna_1,
+         species = subcategory) %>%
+  select(date, site, transect, coral_id, species, qa_qc_condition_code)
+
+# Collapse condition codes to single row
+bl_r3 <- bl_r3 %>%
+  group_by(date, site, transect, coral_id, species) %>%
+  summarise(condition = list(c(unlist(strsplit(qa_qc_condition_code, "/")))))
+```
+
+##### Combine baseline data for HB, R2, R3
+```{r baseline_combine}
+bl <- bind_rows(bl_hb, bl_r2, bl_r3)
+```
+
+### Compliance monitoring (during construction)
+
+Hardbottom, middle, and outer reef data are all in the same spreadsheet
 
 ```{r load_data_nov2013_mar2015}
 ### compliance monitoring during the project
@@ -206,7 +171,7 @@ sitesused <- c("R2NC1-LR", "R2NC2-RR", "R2NC3-LR", "R3NC1-LR", "HBNC1-CP", "HBN3
 #data <- data[data$Site %in% sitesused, ]
 compliance_alldata <- data   # make a copy of all data including the hardbottom sites
 ## SUBSET ONLY REEF 2 and 3 sites?
-data <- droplevels(data[grepl("^R", data$Site), ])
+#data <- droplevels(data[grepl("^R", data$Site), ])
 ##############
 
 # Aggregate all conditions for each observed coral
@@ -222,6 +187,7 @@ data$MaxDiam <- NA    # Max Diameter data was not collected during compliance
 data <- data %>% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)
 ```
 
+### Post-construction ()
 ```{r load_data_aprmay2015}
 # from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
 # worksheet name: IA TAGGED ONLY
