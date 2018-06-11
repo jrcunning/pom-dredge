@@ -50,10 +50,9 @@ Data issues that we have identified in this study are described in detail below.
 ### Correspondence with authors to our inquiries about data issues:
 7. [Response to Sci Rep questions from RS.pdf](Response to Sci Rep questions from RS.pdf)
 8. [Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf](Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf)
-9. [Addl Comments on Response to Rachel Silverstein - Part 2.pdf](Addl Comments on Response to Rachel Silverstein - Part 2.pdf)
 
 ### Data from all middle and outer reef monitoring sites provided to FDEP by authors for compliance monitoring, compiled and reformatted:
-10. [allFDEPdatatable.xls](allFDEPdatatable.xls)
+9. [allFDEPdatatable.xls](allFDEPdatatable.xls)
 
 
 ```{r setup, include=FALSE}
@@ -257,7 +256,7 @@ wp_scirep %>% filter(Date=="2014-09-26") %>% knitr::kable()
 
 Using the data provided by the authors, we find that the prevalence of white plague disease (“WP”) on Sept. 26, 2014 was not greater than 5% at southern monitoring sites. Disease prevalence was only 4% at site R2SC2 (N=1 out of 25 corals) and was 0% at R2SC1 (R2SC2 and R2SC1 are the southern monitoring sites referenced in the Results statement above). Neither reached the “5% prevalence” threshold on that date.
 
-In response to our inquiry regarding this discrepancy, the authors responded that “the original statement should have read ‘< 5%’ not ‘> 5%.’” For Authors’ response to our inquiry about this issue, see [Addl Comments on Response to Rachel Silverstein - Part 2.pdf](Addl Comments on Response to Rachel Silverstein - Part 2.pdf). This apparent typographical error fundamentally changes the conclusions of the paper and the contagion-based model presented in the paper.
+In response to our inquiry regarding this discrepancy, the authors responded that “the original statement should have read ‘< 5%’ not ‘> 5%.’” For Authors’ response to our inquiry about this issue, see [Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf](Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf). This apparent typographical error fundamentally changes the conclusions of the paper and the contagion-based model presented in the paper.
 
 We therefore queried the Precht et al. dataset to determine the earliest date that white plague disease was recorded at >5% prevalence:
 
