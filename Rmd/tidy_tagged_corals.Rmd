@@ -384,7 +384,7 @@ dd <- tagged_c %>%
   arrange(coral, date) %>%
   select(-channel, -reef, -dir, -coral)
 
-write.table(dd, file="alldatatable.txt", row.names = FALSE, quote = FALSE, sep = "\t")
+write.table(dd, file="data/tagged_c.txt", row.names = FALSE, quote = FALSE, sep = "\t")
 ```
 
 
