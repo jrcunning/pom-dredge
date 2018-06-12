@@ -24,11 +24,11 @@ Precht et al. 2016 includes observations of coral condition from both timed swim
 
 Compliance monitoring was triggered whenever dredging activity was within 750m of the monitoring locations. There were a total of 26 tagged coral monitoring locations located north and south of the shipping channel and sites near the channel (within 100 ft) and far from the channel at paired “control” sites (ranging from ~1300m to the south, to ~8000m to the north, See Figure 1). Reef areas monitored included hardbottom areas (closest inshore, “inner reef”), the middle reef, and the outer reef areas (together these reefs comprise the “Florida Reef Tract” in this area). However, Precht et al. only report data from 2 control sites on the northern middle reef and 2 control sites on the southern middle reef, which represent only 4 of the 26 permanent monitoring stations for which the authors had tagged coral data. They do not include their data from any outer reef or inner reef “hardbottom” sites, or any sites near the shipping channel where dredging was occurring. Authors do not mention the existence of additional tagged coral data. 
 
-Data issues that we have identified in this study are described in detail below. Please note that we conduct this reanalysis using the dataset provided by the authors, and we do not independently verify the data through analysis of the photographs of each coral, nor do we present a complete reinterpretation of the data here.
+Data issues that we have identified in this study are described in detail below. Please note that we conduct this review using the dataset provided by the authors, and we do not independently verify the data through analysis of the photographs of each coral, nor do we present a complete reinterpretation of the data here.
 
 [^3]: The only oblique reference to the dredging project is in the Methods section, which states, “These four sites were originally designed as controls for environmental compliance monitoring associated with the Port Miami deepening project (Fig. 1).”
 
-[^4]: Authors do not make clear that a large-scale dredging project was going on nearby their monitoring locations, nor do they describe the severe dredging-related impact to area corals captured in their compliance monitoring, nor do they explore whether any relationship exists between the dredging and the disease outbreak (despite other studies showing just such a link ). Failing to include the data from the near-dredging locations also prevents others from exploring these alternative hypotheses.
+[^4]: Authors do not make clear that a large-scale dredging project was going on nearby their monitoring locations, nor do they describe the severe dredging-related impact to area corals captured in their compliance monitoring, nor do they explore whether any relationship exists between the dredging and the disease outbreak (despite other studies showing just such a link). Failing to include the data from the near-dredging locations also prevents others from exploring these alternative hypotheses.
 
 [^5]: Authors reference Great Lakes Dredge and Dock in their acknowledgements, but fail to make the appropriate disclosures regarding their relationship in the competing financial interest section.
 
@@ -120,7 +120,7 @@ scirep <- with(scirep, {
 
 #### 1.1 Identify species ID errors for individual tagged corals
 
-Here we verify whether the species IDs associated with each tagged coral are the same across all observations.
+Using the dataset provided by authors, here we verify whether the species IDs associated with each tagged coral are the same across all observations.
 
 ```{r check_conflicts}
 # How many corals have multiple species assignments? (e.g., indicative of an error in data entry)
@@ -271,7 +271,7 @@ wp_scirep %>%
   knitr::kable()
 ```
 
-In the 4 monitoring sites included in Precht et al., we find that the first time >5% white plague prevalence (defined as occurrence of the “WP” condition code) was documented was on October 17, 2014 at R2SC2, when the proportion was 8% (N=2 out of 25 colonies). However, analyzing all middle and outer reef permanent monitoring locations (in data submitted to FDEP as part of compliance monitoring), we find that the first prevalence >5% WP at a single site was actually on June 27th, 2014 at R3NC1 (the northern control site from the outer reef (Figure 1); outer reef sites were all omitted from the analyses presented in this paper). This puts the ‘start of the outbreak’ (defined by by the authors’ >5% disease prevalence threshold) months earlier, north of the channel, **and before bleaching had yet occurred.**
+In the Precht et al. dataset, we find that the first time >5% white plague prevalence (defined as occurrence of the “WP” condition code) was documented was on October 17, 2014 at R2SC2, when the proportion was 8% (N=2 out of 25 colonies). However, analyzing all middle and outer reef permanent monitoring locations (in data submitted to FDEP as part of compliance monitoring), we find that the first prevalence >5% WP at a single site was actually on June 27th, 2014 at R3NC1 (the northern control site from the outer reef (Figure 1); outer reef sites were all omitted from the analyses presented in this paper). This puts the ‘start of the outbreak’ (defined by by the authors’ >5% disease prevalence threshold) months earlier, north of the channel, **and before bleaching had yet occurred.**
 
 
 ------
@@ -304,7 +304,9 @@ scirep %>%
   knitr::kable()
 ```
 
-If we also include corals recorded with white plague that had then died (12.7%, 7 out of 55 colonies observed), we still do not find a 15% disease prevalence. Based on communication with the authors (see [Response to Sci Rep questions from RS.pdf](Response to Sci Rep questions from RS.pdf)), it appears that the remaining discrepancy of 2.3% is due to the authors' inclusion of additional corals that were dead that were never recorded as having WP. These were later assumed to be disease-related deaths and are not included in the initial dataset. (Authors stated that certain corals that were found dead were assumed to have died from white plague disease, based on a set of criteria that is not described in the paper). The definition of disease prevalence in the Methods section does not include dead corals. Therefore, the reported value does not accurately describe the colonies that “showed outward signs of white plague” on this date.
+If we also include corals recorded with white plague that had then died (12.7%, 7 out of 55 colonies observed), we still do not find a 15% disease prevalence. Based on communication with the authors (see [Response to Sci Rep questions from RS.pdf](Response to Sci Rep questions from RS.pdf)), it appears that the remaining discrepancy of 2.3% is due to the authors' inclusion of additional corals that were assumed to have died from WP. Authors stated in their response to us that certain corals that were found dead were assumed to have died from white plague disease, based on a set of criteria that is not described in the paper [See footnote 1]. (By contrast, the definition of disease prevalence in the Methods section explicity excludes dead corals.) Therefore, the reported value does not accurately describe the colonies that “showed outward signs of white plague” on this date.
+
+In their response to us, authors also stated that they made clear in the Methods section that dead corals were also included in the disease prevalence values, but this is incorrect. The quotation to which they refer in their response references timed swim data, not tagged coral data. (While authors provided us with "qa/qc'd" timed swim data on April 4, 2018, we have no way to verify or to double check the timed swim data, since no photos, video, or alternative datasets were provided or are available, and Mr. Precht alone appears to have collected this data.) 
 
 ------
 
@@ -322,7 +324,7 @@ wp_scirep %>%
   knitr::kable()
 ```
 
-We also find that WP was first observed ≥5% at the northern sites in June 2015 within the dataset provided by the authors. However, analyzing the 4 sites included in Precht et al, but querying the data provided by the authors to FDEP for compliance monitoring, we find that the northern control site (R2NC2) was observed to have a 10% WP prevalence on May 19, 2015. Precht et al. excludes observations from May 2015 in the analysis presented in their study. For the authors’ response to our inquiry about this missing date, see [Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf](Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf)
+We also find that WP was first observed ≥5% at the northern sites in June 2015 within the dataset provided by the authors. However, analyzing the 4 sites included in Precht et al, but querying the data provided by the authors to FDEP for compliance monitoring, we find that the northern control site (R2NC2) was observed to have a 10% WP prevalence on May 19, 2015. Precht et al. excludes observations from May 2015 in the analysis presented in their study. Therefore, this study not only excludes certain sites from analysis, but also dates. For the authors’ response to our inquiry about this missing date, see [Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf](Response to Rachel Silverstein - Part 2 (WFP & BEG 4.20.18).pdf)
 
 ------
 
@@ -339,7 +341,7 @@ scirep %>%
   knitr::kable()
 ```
 
-We find that, out of 60 corals at the northern monitoring sites, six (10%) were directly observed with active white plague on June 17th, 2015. In order reproduce the 17% prevalence reported here, authors must have included corals that were found dead and were then assumed to have died from white plague disease, but without direct observation or ever being recorded as having white plague [see footnote 1].
+We find that, out of 60 corals at the northern monitoring sites, six (10%) were directly observed with active white plague on June 17th, 2015. In order reproduce the 17% prevalence reported here, authors must have included corals that were found dead and were then assumed to have died from white plague disease, but without direct observation [see footnote 1].
 Therefore, this result is not reproducible– almost half of these corals were not actually “infected with white-plague disease” on this date.
 
 ------
@@ -379,9 +381,11 @@ scirep %>%
   knitr::kable()
 ```
 
-We find that on July 7, 2015, only 3 out of 55 corals observed (5.5%) were actually recorded in the data as “WP”. If we also include corals that were recorded as having WP *and* corals that were previously recorded as having WP and are now recorded as dead (“WPdead”), the total is 15 out of 55 corals, or 27.3%. Therefore, we are unable to reproduce the result reported in the paper with the provided data. To reach the reported 40% disease prevalence, corals assumed to have died from WP without direct observation must also be counted. Including dead corals in the number of corals described as “showing signs of white plague infection” on a given date overinflates the apparent disease prevalence.
+We find that on July 7, 2015, only 3 out of 55 corals observed (5.5%) were actually recorded in the data as “WP”. If we also include corals that were recorded as having WP *and* corals that were previously recorded as having WP and are now recorded as dead (“WPdead”), the total is 15 out of 55 corals, or 27.3%. We are unable to reproduce the result reported in the paper with the provided data. Therefore, the  40% disease prevalence reported here does not represent the number of corals "showing signs of white plague infection" on this date, but must acutally represent the cumulative sum of corals that were recorded with WP, that had WP and then died, and/or that were assumed by authors to have died from WP at any time before July 7, 2015 (also the end of the reported data period). 
 
-We therefore queried the Precht et al. dataset to determine the highest recorded prevalence of active white plague (“WP” condition code):
+This is, perhaps, the most dramatic example of how the stated methods for calculating disease prevalence produce different results than the methods actually employed by the authors, which systematically overinflate the apparent disease prevalence.
+
+We then queried the Precht et al. dataset to determine the highest recorded prevalence of active white plague (“WP” condition code):
 
 ```{r scirep_highest_wp_prevalence, fig.width=10, fig.height=3}
 # Graph white plague prevalence by Date (for all corals surveyed - may include multiple sites)
@@ -432,7 +436,7 @@ scirep_wp.corals <- scirep %>%
   knitr::kable()
 ```
 
-We find that the dataset provided shows that only 28 out of 69 colonies (40.6%) were recorded as having WP at any point in time. Therefore, the reported disease prevalence of all timepoints cumulatively of 51% must also include corals that were found dead and that authors assumed to have died from white plague.
+We find that the dataset provided shows that only 28 out of 69 colonies (40.6%) were recorded as having WP at any point in time.
 
 ------
 
@@ -469,9 +473,9 @@ scirep_bleach_dis %>%
   knitr::kable()
 ```
 
-This is a key finding, yet we cannot reproduce it. We find that only 3 out of 28 corals (10.7%) that had WP were recorded as bleached (BL) prior to becoming infected. 20 out of 28 (71%) were recorded as partially bleached (PB) prior to infection, while 28 out of 28 (100%) were recorded as pale (P) prior to infection. We cannot combine these three condition codes (as appears to have happened for the earlier report of bleaching prevalence) to replicate the reported 81% prior “bleaching” for WP-infected corals, because 100% of corals that got the disease were previously observed with “paling”.
+This is a key finding, yet we cannot reproduce it. We find that only 3 out of 28 corals (10.7%) that had WP were recorded as bleached (BL) at some time prior to becoming infected. 20 out of 28 (71%) were recorded as partially bleached (PB) prior to infection, while 28 out of 28 (100%) were recorded as pale (P) prior to infection. We cannot combine these three condition codes (as appears to have happened for the earlier report of bleaching prevalence) to replicate the reported 81% prior “bleaching” for WP-infected corals.
 
-However, to statistically test whether there is a relationship between bleaching and disease, the number of corals that bleached and did *not* get disease must also be considered. We test for this here:
+However, to statistically test whether there is a relationship between bleaching and disease, the number of corals that bleached and did *not* get disease must also be considered (which authors also do not test). We test for this here:
 
 ```{r bleaching_nodisease}
 blwp <- scirep %>%
