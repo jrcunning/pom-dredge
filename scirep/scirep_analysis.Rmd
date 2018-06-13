@@ -37,7 +37,7 @@ Data issues that we have identified in this study are described in detail below.
 # Attachments
 
 ###Letter to the Editors of Scientific Reports
-This document also accompanies our letter to the editors of Scientific Reports: [Letter_to_SciRep_Editors_re_Precht_et_al_RS_RC_AB.pdf](Letter_to_SciRep_Editors_re_Precht_et_al_RS_RC_AB.pdf).”
+This document also accompanies our letter to the editors of Scientific Reports: [Letter_to_SciRep_Editors_re_Precht_et_al_RS_RC_AB.pdf](Letter_to_SciRep_Editors_re_Precht_et_al_RS_RC_AB.pdf).
 
 
 ###Data provided by Precht et al. authors upon our request:
