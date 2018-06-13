@@ -18,17 +18,12 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(lme4)
 library(lsmeans)
-
-# Define function for accessing corals with specific condition codes
-hasCond <- function(cond, Condition.Codes) {
-  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
-}
 ```
 
 # Import data
 ```{r}
 # Import tidy tagged coral data
-load("../data/tagged_corals.RData")
+load("../data/tagged.RData")
 ```
 
 # Prevalence of total colony mortality
@@ -36,41 +31,41 @@ load("../data/tagged_corals.RData")
 Total colony mortality was recorded using the condition code "DEAD". Here, we summarize the number of corals at each site that died at any point.
 
 ```{r, fig.width = 10, fig.height = 3}
-dead.summ <- alldata %>%
-  group_by(Site, Channel, reef, dir, coral) %>%
-  summarise(DEAD = any(hasCond("DEAD", Condition.Codes))) %>%
-  group_by(Site, Channel, reef, dir) %>%
+dead.summ <- tagged_bool %>%
+  group_by(site, channel, reef, dir, coral) %>%
+  summarise(DEAD = any(DEAD)) %>%
+  group_by(site, channel, reef, dir) %>%
   summarise(n = n(),
             dead = sum(DEAD),
             prop = dead / n)
 
 knitr::kable(dead.summ)
 
-ggplot(dead.summ, aes(x = Site, y = prop, fill = interaction(reef, dir, Channel))) +
-  facet_grid(~ reef + dir, scales = "free_x") +
+ggplot(dead.summ, aes(x = site, y = prop, fill = interaction(reef, dir, channel))) +
+  facet_wrap(dir ~ reef, scales = "free_x") +
   geom_bar(stat = "identity")
 ```
 
 # Was total mortality more common at channelside sites?
 ```{r}
 # Get data frame for each coral and whether it died or not
-dead <- alldata %>%
-  group_by(reef, dir, Channel, Site, Transect, Species, coral) %>%
-  summarise(DEAD = any(hasCond("DEAD", Condition.Codes)))
+dead <- tagged_bool %>%
+  group_by(reef, dir, channel, site, transect, species, coral) %>%
+  summarise(DEAD = any(DEAD))
 
 # Fit generalized linear mixed model
-dead.mod1 <- glmer(DEAD ~ Channel * reef * dir + (1|Site) + (1|Species), 
+dead.mod1 <- glmer(DEAD ~ channel * reef * dir + (1|site/transect) + (1|species), 
                    family = "binomial", data = dead)
 
 # Generate lsmeans for each reef/direction/channelside
-dead.lsm1 <- lsmeans(dead.mod1, specs = c("Channel", "reef", "dir"), type = "response")
+dead.lsm1 <- lsmeans(dead.mod1, specs = c("channel", "reef", "dir"), type = "response")
 
 # Test channelside vs. control mortality for each reef/direction
 dead.lsm1.sig <- rbind(pairs(dead.lsm1, by = c("reef", "dir")), adjust = "none")
 knitr::kable(summary(dead.lsm1.sig))
 
 # Plot mortality rates
-ggplot(summary(dead.lsm1), aes(x = Channel, y = prob, fill = Channel)) + 
+ggplot(summary(dead.lsm1), aes(x = channel, y = prob, fill = channel)) + 
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
@@ -85,30 +80,27 @@ There are no differences in total colony mortality between channelside and contr
 # WP disease-susceptible species
 sus.spp <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DSTR", "SBOU")
 
-# Add grouping factor for susceptibility
-dead <- mutate(dead, sus = factor(ifelse(Species %in% sus.spp, "sus", "nonsus")))
-
 # Subset only disease-resistant corals
-dead.nonsus <- filter(dead, sus == "nonsus")
+dead.nonsus <- filter(dead, !species %in% sus.spp)
 
 # Fit generalized linear mixed model for disease-resistant corals
-dead.mod4 <- glmer(DEAD ~ Channel * reef * dir + (1|Site) + (1|Species), 
+dead.mod4 <- glmer(DEAD ~ channel * reef * dir + (1|site/transect) + (1|species), 
                    family = "binomial", data = dead.nonsus)
 
 # Generate lsmeans for each reef and direction
-dead.lsm4 <- lsmeans(dead.mod4, specs = c("Channel", "reef", "dir"), type = "response")
+dead.lsm4 <- lsmeans(dead.mod4, specs = c("channel", "reef", "dir"), type = "response")
 
 # Test for differences in mortality at channelside vs. control sites
 dead.lsm4.sig <- rbind(pairs(dead.lsm4, by = c("reef", "dir")), adjust = "none")
 knitr::kable(summary(dead.lsm4.sig))
 
 # Plot
-ggplot(summary(dead.lsm4), aes(x = Channel, y = prob, fill = Channel)) + 
+ggplot(summary(dead.lsm4), aes(x = channel, y = prob, fill = channel)) + 
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
   geom_text(data = data.frame(summary(dead.lsm4.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 0.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
+            aes(x = 1.5, y = 0.9, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
-**For disease-resistant corals, there was significantly higher total mortality at channelside sites (37%) relative to control sites (7%) on the northern middle reef.** For the southern middle reef and the outer reef, there was no significant difference in total mortality of disease-resistant corals detected between channelside and control sites.
+**For disease-resistant corals, there was significantly higher total mortality at channelside sites (59%) relative to control sites (11%) on the northern middle reef.** For the southern middle reef and the outer reef, there was no significant difference in total mortality of disease-resistant corals detected between channelside and control sites.

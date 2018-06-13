@@ -16,19 +16,10 @@ library(tidyverse)
 library(stringr)
 library(lubridate)
 library(readxl)
-
-# Function for accessing data for a specific coral from full dataset
-getCoral <- function(d, s, t, c) {
-  with(d, d[Site==s & Transect==t & Coral.ID==c, ])
-}
-
-# Function for accessing corals with specific condition codes
-hasCond <- function(cond, Condition.Codes) {
-  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
-}
+library(janitor)
 ```
 
-## Import data
+# Import data
 
 ### Baseline
 
@@ -44,13 +35,16 @@ bl_hb <- bl_hb %>%
   rename(site = site_e_g_hbnc1_cp,
          transect = transect_e_g_hbna_1,
          species = subcategory) %>%
-  select(date, site, transect, coral_id, species, condition_qa_qc)
+  mutate(date = as_date(date)) %>%
+  select(date, site, transect, coral_id, species, condition_qa_qc, surveyor) %>%
+  rename(condition = condition_qa_qc)
 
-# Collapse condition codes to single row
+# Check and make sure no missing dates
+#bl_hb %>% filter(is.na(date))
+
+# Separate condition codes into multiple rows
 bl_hb <- bl_hb %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(c(unlist(strsplit(condition_qa_qc, "/"))))) %>%
-  ungroup()
+  separate_rows(condition, sep = "/")
 ```
 
 ##### Middle reef
@@ -66,13 +60,22 @@ bl_r2 <- bl_r2 %>%
   rename(site = site_e_g_r2n1_rr,
          transect = transect_e_g_r2n1_rr_1,
          species = subcategory) %>%
-  select(date, site, transect, coral_id, species, condition_qa_qc)
+  mutate(date = as_date(date)) %>%
+  select(date, site, transect, coral_id, species, condition_qa_qc, surveyor) %>%
+  rename(condition = condition_qa_qc)
 
-# Collapse condition codes to single row
+# Check and make sure no missing dates
+#bl_r2 %>% filter(is.na(date))
+# Correct date errors based on manual inspection of spreadsheet
+bl_r2 <- bl_r2 %>% 
+  mutate(date = case_when(
+    transect=="R2N1-RR-1" & coral_id==10 & is.na(date) ~ as_date("2013-11-02"),
+    transect=="R2NC3-LR-2" & coral_id==9 & is.na(date) ~ as_date("2013-11-19"),
+    TRUE ~ as_date(date)))
+
+# Separate condition codes into multiple rows
 bl_r2 <- bl_r2 %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(c(unlist(strsplit(condition_qa_qc, "/"))))) %>%
-  ungroup()
+  separate_rows(condition, sep = "/")
 ```
 
 ##### Outer reef
@@ -88,19 +91,22 @@ bl_r3 <- bl_r3 %>%
   rename(site = site_e_g_hbnc1_cp,
          transect = transect_e_g_hbna_1,
          species = subcategory) %>%
-  select(date, site, transect, coral_id, species, qa_qc_condition_code)
+  mutate(date = as_date(date)) %>%
+  select(date, site, transect, coral_id, species, qa_qc_condition_code, surveyor) %>%
+  rename(condition = qa_qc_condition_code)
 
-# Collapse condition codes to single row
+# Check and make sure no missing dates
+#bl_r3 %>% filter(is.na(date))
+
+# Separate condition codes into multiple rows
 bl_r3 <- bl_r3 %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(c(unlist(strsplit(qa_qc_condition_code, "/"))))) %>%
-  ungroup()
+  separate_rows(condition, sep = "/") %>%
+  separate_rows(condition, sep = " ")
 ```
 
 ##### Combine baseline data for HB, R2, R3
 ```{r baseline_combine}
 bl <- bind_rows(bl_hb, bl_r2, bl_r3) %>%
-  mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 ```
 
@@ -117,7 +123,8 @@ comp <- readxl::read_xlsx(
 # Tidy data
 comp <- comp %>%
   clean_names() %>%
-  select(date, week, site, transect, coral_id, species, condition_code) %>%
+  rename(condition = condition_code) %>%
+  select(date, week, visit, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
@@ -128,17 +135,20 @@ comp <- comp %>%
   # 2013-04-02 should be 2014-04-02
   mutate(date = if_else(date == "2013-04-02", as_date("2014-04-02"), as_date(date))) %>%
   # Looks like a mistake from filling down Date in Excel for Surveyor MLR 
-  # Change all Week 27 dates greater than May 23, 2014 to May 23, 2014
-  mutate(date = if_else(week == 27 & date > as_date("2014-05-23"),
-                        as_date("2014-05-23"), as_date(date))) %>%
+  # Change all Week 27 dates for R2SC1-RR visit 1 to May 23, 2014
+  mutate(date = case_when(site == "R2SC1-RR" & week == 27 & visit == 1 ~ as_date("2014-05-23"),
+                          TRUE ~ as_date(date))) %>%
   # 2020-05-29 should be 2014-05-29
-  mutate(date = if_else(date == "2020-05-29", as_date("2014-05-29"), as_date(date)))
+  mutate(date = if_else(date == "2020-05-29", as_date("2014-05-29"), as_date(date))) %>%
+  # Fix missing dates for HBS1-CP week 28
+  mutate(date = case_when(site=="HBS1-CP" & week == 28 & is.na(date) ~ as_date("2014-05-29"),
+                          TRUE ~ as_date(date)))
 
-# Aggregate condition codes into single row for each observation
-comp <- comp %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(condition_code)) %>%
-  ungroup()
+# Select columns
+comp <- comp %>% select(date, site, transect, coral_id, species, condition, surveyor)
+
+# Check and make sure no missing dates
+#comp %>% filter(is.na(date))
 ```
 
 ### Immediate post-construction
@@ -153,15 +163,13 @@ pc1 <- readxl::read_xlsx(
 # Tidy data
 pc1 <- pc1 %>%
   clean_names() %>%
-  select(date, site, transect, coral_id, species, condition_code) %>%
+  rename(condition = condition_code) %>%
+  select(date, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
-# Aggregate condition codes into single row for each observation
-pc1 <- pc1 %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(condition_code)) %>%
-  ungroup()
+# Check and make sure no missing dates
+#pc1 %>% filter(is.na(date))
 ```
 
 #### June - July 2015
@@ -175,15 +183,13 @@ pc2 <- readxl::read_xlsx(
 pc2 <- pc2 %>%
   clean_names() %>%
   filter(tagged_coral_y_n == "Y") %>%           # Tagged corals only
-  select(date, site, transect, coral_id, species, condition_code_qaqc) %>%
+  rename(condition = condition_code_qaqc) %>%
+  select(date, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
-# Aggregate condition codes into single row for each observation
-pc2 <- pc2 %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(condition_code_qaqc)) %>%
-  ungroup()
+# Check and make sure no missing dates
+#pc2 %>% filter(is.na(date))
 ```
 
 ### One year post-construction (Aug 2016)
@@ -198,105 +204,184 @@ pc3 <- readxl::read_xlsx(
 pc3 <- pc3 %>%
   clean_names() %>%
   filter(tagged_coral_y_n == "Y") %>%              # Tagged corals only
-  select(date, site, transect, coral_id, species, condition_code_qaqc) %>%
+  rename(condition = condition_code_qaqc) %>%
+  select(date, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
+# Check and make sure no missing dates
+#pc3 %>% filter(is.na(date))
+
 # Aggregate condition codes into single row for each observation
-pc3 <- pc3 %>%
-  group_by(date, site, transect, coral_id, species) %>%
-  summarise(condition = list(condition_code_qaqc)) %>%
-  ungroup()
+# pc3 <- pc3 %>%
+#   group_by(date, site, transect, coral_id, species) %>%
+#   summarise(condition = list(condition_code_qaqc)) %>%
+#   ungroup()
 ```
 
 # Combine all tagged coral data
 ```{r merge_data}
 # Combine all data
-tagged <- bind_rows(bl, comp, pc1, pc2, pc3) %>%
-  mutate_if(is.character, as.factor)
+tagged <- bind_rows(bl, comp, pc1, pc2, pc3)
 ```
 
-# Homogenize site, transect, coral ID, and species levels
+### Homogenize site, transect, coral ID, and species codes
 ```{r}
+tagged <- tagged %>%
+  mutate(site = str_extract(site, pattern = "[^-]+")) %>%           # Remove "-RR" etc.
+  mutate(transect = str_extract(transect, pattern = ".$")) %>%      # Get transect as single digit
+  unite(coral, site, transect, coral_id, sep = ".", remove = FALSE)
 
+tagged <- tagged %>%
+  mutate(species = case_when(
+    species %in% c("MFOR") ~ "MDEC",
+    species %in% c("MFER", "MALI", "Mycetophyllia ferox") ~ "MYCE",
+    species %in% c("Orbicella annularis") ~ "OANN",
+    species %in% c("stephanoceonia intersepta", "Stephanocoenia intersepta",
+                   "Stephanocoenia intercepta", "stephanocoenia intersepta") ~ "SINT",
+    species %in% c("Dichocoenia stokesii", "Dichocenia stokesii") ~ "DSTO",
+    species %in% c("Solenastrea bournoni") ~ "SBOU",
+    species %in% c("Montastraea cavernosa") ~ "MCAV",
+    species %in% c("Siderastrea siderea") ~ "SSID",
+    species %in% c("Meandrina meandrites") ~ "MMEA",
+    species %in% c("Diploria clivosa") ~ "DCLI",
+    species %in% c("Agaricia sp.") ~ "AGSP",
+    species %in% c("Madracis formosa") ~ "MFOR",
+    species %in% c("Madracis decactis") ~ "MDEC",
+    species %in% c("Porites astreoides") ~ "PAST",
+    species %in% c("Porites porites") ~ "PPOR",
+    species %in% c("Siderastrea sp.") ~ "SIDSP",
+    species %in% c("Oculina diffusa") ~ "ODIF",
+    species %in% c("Diploria strigosa", "Diplora strigosa", "DSTR") ~ "PSTR",
+    species %in% c("Diploria labyrinthiformis") ~ "DLAB",
+    species %in% c("Colpophyllia natans", "Colophyllia natans") ~ "CNAT",
+    species %in% c("Eusmilia fastigiata") ~ "EFAS",
+    species %in% c("Orbicella faveolata") ~ "OFAV",
+    species %in% c("Acropora cervicornis") ~ "ACER",
+    species %in% c("Agaricia agaricites") ~ "AAGA",
+    species %in% c("Agaricia lamarcki") ~ "ALAM",
+    TRUE ~ as.character(species)))
+
+# Remove row with missing data
+tagged <- tagged %>% drop_na(date)
+```
+
+# Additional data QC
+
+#### Check condition codes
+```{r}
+# tagged %>%
+#   distinct(condition) %>%
+#   print(n = nrow(.))
+
+tagged <- tagged %>%
+  mutate(condition = recode(condition, `sed dust` = "SED"))
 ```
 
 
+#### Check for conflicting species IDs
 ```{r}
-# Add grouping factors
-alldata$Channel <- ifelse(grepl("C", alldata$Site), "control", "channelside")
-alldata$reef <- substr(alldata$Site, 1, 2)
-alldata$dir <- substr(alldata$Site, 3, 3)
+spp_conflicts <- tagged %>% 
+  distinct(coral, species) %>%
+  group_by(coral) %>%
+  filter(n() > 1) %>%
+  arrange(coral) %>%
+  summarise(conflicting_species = list(species))
+```
 
-# Find any remaining species names errors to fix
-levels(droplevels(factor(alldata$Species)))
-# Coral that was labele MDEC at all other time points was labeled MFOR once
-alldata[alldata$Species=="MFOR", "Species"] <- "MDEC"
-# Apparently MFER and MALI (Mycetolphyllia ferox vs. aliciae) were both used for some corals, rename to MYCE
-alldata[alldata$Species=="MFER", "Species"] <- "MYCE"
-alldata[alldata$Species=="MALI", "Species"] <- "MYCE"
-alldata[alldata$Species=="Mycetophyllia ferox", "Species"] <- "MYCE"
-# Change Orbicella annularis to OANN
-alldata[alldata$Species=="Orbicella annularis", "Species"] <- "OANN"
-# Change stephanocoenia intersepta to SINT
-alldata[alldata$Species=="stephanocoenia intersepta", "Species"] <- "SINT"
+183 of the tagged corals have conflicting species information.
 
-# Strip whitespace from condition codes
-alldata$Condition.Codes <- lapply(alldata$Condition.Codes, trimws)
+#### Correct conflicting IDs by assigning most frequently noted species
+```{r}
+# Get most frequently used species ID for each coral
+spp_ids <- tagged %>%
+  group_by(coral) %>%
+  count(species) %>%
+  summarise(most_freq_species = species[which.max(n)])
 
-# Add column for individual coral unique identifier
-alldata$coral <- with(alldata, interaction(Site, Transect, Coral.ID))
-alldata <- droplevels(alldata)
+# Replace species ID with most frequently used species ID for each coral
+tagged <- tagged %>%
+  left_join(spp_ids, by = "coral") %>%
+  select(date, site, transect, coral_id, coral, most_freq_species, condition, surveyor) %>%
+  rename(species = most_freq_species) 
+```
 
+#### Change *A. cervicornis* WP records to WB
+
+```{r}
+tagged <- tagged %>%
+  mutate(condition = if_else(species == "ACER", 
+                             str_replace(condition, "WP", "WB"),
+                             condition))
+```
+
+#### Check surveyor IDs
+```{r}
+tagged %>% count(surveyor)
+
+# Change WP and WPF to WFP
+# Change MR to MLR
+# Change JC to JDC
+tagged <- tagged %>%
+  mutate(surveyor = recode(surveyor, 
+                           WP = "WFP", WPF = "WFP",
+                           MR = "MLR",
+                           JC = "JDC"))
+```
+
+#### Add site metadata
+```{r}
+tagged <- tagged %>%
+  mutate(channel = if_else(str_detect(site, "C"), "control", "channelside"),
+            reef = str_sub(site, 1, 2),
+             dir = str_sub(site, 3, 3)) %>%
+  select(date, reef, dir, channel, site, transect, coral, species, condition, surveyor)
+```
+
+#### Spread all conditions to boolean columns for each observation
+```{r}
+tagged_bool <- tagged %>% 
+  mutate(hasCond = TRUE) %>%
+  distinct() %>%
+  spread(condition, hasCond, fill = FALSE)
+```
+
+#### Nest all condition codes for each observation
+```{r}
+tagged_nest <- tagged %>% nest(condition, .key = "condition")
+```
+
+#### Concatenate all condition codes for each obervation
+```{r}
+tagged_c <- tagged %>%
+  group_by(date, reef, dir, channel, site, transect, coral, species) %>%
+  summarise(condition = paste(condition, collapse = ", ")) %>%
+  ungroup()
+```
+
+# Save tagged coral data as .RData
+```{r}
+save(tagged, tagged_bool, tagged_nest, tagged_c, file = "data/tagged.RData")
+```
+
+# Write concatenated data to file
+```{r}
 # Write all data to spreadsheet (STILL CONTAINS UNCORRECTED SPP CONFLICTS)
-dd <- alldata %>% 
-  arrange(coral, Date) %>%
-  select(-Channel, -reef, -dir, -coral)
+dd <- tagged_c %>% 
+  arrange(coral, date) %>%
+  select(-channel, -reef, -dir, -coral)
 
-dd$Condition.Codes <- vapply(dd$Condition.Codes, paste, collapse = ", ", character(1L))
-
-write.table(dd, file="alldatatable.txt", row.names = FALSE, quote = FALSE, sep = "\t")
+write.table(dd, file="data/tagged_c.txt", row.names = FALSE, quote = FALSE, sep = "\t")
 ```
 
-#### Check for conflicting species assignments for individual corals
 
-```{r check_conflicts}
-# How many corals have multiple species assignments? (e.g., indicative of an error in data entry)
-spp <- with(alldata, aggregate(Species, by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
-                     FUN=function(x) unique(c(as.character(x)))))
-table(sapply(spp$x, length)>1)
 
-capture.output(spp, file="all_spp_conflicts.txt")
-```
 
-Out of 115 corals, 23 have multiple species IDs associated with them at different points in time, indicative of some (unidentifiable) error in data entry. These errors might be resolved by going back to the raw data collection sheets.
 
-#### Change conflicting species assignments to reflect most frequently assigned species
 
-We attempt to fix some of these conflicting species assignments by changing species assignments for each coral (defined as unique site-transect-coralID) to the most frequently assigned species.
 
-```{r fix_errors}
-# There are several instances where a given Site-Transect-Coral.ID has multiple spp. assignments...
-# Find which name was used most frequently for each Site-Transect-Coral.ID
-which.spp <- with(alldata, {
-  aggregate(data.frame(Species=Species), by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
-            FUN=function(x) {
-              names(table(c(as.character(x))))[which.max(table(c(as.character(x))))]
-            })
-})
-
-# Reassign all values of Species for each coral to the most freq used Species
-for (i in 1:nrow(which.spp)) {
-  alldata[alldata$Site==which.spp[i, "Site"] & 
-          alldata$Transect==which.spp[i, "Transect"] &
-          alldata$Coral.ID==which.spp[i, "Coral.ID"],
-          "Species"] <- which.spp[i, "Species"]
-}
-```
-
+```{r, include = FALSE, eval = FALSE}
 #### Identify colonies that died after having WP
-
-```{r}
 wpbeforedead <- alldata %>%
   group_by(coral) %>%
   summarise(WP = as.character(min(Date[hasCond("^WP$", Condition.Codes)])),
@@ -308,14 +393,3 @@ wpbeforedead <- alldata %>%
 alldata[alldata$coral %in% wpbeforedead$coral & hasCond("DEAD", alldata$Condition.Codes), "Condition.Codes"] <- "WPDEAD"
 ```
 
-#### Change *A. cervicornis* WP records to WB
-
-```{r}
-cond <- alldata[alldata$Species=="ACER" & hasCond("^WP$", alldata$Condition.Codes), "Condition.Codes"]
-alldata[alldata$Species=="ACER" & hasCond("^WP$", alldata$Condition.Codes), "Condition.Codes"] <- str_replace_all(cond, "WP", "WB")
-```
-
-# Save tagged coral data as .RData
-```{r}
-save(alldata, file = "data/tagged_corals.RData")
-```

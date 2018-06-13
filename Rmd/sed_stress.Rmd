@@ -10,24 +10,19 @@ editor_options:
 # Setup
 ```{r setup, include = FALSE}
 # Set knitr options
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
 ```
 
 ```{r}
 # Load packages
+library(MASS)
 library(tidyverse)
 library(lubridate)
 library(lme4)
 library(lsmeans)
 library(mgcv)
 library(gamm4)
-library(MASS)
 library(furrr)
-
-# Define function for accessing corals with specific condition codes
-hasCond <- function(cond, Condition.Codes) {
-  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
-}
 
 # Convert logit to probability
 logit2prob <- function(logit){
@@ -35,6 +30,9 @@ logit2prob <- function(logit){
   prob <- odds / (1 + odds)
   return(prob)
 }
+
+# Plan for parallel processing
+plan(multiprocess)
 ```
 
 # Import data
@@ -43,32 +41,18 @@ We will analyze the complete tagged coral dataset.
 
 ```{r}
 # Import tidy tagged coral data
-load("../data/tagged_corals.RData")
+load("../data/tagged.RData")
+tagged_bool <- tagged_bool %>%
+  mutate(day = (date - min(date)) / ddays(1))
 
 # Define start and end of dredging (for plotting)
-dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
-dredge.start.wk <- (dredge.start.date - min(alldata$Date)) / dweeks(1)
-dredge.end.date <- as.Date("2014-12-31")                    # DCA report August 2015, page 3
-dredge.end.wk <- (dredge.end.date - min(alldata$Date)) / dweeks(1)
+dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
+dredge.start.wk <- (dredge.start.date - min(tagged$date)) / dweeks(1)
+dredge.end.date <- as.Date("2014-12-31")                  # DCA report August 2015, page 3
+dredge.end.wk <- (dredge.end.date - min(tagged$date)) / dweeks(1)
 ```
 
-#### Aggregate all data by week number
-
-Different sites were observed on different dates. For this reason, we will bin dates by week number starting at the earliest date on which data were collected.
-
-```{r}
-# Assign week number for all observations based on number of weeks since earliest data
-alldata <- alldata %>%
-  mutate(weekn = trunc((Date - min(Date)) / dweeks(1)))
-
-# Some of the the corals were observed multiple times per "week" - need to aggregate condition codes
-allweeks <- alldata %>%
-  group_by(Site, reef, dir, Channel, Species, coral, weekn) %>%
-  do(Condition.Codes = unique(unlist(c(.$Condition.Codes)))) %>%
-  ungroup()
-```
-
-#### Quantify sedimentation stress
+#### Quantifying sedimentation stress
 
 Several different condition codes were used to document impacts of sedimentation on corals:
 
@@ -76,61 +60,57 @@ Several different condition codes were used to document impacts of sedimentation
 * PBUR = partial burial of the colony
 * BUR = complete burial of the colony
 
-Here, we quantify and analyze "sedimentation stress" as the presence of any of these three condition codes.
+First we will look at all three of these codes as indicators of general sedimentation stress. Then we will look at only the more severe conditions - PBUR and BUR.
+
+# All sedimentation stress conditions (SA, PBUR, and BUR)
+
+### Proportion of corals with sedimentation stress over time for each site
 
 ```{r}
-# Quantify sedimentation stress for living corals only
-allweeks <- allweeks %>%
-  filter(!hasCond("DEAD", Condition.Codes)) %>%       # Only look at living corals
-  mutate(  SA = hasCond("^SA$", Condition.Codes),     # Did coral have sediment accumulation?
-         PBUR = hasCond("^PBUR$", Condition.Codes),   # Was coral partially buried in sediment?
-          BUR = hasCond("^BUR$", Condition.Codes),    # Was coral fully buried in sediment?
-    SEDSTRESS = hasCond("^SA$|^PBUR$|^BUR$", Condition.Codes))  # Any of these conditions?  
-```
-
-# Sedimentation stress over time (SA, PBUR, or BUR)
-```{r}
-# Get proportion of corals with sedimentation stress for each reef/dir at each week
-sedstress.summ <- allweeks %>%
-  group_by(reef, dir, Channel, weekn) %>%
+# Get proportion of living corals with sedimentation stress for each reef/dir at each week
+sedstress.summ1 <- tagged_bool %>%
+  filter(!DEAD) %>%
+  group_by(reef, dir, channel, site, day) %>%
   summarise(n = n(),
-            SEDSTRESS = sum(SEDSTRESS),
+            SEDSTRESS = sum(SA|PBUR|BUR),
             prop = SEDSTRESS / n)
 
 # Plot proportions
-ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
-  facet_grid(dir ~ reef) +
+ggplot(sedstress.summ1, aes(x = day, y = prop, color = channel)) + 
+  facet_wrap(site ~ .) + ylim(0, 1) +
   geom_point(aes(size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
-  geom_smooth(method = "loess", se = FALSE) +
+  geom_smooth(method = "loess", se = FALSE, span = 1) +
   labs(title = "Sedimentation stress (SA, PBUR, or BUR)",
        xlab = "Time (weeks)", ylab = "Proportion of corals")
 ```
 
-These plots with local regression smoothing show that sedimentation stress was much greater at channelside sites relative to controls. However, there are some gaps in the data that are causing some artifacts in the smoothing. To eliminate these artifacts, and generate more robust statistical fits for the dataset, we can fit generalized additive mixed models (GAMMs) and use only the regions in the data without large gaps in time.
+These plots with local regression smoothing show that sedimentation stress was much greater at channelside sites relative to controls. To generate more robust statistical fits for the dataset and compare channelside vs. controls at each reef, we can fit generalized additive mixed models (GAMMs) and use only the regions in the data without large gaps in time.
 
 ### Model sedimentation stress using GAMMs
 ```{r}
 # Filter dataset to only fit over regions with less than 20-week gaps between data points
-allweeks.f <- allweeks %>%
-  nest(-reef, -dir, -Channel) %>%                                            # For each reef
-  mutate(weeks = map(data, ~ sort(unique(.$weekn))),                         # Which weeks have data
-          runs = map(weeks, ~ split(.x, cumsum(c(TRUE, diff(.x) > 20)))),    # Find runs w/o 20wk gaps
+tagged_bool_f <- tagged_bool %>%
+  filter(!DEAD) %>%
+  nest(-reef, -dir, -channel) %>%                                            # For each reef
+  mutate( days = map(data, ~ sort(unique(.$day))),                           # Which weeks have data
+          runs = map(days, ~ split(.x, cumsum(c(TRUE, diff(.x) > 140)))), # Find runs w/o 140d gaps
        longest = map(runs, ~ .x[[which.max(sapply(.x, length))]]),           # Get longest run
-        data.f = map2(data, longest, ~ filter(.x, .$weekn %in% .y))) %>%     # Get data from those weeks
+        data.f = map2(data, longest, ~ filter(.x, .$day %in% .y))) %>%  # Get data from those days
   unnest(data.f)
 
 # Fit GAMMs for each reef
-dd <- allweeks.f %>%
-  # For each reef (R2N, R2S, R3N, R3S)
+gamms1 <- tagged_bool_f %>%
+  # For each reef and direction
   nest(-reef, -dir) %>%
   mutate(
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
-    mod = future_map(data, ~ gamm4(SEDSTRESS ~ s(weekn, by = factor(Channel), k = 8) + Channel,
-                                 random = ~ (1|Site), family = "binomial", data = .)$gam),
+    mod = future_map(data, ~ gamm4(SA|PBUR|BUR ~ s(day, by = factor(channel), k = 8) + channel,
+                                 random = ~ (1|site/transect) + (1|species), 
+                                 family = "binomial", data = .)$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
-    newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
-                                      Channel = c("channelside", "control"))),
+    newdata = map(data, ~ expand.grid(day = min(.$day):max(.$day),
+                                      channel = c("channelside", "control"))),
     # Get fitted values from GAMM using newdata frame
     fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
     # Get confidence intervals by simulation
@@ -140,47 +120,66 @@ dd <- allweeks.f %>%
     lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
     uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
   ) %>% unnest(newdata, fit, lci, uci)
+```
 
+```{r}
 # Plot
-fig1 <- ggplot(dd, aes(x = weekn, y = fit, color = Channel)) +
+fig1 <- ggplot(gamms1, aes(x = day, y = fit, color = channel)) +
   facet_grid(dir ~ reef) +
-  geom_point(data = sedstress.summ, aes(y = prop, size = n), alpha = 0.4) +
+  geom_point(data = sedstress.summ1, aes(y = prop, size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
   labs(title = "Sedimentation stress (SA, PBUR, or BUR)",
        xlab = "Time (weeks)", ylab = "Proportion of corals")
-    
 
 fig1
 ```
 
 Why is there so much sediment stress at control sites? Either some of these condition codes (e.g., SA) don't really reflect dredging sediment, or the control sites were actually impacted by dredging sediment.
 
-# Analyze sedimentation stress as PBUR or BUR (exclude SA)
+# Severe sedimentation stress (PBUR or BUR, excluding SA)
 
 If we assume that control sites are far enough from dredging activity that they are not impacted by dredging sediments, then the "SA" condition code, which was observed frequently at control sites, may not be indicative of actual dredging impact. Therefore, PBUR and BUR may be more appropriate indicators of sedimentation stress due to dredging.
 
+
+### Proportion of corals with severe sedimentation stress over time for each site
+
 ```{r}
-# Get proportion of corals with PBUR or BUR for each reef/dir at each week
-sedstress.summ <- allweeks %>%
-  group_by(reef, dir, Channel, weekn) %>%
+# Get proportion of living corals with sedimentation stress for each reef/dir at each week
+sedstress.summ2 <- tagged_bool %>%
+  filter(!DEAD) %>%
+  group_by(reef, dir, channel, site, day) %>%
   summarise(n = n(),
             SEDSTRESS = sum(PBUR|BUR),
             prop = SEDSTRESS / n)
 
+# Plot proportions
+ggplot(sedstress.summ2, aes(x = day, y = prop, color = channel)) + 
+  facet_wrap(site ~ .) + ylim(0, 1) +
+  geom_point(aes(size = n), alpha = 0.4) +
+  scale_size(range = c(0.1, 2.5)) +
+  geom_smooth(method = "loess", se = FALSE, span = 1) +
+  labs(title = "Severe sedimentation stress (PBUR, or BUR)",
+       xlab = "Time (weeks)", ylab = "Proportion of corals")
+```
+
+### Model severe sedimentation stress using GAMMs
+
+```{r}
 # Fit GAMMs for each reef
-dd2 <- allweeks.f %>%
+gamms2 <- tagged_bool_f %>%
   # For each reef (R2N, R2S, R3N, R3S)
   nest(-reef, -dir) %>%
   mutate(
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
-    mod = future_map(data, ~ gamm4(PBUR|BUR ~ s(weekn, by = factor(Channel), k = 8) + Channel,
-                                 random = ~ (1|Site), family = "binomial", data = .)$gam),
+    mod = future_map(data, ~ gamm4(PBUR|BUR ~ s(day, by = factor(channel), k = 8) + channel,
+                                   random = ~ (1|site/transect) + (1|species),
+                                   family = "binomial", data = .)$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
-    newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
-                                      Channel = c("channelside", "control"))),
+    newdata = map(data, ~ expand.grid(day = min(.$day):max(.$day),
+                                      channel = c("channelside", "control"))),
     # Get fitted values from GAMM using newdata frame
     fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
     # Get confidence intervals by simulation
@@ -190,42 +189,23 @@ dd2 <- allweeks.f %>%
     lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
     uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
   ) %>% unnest(newdata, fit, lci, uci)
+```
 
+```{r}
 # Plot
-fig2 <- ggplot(dd2, aes(x = weekn, y = fit, color = Channel)) +
+fig2 <- ggplot(gamms2, aes(x = day, y = fit, color = channel)) +
   facet_grid(dir ~ reef) +
-  geom_point(data = sedstress.summ, aes(y = prop, size = n), alpha = 0.4) +
+  geom_point(data = sedstress.summ2, aes(y = prop, size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
-  labs(title = "Sedimentation stress (PBUR or BUR)",
+  labs(title = "Severe sedimentation stress (PBUR or BUR)",
        xlab = "Time (weeks)", ylab = "Proportion of corals")
 
 fig2
 ```
 
 Analysis of PBUR or BUR only shows much lower prevalence of these condition codes at control sites, yet their prevalence at channelside sites remains very high.
-
-##### Break this down by site for the northern middle reef
-
-```{r}
-# Get proportion of corals with sedimentation stress for each reef/dir at each week
-sedstress.summ <- allweeks %>%
-  filter(reef=="R2", dir == "N") %>%
-  group_by(reef, dir, Channel, Site, weekn) %>%
-  summarise(n = n(),
-            SEDSTRESS = sum(PBUR|BUR),
-            prop = SEDSTRESS / n)
-
-# Plot proportions
-ggplot(sedstress.summ, aes(x = weekn, y = prop, color = Channel)) + 
-  facet_wrap(Site ~ .) +
-  geom_point(aes(size = n), alpha = 0.4) +
-  scale_size(range = c(0.1, 2.5)) +
-  geom_smooth(method = "loess", se = FALSE) +
-  labs(title = "Sedimentation stress (PBUR or BUR)",
-       xlab = "Time (weeks)", ylab = "Proportion of corals")
-```
 
 
