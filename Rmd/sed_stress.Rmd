@@ -4,7 +4,7 @@ author: "Ross Cunning"
 date: "5/27/2018"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 # Setup
@@ -41,15 +41,15 @@ We will analyze the complete tagged coral dataset.
 
 ```{r}
 # Import tidy tagged coral data
-load("../data/tagged.RData")
+load("../data/tagged.RData") 
 tagged_bool <- tagged_bool %>%
   mutate(day = (date - min(date)) / ddays(1))
 
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
-dredge.start.wk <- (dredge.start.date - min(tagged$date)) / dweeks(1)
+dredge.start.day <- (dredge.start.date - min(tagged$date)) / ddays(1)
 dredge.end.date <- as.Date("2014-12-31")                  # DCA report August 2015, page 3
-dredge.end.wk <- (dredge.end.date - min(tagged$date)) / dweeks(1)
+dredge.end.day <- (dredge.end.date - min(tagged$date)) / ddays(1)
 ```
 
 #### Quantifying sedimentation stress
@@ -82,7 +82,7 @@ ggplot(sedstress.summ1, aes(x = day, y = prop, color = channel)) +
   scale_size(range = c(0.1, 2.5)) +
   geom_smooth(method = "loess", se = FALSE, span = 1) +
   labs(title = "Sedimentation stress (SA, PBUR, or BUR)",
-       xlab = "Time (weeks)", ylab = "Proportion of corals")
+       x = "Time (days)", y = "Proportion of corals")
 ```
 
 These plots with local regression smoothing show that sedimentation stress was much greater at channelside sites relative to controls. To generate more robust statistical fits for the dataset and compare channelside vs. controls at each reef, we can fit generalized additive mixed models (GAMMs) and use only the regions in the data without large gaps in time.
@@ -107,32 +107,34 @@ gamms1 <- tagged_bool_f %>%
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
     mod = future_map(data, ~ gamm4(SA|PBUR|BUR ~ s(day, by = factor(channel), k = 8) + channel,
                                  random = ~ (1|site/transect) + (1|species), 
-                                 family = "binomial", data = .)$gam),
+                                 family = "binomial", data = .)),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(day = min(.$day):max(.$day),
                                       channel = c("channelside", "control"))),
     # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
+    fit = map2(mod, newdata, ~ predict(object = .x$gam, newdata = .y, type = "response")),
     # Get confidence intervals by simulation
-    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
-    Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
+    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.$gam), vcov(.$gam))),
+    Xp = map2(mod, newdata, ~ predict(object = .x$gam, newdata = .y, type = "lpmatrix")),
     sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
     lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
     uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
-  ) %>% unnest(newdata, fit, lci, uci)
+  ) 
+
+gamms1.fitted <- gamms1 %>% unnest(newdata, fit, lci, uci)
 ```
 
 ```{r}
 # Plot
-fig1 <- ggplot(gamms1, aes(x = day, y = fit, color = channel)) +
+fig1 <- ggplot(gamms1.fitted, aes(x = day, y = fit, color = channel)) +
   facet_grid(dir ~ reef) +
   geom_point(data = sedstress.summ1, aes(y = prop, size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
   geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
+  geom_vline(xintercept = c(dredge.start.day, dredge.end.day), linetype = 1, lwd = 0.25) +
   labs(title = "Sedimentation stress (SA, PBUR, or BUR)",
-       xlab = "Time (weeks)", ylab = "Proportion of corals")
+       x = "Time (days)", y = "Proportion of corals")
 
 fig1
 ```
@@ -162,7 +164,7 @@ ggplot(sedstress.summ2, aes(x = day, y = prop, color = channel)) +
   scale_size(range = c(0.1, 2.5)) +
   geom_smooth(method = "loess", se = FALSE, span = 1) +
   labs(title = "Severe sedimentation stress (PBUR, or BUR)",
-       xlab = "Time (weeks)", ylab = "Proportion of corals")
+       x = "Time (days)", y = "Proportion of corals")
 ```
 
 ### Model severe sedimentation stress using GAMMs
@@ -176,32 +178,34 @@ gamms2 <- tagged_bool_f %>%
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
     mod = future_map(data, ~ gamm4(PBUR|BUR ~ s(day, by = factor(channel), k = 8) + channel,
                                    random = ~ (1|site/transect) + (1|species),
-                                   family = "binomial", data = .)$gam),
+                                   family = "binomial", data = .)),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(day = min(.$day):max(.$day),
                                       channel = c("channelside", "control"))),
     # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
+    fit = map2(mod, newdata, ~ predict(object = .x$gam, newdata = .y, type = "response")),
     # Get confidence intervals by simulation
-    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
-    Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
+    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.$gam), vcov(.$gam))),
+    Xp = map2(mod, newdata, ~ predict(object = .x$gam, newdata = .y, type = "lpmatrix")),
     sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
     lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
     uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
-  ) %>% unnest(newdata, fit, lci, uci)
+  ) 
+
+gamms2.fitted <- gamms2 %>% unnest(newdata, fit, lci, uci)
 ```
 
 ```{r}
 # Plot
-fig2 <- ggplot(gamms2, aes(x = day, y = fit, color = channel)) +
+fig2 <- ggplot(gamms2.fitted, aes(x = day, y = fit, color = channel)) +
   facet_grid(dir ~ reef) +
   geom_point(data = sedstress.summ2, aes(y = prop, size = n), alpha = 0.4) +
   scale_size(range = c(0.1, 2.5)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
   geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
+  geom_vline(xintercept = c(dredge.start.day, dredge.end.day), linetype = 1, lwd = 0.25) +
   labs(title = "Severe sedimentation stress (PBUR or BUR)",
-       xlab = "Time (weeks)", ylab = "Proportion of corals")
+       x = "Time (days)", y = "Proportion of corals")
 
 fig2
 ```
