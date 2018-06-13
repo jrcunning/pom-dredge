@@ -16,16 +16,7 @@ library(tidyverse)
 library(stringr)
 library(lubridate)
 library(readxl)
-
-# Function for accessing data for a specific coral from full dataset
-getCoral <- function(d, s, t, c) {
-  with(d, d[Site==s & Transect==t & Coral.ID==c, ])
-}
-
-# Function for accessing corals with specific condition codes
-hasCond <- function(cond, Condition.Codes) {
-  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
-}
+library(janitor)
 ```
 
 # Import data
@@ -45,7 +36,7 @@ bl_hb <- bl_hb %>%
          transect = transect_e_g_hbna_1,
          species = subcategory) %>%
   mutate(date = as_date(date)) %>%
-  select(date, site, transect, coral_id, species, condition_qa_qc) %>%
+  select(date, site, transect, coral_id, species, condition_qa_qc, surveyor) %>%
   rename(condition = condition_qa_qc)
 
 # Check and make sure no missing dates
@@ -70,7 +61,7 @@ bl_r2 <- bl_r2 %>%
          transect = transect_e_g_r2n1_rr_1,
          species = subcategory) %>%
   mutate(date = as_date(date)) %>%
-  select(date, site, transect, coral_id, species, condition_qa_qc) %>%
+  select(date, site, transect, coral_id, species, condition_qa_qc, surveyor) %>%
   rename(condition = condition_qa_qc)
 
 # Check and make sure no missing dates
@@ -101,7 +92,7 @@ bl_r3 <- bl_r3 %>%
          transect = transect_e_g_hbna_1,
          species = subcategory) %>%
   mutate(date = as_date(date)) %>%
-  select(date, site, transect, coral_id, species, qa_qc_condition_code) %>%
+  select(date, site, transect, coral_id, species, qa_qc_condition_code, surveyor) %>%
   rename(condition = qa_qc_condition_code)
 
 # Check and make sure no missing dates
@@ -133,7 +124,7 @@ comp <- readxl::read_xlsx(
 comp <- comp %>%
   clean_names() %>%
   rename(condition = condition_code) %>%
-  select(date, week, visit, site, transect, coral_id, species, condition) %>%
+  select(date, week, visit, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
@@ -154,16 +145,10 @@ comp <- comp %>%
                           TRUE ~ as_date(date)))
 
 # Select columns
-comp <- comp %>% select(date, site, transect, coral_id, species, condition)
+comp <- comp %>% select(date, site, transect, coral_id, species, condition, surveyor)
 
 # Check and make sure no missing dates
 #comp %>% filter(is.na(date))
-
-# Aggregate condition codes into single row for each observation
-# comp <- comp %>%
-#   group_by(date, site, transect, coral_id, species) %>%
-#   summarise(condition = list(condition_code)) %>%
-#   ungroup()
 ```
 
 ### Immediate post-construction
@@ -179,18 +164,12 @@ pc1 <- readxl::read_xlsx(
 pc1 <- pc1 %>%
   clean_names() %>%
   rename(condition = condition_code) %>%
-  select(date, site, transect, coral_id, species, condition) %>%
+  select(date, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
 # Check and make sure no missing dates
 #pc1 %>% filter(is.na(date))
-
-# Aggregate condition codes into single row for each observation
-# pc1 <- pc1 %>%
-#   group_by(date, site, transect, coral_id, species) %>%
-#   summarise(condition = list(condition_code)) %>%
-#   ungroup()
 ```
 
 #### June - July 2015
@@ -205,18 +184,12 @@ pc2 <- pc2 %>%
   clean_names() %>%
   filter(tagged_coral_y_n == "Y") %>%           # Tagged corals only
   rename(condition = condition_code_qaqc) %>%
-  select(date, site, transect, coral_id, species, condition) %>%
+  select(date, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
 # Check and make sure no missing dates
 #pc2 %>% filter(is.na(date))
-
-# Aggregate condition codes into single row for each observation
-# pc2 <- pc2 %>%
-#   group_by(date, site, transect, coral_id, species) %>%
-#   summarise(condition = list(condition_code_qaqc)) %>%
-#   ungroup()
 ```
 
 ### One year post-construction (Aug 2016)
@@ -232,7 +205,7 @@ pc3 <- pc3 %>%
   clean_names() %>%
   filter(tagged_coral_y_n == "Y") %>%              # Tagged corals only
   rename(condition = condition_code_qaqc) %>%
-  select(date, site, transect, coral_id, species, condition) %>%
+  select(date, site, transect, coral_id, species, condition, surveyor) %>%
   mutate(date = as_date(date)) %>%
   mutate_at(c("transect", "coral_id"), as.factor)
 
@@ -297,9 +270,9 @@ tagged <- tagged %>% drop_na(date)
 
 #### Check condition codes
 ```{r}
-tagged %>%
-  distinct(condition) %>%
-  print(n = nrow(.))
+# tagged %>%
+#   distinct(condition) %>%
+#   print(n = nrow(.))
 
 tagged <- tagged %>%
   mutate(condition = recode(condition, `sed dust` = "SED"))
@@ -329,7 +302,7 @@ spp_ids <- tagged %>%
 # Replace species ID with most frequently used species ID for each coral
 tagged <- tagged %>%
   left_join(spp_ids, by = "coral") %>%
-  select(date, site, transect, coral_id, coral, most_freq_species, condition) %>%
+  select(date, site, transect, coral_id, coral, most_freq_species, condition, surveyor) %>%
   rename(species = most_freq_species) 
 ```
 
@@ -342,13 +315,27 @@ tagged <- tagged %>%
                              condition))
 ```
 
+#### Check surveyor IDs
+```{r}
+tagged %>% count(surveyor)
+
+# Change WP and WPF to WFP
+# Change MR to MLR
+# Change JC to JDC
+tagged <- tagged %>%
+  mutate(surveyor = recode(surveyor, 
+                           WP = "WFP", WPF = "WFP",
+                           MR = "MLR",
+                           JC = "JDC"))
+```
+
 #### Add site metadata
 ```{r}
 tagged <- tagged %>%
   mutate(channel = if_else(str_detect(site, "C"), "control", "channelside"),
             reef = str_sub(site, 1, 2),
              dir = str_sub(site, 3, 3)) %>%
-  select(date, reef, dir, channel, site, transect, coral, species, condition)
+  select(date, reef, dir, channel, site, transect, coral, species, condition, surveyor)
 ```
 
 #### Spread all conditions to boolean columns for each observation
