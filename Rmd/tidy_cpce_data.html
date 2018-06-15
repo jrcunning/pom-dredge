@@ -180,14 +180,40 @@ cpce &lt;- cpce %&gt;%
 
 # Add date information
 # Use information from &quot;POM PERM SITE INVENTORY (5 29 18).xlsx&quot; to add date information
+# These are estimates of dates... actual dates may be in &quot;Appendix H&quot;
+# Add estimated dates first...
 cpce &lt;- cpce %&gt;%
   mutate(date = case_when(
-    # Baseline week 3 is a different date for reef 2 and reef 3
-    week == &quot;BW3&quot; ~ case_when(reef == &quot;R2&quot; ~ as.Date(&quot;2013-11-25&quot;),
-                              reef == &quot;R3&quot; ~ as.Date(&quot;2013-12-23&quot;)),
-    # Baseline week 4 is a different date for reef 2 and reef 3
-    week == &quot;BW4&quot; ~ case_when(reef == &quot;R2&quot; ~ as.Date(&quot;2013-12-02&quot;),
-                              reef == &quot;R3&quot; ~ as.Date(&quot;2013-12-20&quot;)),
+    str_detect(week, &quot;B&quot;) ~ case_when(site == &quot;HBN1&quot; ~ as_date(&quot;2013-11-07&quot;),
+                                      site == &quot;HBN2&quot; ~ as_date(&quot;2013-11-07&quot;),
+                                      site == &quot;HBN3&quot; ~ as_date(&quot;2013-11-07&quot;),
+                                      site == &quot;HBNC1&quot; ~ as_date(&quot;2013-11-12&quot;),
+                                      site == &quot;HBS1&quot; ~ as_date(&quot;2013-11-07&quot;),
+                                      site == &quot;HBS2&quot; ~ as_date(&quot;2013-11-07&quot;),
+                                      site == &quot;HBS3&quot; ~ as_date(&quot;2013-11-12&quot;),
+                                      site == &quot;HBS4&quot; ~ as_date(&quot;2013-11-08&quot;),
+                                      site == &quot;HBSC1&quot; ~ as_date(&quot;2013-11-07&quot;),
+                                      site == &quot;R2N1&quot; ~ as_date(&quot;2013-11-19&quot;),
+                                      site == &quot;R2S1&quot; ~ as_date(&quot;2013-11-19&quot;),
+                                      site == &quot;R2SC1&quot; ~ as_date(&quot;2013-11-18&quot;),
+                                      site == &quot;R2NC1&quot; ~ as_date(&quot;2013-11-24&quot;),
+                                      site == &quot;R2N2&quot; ~ as_date(&quot;2013-12-15&quot;),
+                                      site == &quot;R2NC2&quot; ~ as_date(&quot;2013-12-02&quot;),
+                                      site == &quot;R2NC3&quot; ~ as_date(&quot;2013-12-10&quot;),
+                                      site == &quot;R2S2&quot; ~ as_date(&quot;2013-12-15&quot;),
+                                      # BL report Table 1 conflicts with Monitoring Matrix for R2SC2
+                                      # latest tagged coral data are from 2013-12-15
+                                      site == &quot;R2SC2&quot; ~ as_date(&quot;2013-12-15&quot;),
+                                      # BL report Table 1 conflicts with Monitoring Matrix for R3N1
+                                      # latest tagged coral data are from 2013-12-11
+                                      site == &quot;R3N1&quot; ~ as_date(&quot;2013-12-11&quot;),
+                                      site == &quot;R3NC1&quot; ~ as_date(&quot;2013-12-10&quot;),
+                                      site == &quot;R3S1&quot; ~ as_date(&quot;2013-12-30&quot;),
+                                      site == &quot;R3S2&quot; ~ as_date(&quot;2013-12-30&quot;),
+                                      site == &quot;R3S3&quot; ~ as_date(&quot;2013-12-30&quot;),
+                                      site == &quot;R3SC1&quot; ~ as_date(&quot;2013-12-12&quot;),
+                                      site == &quot;R3SC2&quot; ~ as_date(&quot;2013-12-12&quot;),
+                                      site == &quot;R3SC3&quot; ~ as_date(&quot;2013-12-12&quot;)),
     # Compliance weeks are the same for all reefs, number of weeks since 2013-11-20
     grepl(&quot;^C&quot;, week) ~ as.Date(&quot;2013-11-20&quot;) + 
       dweeks(as.numeric(str_extract(week, &quot;[[:digit:]]{1,2}&quot;))),
@@ -195,7 +221,13 @@ cpce &lt;- cpce %&gt;%
     week == &quot;PC3&quot; ~ as.Date(&quot;2015-07-01&quot;),
     # Impact assessment
     week == &quot;IA&quot; ~ as.Date(&quot;2016-08-20&quot;)     ### THESE DATES NEED CONFIRMATION
-  ))</code></pre>
+  ))
+
+# Then add date if one can be found in DCA filepath
+bb &lt;- unlist(str_extract_all(cpce$DCAfile, &quot;[0-9]+-[0-9]+-[0-9]+&quot;))
+bb</code></pre>
+<pre><code>## [1] &quot;11-19-13&quot; &quot;11-19-13&quot; &quot;11-19-13&quot; &quot;12-15-13&quot; &quot;12-15-13&quot; &quot;12-15-13&quot;</code></pre>
+<pre class="r"><code># only a few files actually have dates......</code></pre>
 </div>
 <div id="additional-qc" class="section level1">
 <h1>Additional QC</h1>

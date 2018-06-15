@@ -77,14 +77,40 @@ cpce <- cpce %>%
 
 # Add date information
 # Use information from "POM PERM SITE INVENTORY (5 29 18).xlsx" to add date information
+# These are estimates of dates... actual dates may be in "Appendix H"
+# Add estimated dates first...
 cpce <- cpce %>%
   mutate(date = case_when(
-    # Baseline week 3 is a different date for reef 2 and reef 3
-    week == "BW3" ~ case_when(reef == "R2" ~ as.Date("2013-11-25"),
-                              reef == "R3" ~ as.Date("2013-12-23")),
-    # Baseline week 4 is a different date for reef 2 and reef 3
-    week == "BW4" ~ case_when(reef == "R2" ~ as.Date("2013-12-02"),
-                              reef == "R3" ~ as.Date("2013-12-20")),
+    str_detect(week, "B") ~ case_when(site == "HBN1" ~ as_date("2013-11-07"),
+                                      site == "HBN2" ~ as_date("2013-11-07"),
+                                      site == "HBN3" ~ as_date("2013-11-07"),
+                                      site == "HBNC1" ~ as_date("2013-11-12"),
+                                      site == "HBS1" ~ as_date("2013-11-07"),
+                                      site == "HBS2" ~ as_date("2013-11-07"),
+                                      site == "HBS3" ~ as_date("2013-11-12"),
+                                      site == "HBS4" ~ as_date("2013-11-08"),
+                                      site == "HBSC1" ~ as_date("2013-11-07"),
+                                      site == "R2N1" ~ as_date("2013-11-19"),
+                                      site == "R2S1" ~ as_date("2013-11-19"),
+                                      site == "R2SC1" ~ as_date("2013-11-18"),
+                                      site == "R2NC1" ~ as_date("2013-11-24"),
+                                      site == "R2N2" ~ as_date("2013-12-15"),
+                                      site == "R2NC2" ~ as_date("2013-12-02"),
+                                      site == "R2NC3" ~ as_date("2013-12-10"),
+                                      site == "R2S2" ~ as_date("2013-12-15"),
+                                      # BL report Table 1 conflicts with Monitoring Matrix for R2SC2
+                                      # latest tagged coral data are from 2013-12-15
+                                      site == "R2SC2" ~ as_date("2013-12-15"),
+                                      # BL report Table 1 conflicts with Monitoring Matrix for R3N1
+                                      # latest tagged coral data are from 2013-12-11
+                                      site == "R3N1" ~ as_date("2013-12-11"),
+                                      site == "R3NC1" ~ as_date("2013-12-10"),
+                                      site == "R3S1" ~ as_date("2013-12-30"),
+                                      site == "R3S2" ~ as_date("2013-12-30"),
+                                      site == "R3S3" ~ as_date("2013-12-30"),
+                                      site == "R3SC1" ~ as_date("2013-12-12"),
+                                      site == "R3SC2" ~ as_date("2013-12-12"),
+                                      site == "R3SC3" ~ as_date("2013-12-12")),
     # Compliance weeks are the same for all reefs, number of weeks since 2013-11-20
     grepl("^C", week) ~ as.Date("2013-11-20") + 
       dweeks(as.numeric(str_extract(week, "[[:digit:]]{1,2}"))),
@@ -93,6 +119,11 @@ cpce <- cpce %>%
     # Impact assessment
     week == "IA" ~ as.Date("2016-08-20")     ### THESE DATES NEED CONFIRMATION
   ))
+
+# Check to see if dates of cpce surveys can be found in DCA filepath
+bb <- unlist(str_extract_all(cpce$DCAfile, "[0-9]+-[0-9]+-[0-9]+"))
+bb
+# only a few files actually have dates......
 
 ```
 
