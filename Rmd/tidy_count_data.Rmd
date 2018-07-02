@@ -26,8 +26,8 @@ library(janitor)
 dens2009 <- readxl::read_xlsx(
   path = "data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
   clean_names() %>%
-  rename(site = area_e_g_r2n, transect = transect_e_g_r2n_10) %>%
-  select(site, transect, category, subcategory) %>%
+  rename(site = area_e_g_r2n, transect = transect_e_g_r2n_10, diameter = diameter_cm) %>%
+  select(site, transect, category, subcategory, diameter) %>%
   filter(!grepl("D", transect)) %>%  # Remove transects that contain a "D". These were 'direct impact'
                                      # areas where reef was removed, so no later data for comparison
   mutate(site = substr(transect, 1, ifelse(nchar(transect) == 6, 3, 4)),   # Get site name
@@ -53,20 +53,24 @@ unique(dens2009$site)
 
 # Reef 2
 dens2013r2 <- readxl::read_xlsx(
-  path  = "data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx", sheet = "Raw Data") %>%
+  path  = "data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx", 
+  sheet = "Raw Data", guess_max = 4000) %>%
   clean_names() %>%
-  rename(site = site_e_g_r2n1_rr, transect = transect_e_g_r2n1_rr_1, count = total_count) %>%
+  rename(site = site_e_g_r2n1_rr, transect = transect_e_g_r2n1_rr_1, 
+         diameter = max_diameter_cm, count = total_count) %>%
   separate(site, into = c("site", "site2")) %>%
-  select(date, site, transect, category, subcategory, count)
+  mutate(diameter = as.numeric(diameter)) %>%
+  select(date, site, transect, category, subcategory, diameter, count)
 
 
 # Reef 3
 dens2013r3 <- readxl::read_xlsx(
   path  = "data/Density_Data/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx", sheet = "Raw Data") %>%
   clean_names() %>%
-  rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, count = total_count) %>%
+  rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
+         diameter = max_diameter, count = total_count) %>%
   separate(site, into = c("site", "site2")) %>%
-  select(date, site, transect, category, subcategory, count)
+  select(date, site, transect, category, subcategory, diameter, count)
 
 # Combine reef 2 and reef 3 data
 dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
@@ -79,23 +83,36 @@ dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
 # Import data from 2015 - permanent sites
 ```{r}
 dens2015 <- readxl::read_xlsx(
-  path = "data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx") %>%
+  path = "data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx",
+  guess_max = 10000) %>%
   clean_names() %>%
   rename(category = category_scleractinian_etc,
          subcategory = subcategory_species_or_genus,
-         count = total_count) %>%
+         count = total_count, diameter = max_diameter) %>%
   separate(site, into = c("site", "site2")) %>%
   mutate(date = as.Date(date),                                # convert to Date
          dist = NA) %>%                                       # add dist column (NAs filled in later)
   filter(grepl("^R", site)) %>%                                    # select R2 and R3
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
-  select(date, site, transect, category, subcategory, count) %>%
+  select(date, site, transect, category, subcategory, diameter, count) %>%
   mutate(count = ifelse(is.na(count), 1, count)) %>%                # ASSUME MISSING COUNTS ARE 1
   mutate(date = if_else(is.na(date), as.Date("2015-06-22"), date)) %>%  # fill in missing date
+  mutate(diameter = as.numeric(diameter)) %>%
   mutate(transect_area_m2 = 20)    # transects were 20 m2
 ```
 
 # Import data from 2015 - other sites / distances from channel (where is this?)
+```{r}
+# Data collected ____________
+dens2015other <- readxl::read_xlsx(
+  path = "data/Density_Data/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_comp_data.xlsx",
+  sheet = "original_data"
+)
+
+# this data looks like up to 10 corals per transect were observed for condition codes, but does not look like all corals along the transects were counted
+# do not use this data until methods are confirmed
+  
+```
 
 # Import data from 2016 - permanent sites
 ```{r}
@@ -120,10 +137,11 @@ dens2016scler <- readxl::read_xlsx(
   path = "data/Density_Data/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX",
   sheet = "Raw Data", skip = 1)  %>%
   clean_names() %>%
-  rename(category = category_scleractinian_etc, subcategory = species) %>%
+  rename(category = category_scleractinian_etc, subcategory = species,
+         diameter = max_diameter) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
-  select(date, site, transect, category, subcategory) %>%
+  select(date, site, transect, category, subcategory, diameter) %>%
   mutate(count = 1,  # 1 coral per row (no count data in sheet)
          date = as.Date(date))
          
@@ -174,7 +192,8 @@ cs2016scler <- cs2016scler %>%
   filter(grepl("^R2|^R3", station)) %>%               # get only R2 and R3 survey sites
   rename(site = station, transect = transect_ns_or_ew,
          category = organism_type_scl_spo_octo, 
-         subcategory = species_scl_genera_octo_morph_spo) %>%
+         subcategory = species_scl_genera_octo_morph_spo,
+         diameter = size_cm) %>%
   mutate(count = 1) %>%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
@@ -182,9 +201,7 @@ cs2016scler <- cs2016scler %>%
   mutate(site2 = str_extract(site, "LR|RR")) %>%                 # extract LR or RR from site name
   mutate(site = str_extract(site, "R[^-|_]*")) %>%                 # extract base site form site name
   filter(!grepl("DEAD", condition_codes_all)) %>%              # EXCLUDE DEAD CORALS!
-  select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
-
-# Some of the CORALS are DEAD -- omit these
+  select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
 
 # Combine octocoral and scleractinian data
