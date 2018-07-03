@@ -201,7 +201,8 @@ dens2015 &lt;- readxl::read_xlsx(
          dist = NA) %&gt;%                                       # add dist column (NAs filled in later)
   filter(grepl(&quot;^R&quot;, site)) %&gt;%                                    # select R2 and R3
   filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
-  select(date, site, transect, coral_id, category, subcategory, diameter, count) %&gt;%
+  # tagged and non-tagged corals are given same coral_id numbers, so must keep tagged_coral_y_n
+  select(date, site, transect, coral_id, tagged_coral_y_n, category, subcategory, diameter, count) %&gt;%
   distinct() %&gt;%      # reduces to single row for unique site/transect/coral_id
   mutate(count = ifelse(is.na(count), 1, count)) %&gt;%                # ASSUME MISSING COUNTS ARE 1
   mutate(date = if_else(is.na(date), as.Date(&quot;2015-06-22&quot;), date)) %&gt;%  # fill in missing date
@@ -238,7 +239,7 @@ dens2016octo &lt;- readxl::read_xlsx(
          date = as.Date(date))
 
 ## Corals are in another spreadsheet
-# 2015 data has multiple condition codes for the same coral recorded as separate lines.
+# 2016 data has multiple condition codes for the same coral recorded as separate lines.
 # need to aggregate these to a single line so one row = one coral
 dens2016scler &lt;- readxl::read_xlsx(
   path = &quot;data/Density_Data/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX&quot;,
@@ -251,7 +252,7 @@ dens2016scler &lt;- readxl::read_xlsx(
   select(date, site, transect, coral_id, category, subcategory, diameter) %&gt;%
   mutate(count = 1,  # 1 coral per row (no count data in sheet)
          date = as.Date(date)) %&gt;%
-  distinct()   # reduce to single row for each site/transect/coral_id (b/c multiple conditions/rows)
+  distinct(date, site, transect, coral_id, .keep_all = TRUE)   # reduce to single row for each site/transect/coral_id (b/c multiple conditions/rows)
          
 ## Combine sponge, octocoral, and scleractinian data
 dens2016 &lt;- bind_rows(dens2016octo, dens2016scler) %&gt;%
