@@ -128,7 +128,9 @@ $(document).ready(function () {
 <p>Import and tidy density data for scleractinians and octocorals</p>
 <div id="import-baseline-data-from-2009" class="section level1">
 <h1>Import baseline data from 2009</h1>
-<pre class="r"><code># Import and tidy baseline density data from 2009 (10m transects)
+<pre class="r"><code># Where is Hardbottom 2009 data??
+
+# Import and tidy baseline density data from 2009 (10m transects)
 dens2009 &lt;- readxl::read_xlsx(
   path = &quot;data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx&quot;) %&gt;% 
   clean_names() %&gt;%
@@ -157,6 +159,17 @@ unique(dens2009$site)</code></pre>
 <pre class="r"><code># Data from Oct - Dec 2013 (three 20m long transects (x1m wide))
 # SOME SITES/transects DONE MORE THAN ONCE -- NEED TO INCLUDE DATE
 
+#Hardbottom
+dens2013hb &lt;- readxl::read_xlsx(
+  path = &quot;data/Density_Data/Copy of Hardbottom_Baseline_POM_022514_LATEST.xlsx&quot;,
+  sheet = &quot;Raw Data&quot;) %&gt;%
+  clean_names() %&gt;%
+  rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
+         diameter = max_diameter, count = total_count) %&gt;%
+  separate(site, into = c(&quot;site&quot;, &quot;site2&quot;)) %&gt;%
+  select(date, site, transect, category, subcategory, diameter, count) %&gt;%
+  mutate(count = as.numeric(count))
+
 # Reef 2
 dens2013r2 &lt;- readxl::read_xlsx(
   path  = &quot;data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx&quot;, 
@@ -179,7 +192,7 @@ dens2013r3 &lt;- readxl::read_xlsx(
   select(date, site, transect, category, subcategory, diameter, count)
 
 # Combine reef 2 and reef 3 data
-dens2013 &lt;- bind_rows(dens2013r2, dens2013r3) %&gt;%
+dens2013 &lt;- bind_rows(dens2013hb, dens2013r2, dens2013r3) %&gt;%
   mutate(dist = NA,
          date = as.Date(date),
          transect_area_m2 = 20) %&gt;%  # each transect was 20 square meters 
@@ -279,9 +292,21 @@ cs2016octo &lt;- cs2016octo %&gt;%
   mutate(count = 1) %&gt;%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == &quot;EW&quot; ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == &quot;NS&quot; ~ 20)) %&gt;%  
-  mutate(dist = str_extract(site, &quot;[[:digit:]]{2,3}&quot;)) %&gt;%      # extract distance from site name
-  mutate(site2 = str_extract(site, &quot;LR|RR|CP|SG|CR&quot;)) %&gt;%            # extract LR or RR from site name
-  mutate(site = str_extract(site, &quot;^.[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
+mutate(dist = case_when(
+    site == &quot;7a-150&quot; ~ &quot;150&quot;,
+    site == &quot;15B-250&quot; ~ &quot;250&quot;,
+    site == &quot;HBS-15b-150&quot; ~ &quot;150&quot;,
+    TRUE ~ str_extract(site, &quot;[[:digit:]]{2,3}&quot;))) %&gt;%      # extract distance from site name
+  mutate(site2 = case_when(
+    site == &quot;HBS-15b-150&quot; ~ &quot;15b&quot;,
+    site == &quot;15B-250&quot; ~ &quot;15b&quot;,
+    site == &quot;7a-150&quot; ~ &quot;7a&quot;,
+    TRUE ~ str_extract(site, &quot;LR|RR|CP|SG|CR&quot;))) %&gt;%           # extract LR or RR from site name
+  mutate(site = case_when(
+    site == &quot;HBS-15b-150&quot; ~ &quot;HBS&quot;,
+    site == &quot;15B-250&quot; ~ &quot;HBS&quot;,
+    site == &quot;7a-150&quot; ~ &quot;HBN&quot;,
+    TRUE ~ str_extract(site, &quot;^.[^-|_]*&quot;))) %&gt;%                 # extract base site form site name
   filter(!grepl(&quot;DEAD&quot;, condition_codes_all)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
@@ -300,9 +325,21 @@ cs2016scler &lt;- cs2016scler %&gt;%
   mutate(count = 1) %&gt;%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == &quot;EW&quot; ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == &quot;NS&quot; ~ 20)) %&gt;%  
-  mutate(dist = str_extract(site, &quot;[[:digit:]]{2,3}&quot;)) %&gt;%      # extract distance from site name
-  mutate(site2 = str_extract(site, &quot;LR|RR|CP|SG|CR&quot;)) %&gt;%           # extract LR or RR from site name
-  mutate(site = str_extract(site, &quot;^.[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
+  mutate(dist = case_when(
+    site == &quot;7a-150&quot; ~ &quot;150&quot;,
+    site == &quot;15B-250&quot; ~ &quot;250&quot;,
+    site == &quot;HBS-15b-150&quot; ~ &quot;150&quot;,
+    TRUE ~ str_extract(site, &quot;[[:digit:]]{2,3}&quot;))) %&gt;%      # extract distance from site name
+  mutate(site2 = case_when(
+    site == &quot;HBS-15b-150&quot; ~ &quot;15b&quot;,
+    site == &quot;15B-250&quot; ~ &quot;15b&quot;,
+    site == &quot;7a-150&quot; ~ &quot;7a&quot;,
+    TRUE ~ str_extract(site, &quot;LR|RR|CP|SG|CR&quot;))) %&gt;%           # extract LR or RR from site name
+  mutate(site = case_when(
+    site == &quot;HBS-15b-150&quot; ~ &quot;HBS&quot;,
+    site == &quot;15B-250&quot; ~ &quot;HBS&quot;,
+    site == &quot;7a-150&quot; ~ &quot;HBN&quot;,
+    TRUE ~ str_extract(site, &quot;^.[^-|_]*&quot;))) %&gt;%                 # extract base site form site name
   filter(!grepl(&quot;DEAD&quot;, condition_codes_all)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
@@ -405,11 +442,11 @@ all_counts &lt;- all_counts %&gt;%
     site==&quot;HBN3&quot; ~ &quot;48&quot;,
     site==&quot;HBSC1&quot; ~ &quot;1650&quot;,
     site==&quot;HBS4&quot; ~ &quot;32&quot;,
-    site==&quot;HBS1&quot; ~ &quot;&quot;,      # GET DATA
-    site==&quot;HBS2&quot; ~ &quot;&quot;,      # GET DATA
-    site==&quot;HBS3&quot; ~ &quot;&quot;,      # GET DATA
-    site==&quot;HBN1&quot; ~ &quot;&quot;,      # GET DATA
-    site==&quot;HBN2&quot; ~ &quot;&quot;,      # GET DATA
+    site==&quot;HBS1&quot; ~ &quot;20&quot;,      # GET DATA
+    site==&quot;HBS2&quot; ~ &quot;20&quot;,      # GET DATA
+    site==&quot;HBS3&quot; ~ &quot;20&quot;,      # GET DATA
+    site==&quot;HBN1&quot; ~ &quot;20&quot;,      # GET DATA
+    site==&quot;HBN2&quot; ~ &quot;30&quot;,      # GET DATA
     site==&quot;R2N1&quot; ~ &quot;28&quot;,
     site==&quot;R2NC2&quot; ~ &quot;9380&quot;,
     site==&quot;R2N2&quot; ~ &quot;18&quot;,

@@ -22,6 +22,8 @@ library(janitor)
 
 # Import baseline data from 2009
 ```{r}
+# Where is Hardbottom 2009 data??
+
 # Import and tidy baseline density data from 2009 (10m transects)
 dens2009 <- readxl::read_xlsx(
   path = "data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
@@ -51,6 +53,17 @@ unique(dens2009$site)
 # Data from Oct - Dec 2013 (three 20m long transects (x1m wide))
 # SOME SITES/transects DONE MORE THAN ONCE -- NEED TO INCLUDE DATE
 
+#Hardbottom
+dens2013hb <- readxl::read_xlsx(
+  path = "data/Density_Data/Copy of Hardbottom_Baseline_POM_022514_LATEST.xlsx",
+  sheet = "Raw Data") %>%
+  clean_names() %>%
+  rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
+         diameter = max_diameter, count = total_count) %>%
+  separate(site, into = c("site", "site2")) %>%
+  select(date, site, transect, category, subcategory, diameter, count) %>%
+  mutate(count = as.numeric(count))
+
 # Reef 2
 dens2013r2 <- readxl::read_xlsx(
   path  = "data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx", 
@@ -73,7 +86,7 @@ dens2013r3 <- readxl::read_xlsx(
   select(date, site, transect, category, subcategory, diameter, count)
 
 # Combine reef 2 and reef 3 data
-dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
+dens2013 <- bind_rows(dens2013hb, dens2013r2, dens2013r3) %>%
   mutate(dist = NA,
          date = as.Date(date),
          transect_area_m2 = 20) %>%  # each transect was 20 square meters 
@@ -178,9 +191,21 @@ cs2016octo <- cs2016octo %>%
   mutate(count = 1) %>%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
-  mutate(dist = str_extract(site, "[[:digit:]]{2,3}")) %>%      # extract distance from site name
-  mutate(site2 = str_extract(site, "LR|RR|CP|SG|CR")) %>%            # extract LR or RR from site name
-  mutate(site = str_extract(site, "^.[^-|_]*")) %>%                 # extract base site form site name
+mutate(dist = case_when(
+    site == "7a-150" ~ "150",
+    site == "15B-250" ~ "250",
+    site == "HBS-15b-150" ~ "150",
+    TRUE ~ str_extract(site, "[[:digit:]]{2,3}"))) %>%      # extract distance from site name
+  mutate(site2 = case_when(
+    site == "HBS-15b-150" ~ "15b",
+    site == "15B-250" ~ "15b",
+    site == "7a-150" ~ "7a",
+    TRUE ~ str_extract(site, "LR|RR|CP|SG|CR"))) %>%           # extract LR or RR from site name
+  mutate(site = case_when(
+    site == "HBS-15b-150" ~ "HBS",
+    site == "15B-250" ~ "HBS",
+    site == "7a-150" ~ "HBN",
+    TRUE ~ str_extract(site, "^.[^-|_]*"))) %>%                 # extract base site form site name
   filter(!grepl("DEAD", condition_codes_all)) %>%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
@@ -199,9 +224,21 @@ cs2016scler <- cs2016scler %>%
   mutate(count = 1) %>%                               # single observation per row
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
-  mutate(dist = str_extract(site, "[[:digit:]]{2,3}")) %>%      # extract distance from site name
-  mutate(site2 = str_extract(site, "LR|RR|CP|SG|CR")) %>%           # extract LR or RR from site name
-  mutate(site = str_extract(site, "^.[^-|_]*")) %>%                 # extract base site form site name
+  mutate(dist = case_when(
+    site == "7a-150" ~ "150",
+    site == "15B-250" ~ "250",
+    site == "HBS-15b-150" ~ "150",
+    TRUE ~ str_extract(site, "[[:digit:]]{2,3}"))) %>%      # extract distance from site name
+  mutate(site2 = case_when(
+    site == "HBS-15b-150" ~ "15b",
+    site == "15B-250" ~ "15b",
+    site == "7a-150" ~ "7a",
+    TRUE ~ str_extract(site, "LR|RR|CP|SG|CR"))) %>%           # extract LR or RR from site name
+  mutate(site = case_when(
+    site == "HBS-15b-150" ~ "HBS",
+    site == "15B-250" ~ "HBS",
+    site == "7a-150" ~ "HBN",
+    TRUE ~ str_extract(site, "^.[^-|_]*"))) %>%                 # extract base site form site name
   filter(!grepl("DEAD", condition_codes_all)) %>%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
@@ -307,11 +344,11 @@ all_counts <- all_counts %>%
     site=="HBN3" ~ "48",
     site=="HBSC1" ~ "1650",
     site=="HBS4" ~ "32",
-    site=="HBS1" ~ "",      # GET DATA
-    site=="HBS2" ~ "",      # GET DATA
-    site=="HBS3" ~ "",      # GET DATA
-    site=="HBN1" ~ "",      # GET DATA
-    site=="HBN2" ~ "",      # GET DATA
+    site=="HBS1" ~ "20",      # GET DATA
+    site=="HBS2" ~ "20",      # GET DATA
+    site=="HBS3" ~ "20",      # GET DATA
+    site=="HBN1" ~ "20",      # GET DATA
+    site=="HBN2" ~ "30",      # GET DATA
     site=="R2N1" ~ "28",
     site=="R2NC2" ~ "9380",
     site=="R2N2" ~ "18",
