@@ -32,8 +32,23 @@ load("data/all_counts.RData")
 ```{r}
 # Scleractinian count data
 scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleractinians only
-  select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
-         transect, transect_area_m2, genus, species, count, perm)
+  dplyr::select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
+                transect, transect_area_m2, genus, species, diameter, count, perm)
+
+# Were small corals recorded?
+ggplot(scler, aes(x = diameter)) + 
+  geom_histogram(binwidth = 1) + 
+  facet_wrap(~ year) +
+  scale_x_continuous(limits = c(0, 5))
+
+## Yes, small corals were recorded, but only in 2009, 2016, and 2017. Must filter out.
+## Filter out small corals / recruits (less than 3 cm)
+## However, many entries do not include a size (diameter = NA)
+## -- assume these are bigger than 3 cm and keep them
+scler <- scler %>%
+  filter(diameter >= 3 | is.na(diameter))
+
+
 
 # Summarize density of all corals per transect
 scler_dens_transect <- scler %>%
@@ -58,7 +73,7 @@ ggplot(filter(scler_dens_transect, dist < 1000),
 ```
 
 ```{r}
-# Reproduce figure 26
+# Reproduce november 2015 report figure 26
 r2summ <- scler_dens_transect %>%
   filter(year == 2013 | year == 2015,        # subset "baseline" and post-construction
          reef == "R2",        # subset reef 2
@@ -74,6 +89,60 @@ ggplot(r2summ, aes(x = site, y = meandens, fill = factor(year), group = factor(y
   geom_bar(stat = "identity", position = "dodge") +
   geom_errorbar(aes(ymin = meandens - se, ymax = meandens + se), position = "dodge")
 
-# this looks different than figure 26.
+# this looks same as figure 26!
+```
+
+```{r}
+summ <- scler_dens_transect %>%
+  filter(perm == "yes") %>%
+  group_by(site, year > 2014) %>%
+  summarise(mean = mean(dens), sd = sd(dens), se = sd/sqrt(n()))
+
+ggplot(summ, aes(x = `year > 2014`, y = mean)) + 
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = mean - se, ymax = mean + se), width = 0.25) +
+  facet_wrap(~ site)
+
+```
+
+
+
+# model to account for transects repeated over time
+```{r}
+scler_dens_transect <- scler_dens_transect %>% 
+  mutate(prepost = factor(ifelse(year < 2014, "pre", "post"), levels = c("pre", "post")))
+mod <- lmer(dens ~ site * prepost + (1|site/transect) + (1|date), 
+            data = filter(scler_dens_transect, perm == "yes"))
+lsm <- lsmeans(mod, specs = c("site", "prepost"))
+
+# Test pre vs. post-dredging density for each site
+lsm.sig <- rbind(pairs(lsm, by = "site"), adjust = "none")
+
+# Plot pre vs. post for each site
+ggplot(summary(lsm), aes(x = prepost, y = lsmean, fill = prepost)) + 
+  facet_wrap(~ site) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.2, lwd = 0.3) +
+  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 3, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
+```
+
+
+```{r}
+mod <- lmer(dens ~ site * factor(year) + (1|site/transect) + (1|date), 
+            data = filter(scler_dens_transect, perm == "yes", year %in% c(2013, 2015)))
+lsm <- lsmeans(mod, specs = c("site", "year"))
+lsm
+
+# Test pre vs. post-dredging density for each site
+lsm.sig <- rbind(pairs(lsm, by = "site"), adjust = "none")
+
+# Plot pre vs. post for each site
+ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = year)) + 
+  facet_wrap(~ site) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.2, lwd = 0.3) +
+  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
+            aes(x = 1.5, y = 3, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
