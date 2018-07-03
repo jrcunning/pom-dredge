@@ -199,7 +199,6 @@ dens2015 &lt;- readxl::read_xlsx(
   separate(site, into = c(&quot;site&quot;, &quot;site2&quot;)) %&gt;%
   mutate(date = as.Date(date),                                # convert to Date
          dist = NA) %&gt;%                                       # add dist column (NAs filled in later)
-  filter(grepl(&quot;^R&quot;, site)) %&gt;%                                    # select R2 and R3
   filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
   # tagged and non-tagged corals are given same coral_id numbers, so must keep tagged_coral_y_n
   select(date, site, transect, coral_id, tagged_coral_y_n, category, subcategory, diameter, count) %&gt;%
@@ -232,7 +231,6 @@ dens2016octo &lt;- readxl::read_xlsx(
   clean_names() %&gt;%
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
          count = octo_sponge_zoanthid_count_qaqc) %&gt;%
-  filter(grepl(&quot;^R&quot;, site)) %&gt;%     # filter reef 2 and reef 3 only
   filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, category, subcategory, count) %&gt;%
   mutate(count = ifelse(is.na(count), 1, count),            # ASSUME MISSING COUNTS ARE 1
@@ -247,7 +245,6 @@ dens2016scler &lt;- readxl::read_xlsx(
   clean_names() %&gt;%
   rename(category = category_scleractinian_etc, subcategory = species,
          diameter = max_diameter) %&gt;%
-  filter(grepl(&quot;^R&quot;, site)) %&gt;%     # filter reef 2 and reef 3 only
   filter(!grepl(&quot;DEAD&quot;, condition_code_qaqc)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, coral_id, category, subcategory, diameter) %&gt;%
   mutate(count = 1,  # 1 coral per row (no count data in sheet)
@@ -276,7 +273,6 @@ cs2016octo &lt;- files %&gt;%
 # Tidy data
 cs2016octo &lt;- cs2016octo %&gt;%
   clean_names() %&gt;%
-  filter(grepl(&quot;^R2|^R3&quot;, station)) %&gt;%               # get only R2 and R3 survey sites
   rename(site = station, transect = transect_ns_or_ew,
          category = organism_type_scl_spo_octo, 
          subcategory = species_scl_genera_octo_morph_spo) %&gt;%
@@ -284,8 +280,8 @@ cs2016octo &lt;- cs2016octo %&gt;%
   mutate(transect_area_m2 = case_when(transect == &quot;EW&quot; ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == &quot;NS&quot; ~ 20)) %&gt;%  
   mutate(dist = str_extract(site, &quot;[[:digit:]]{2,3}&quot;)) %&gt;%      # extract distance from site name
-  mutate(site2 = str_extract(site, &quot;LR|RR&quot;)) %&gt;%                 # extract LR or RR from site name
-  mutate(site = str_extract(site, &quot;R[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
+  mutate(site2 = str_extract(site, &quot;LR|RR|CP|SG|CR&quot;)) %&gt;%            # extract LR or RR from site name
+  mutate(site = str_extract(site, &quot;^.[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
   filter(!grepl(&quot;DEAD&quot;, condition_codes_all)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
@@ -297,7 +293,6 @@ cs2016scler &lt;- files %&gt;%
 # Tidy data
 cs2016scler &lt;- cs2016scler %&gt;%
   clean_names() %&gt;%
-  filter(grepl(&quot;^R2|^R3&quot;, station)) %&gt;%               # get only R2 and R3 survey sites
   rename(site = station, transect = transect_ns_or_ew,
          category = organism_type_scl_spo_octo, 
          subcategory = species_scl_genera_octo_morph_spo,
@@ -306,8 +301,8 @@ cs2016scler &lt;- cs2016scler %&gt;%
   mutate(transect_area_m2 = case_when(transect == &quot;EW&quot; ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == &quot;NS&quot; ~ 20)) %&gt;%  
   mutate(dist = str_extract(site, &quot;[[:digit:]]{2,3}&quot;)) %&gt;%      # extract distance from site name
-  mutate(site2 = str_extract(site, &quot;LR|RR&quot;)) %&gt;%                 # extract LR or RR from site name
-  mutate(site = str_extract(site, &quot;R[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
+  mutate(site2 = str_extract(site, &quot;LR|RR|CP|SG|CR&quot;)) %&gt;%           # extract LR or RR from site name
+  mutate(site = str_extract(site, &quot;^.[^-|_]*&quot;)) %&gt;%                 # extract base site form site name
   filter(!grepl(&quot;DEAD&quot;, condition_codes_all)) %&gt;%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
@@ -405,7 +400,16 @@ all_counts &lt;- all_counts %&gt;%
 
 # Add distance from channel for each permanent site
 all_counts &lt;- all_counts %&gt;%
-  mutate(dist = ifelse(is.na(dist), case_when(           
+  mutate(dist = ifelse(is.na(dist), case_when(    
+    site==&quot;HBNC1&quot; ~ &quot;2350&quot;,
+    site==&quot;HBN3&quot; ~ &quot;48&quot;,
+    site==&quot;HBSC1&quot; ~ &quot;1650&quot;,
+    site==&quot;HBS4&quot; ~ &quot;32&quot;,
+    site==&quot;HBS1&quot; ~ &quot;&quot;,      # GET DATA
+    site==&quot;HBS2&quot; ~ &quot;&quot;,      # GET DATA
+    site==&quot;HBS3&quot; ~ &quot;&quot;,      # GET DATA
+    site==&quot;HBN1&quot; ~ &quot;&quot;,      # GET DATA
+    site==&quot;HBN2&quot; ~ &quot;&quot;,      # GET DATA
     site==&quot;R2N1&quot; ~ &quot;28&quot;,
     site==&quot;R2NC2&quot; ~ &quot;9380&quot;,
     site==&quot;R2N2&quot; ~ &quot;18&quot;,
@@ -436,7 +440,8 @@ all_counts &lt;- all_counts %&gt;%
     site %in% c(&quot;R2NC1&quot;, &quot;R2NC3&quot;, &quot;R2N1&quot;, &quot;R2SC2&quot;, &quot;R2S2&quot;, 
                 &quot;R3NC1&quot;, &quot;R3N1&quot;, &quot;R3SC2&quot;, &quot;R2S2&quot;,
                 &quot;R2N2&quot;, &quot;R3S2&quot;) ~ &quot;LR&quot;,
-    site %in% c(&quot;R3S1&quot;, &quot;R3SC1&quot;) ~ &quot;CP&quot;,
+    site %in% c(&quot;R3S1&quot;, &quot;R3SC1&quot;, &quot;HBNC1&quot;, &quot;HBS1&quot;, &quot;HBS2&quot;, &quot;HBS3&quot;, &quot;HBN3&quot;) ~ &quot;CP&quot;,
+    site %in% c(&quot;HBN1&quot;, &quot;HBN2&quot;, &quot;HBS4&quot;) ~ &quot;CR&quot;,
     site %in% c(&quot;R3S3&quot;, &quot;R3SC3&quot;) ~ &quot;SG&quot;),
     site2))</code></pre>
 </div>

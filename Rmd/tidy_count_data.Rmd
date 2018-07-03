@@ -94,7 +94,6 @@ dens2015 <- readxl::read_xlsx(
   separate(site, into = c("site", "site2")) %>%
   mutate(date = as.Date(date),                                # convert to Date
          dist = NA) %>%                                       # add dist column (NAs filled in later)
-  filter(grepl("^R", site)) %>%                                    # select R2 and R3
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
   # tagged and non-tagged corals are given same coral_id numbers, so must keep tagged_coral_y_n
   select(date, site, transect, coral_id, tagged_coral_y_n, category, subcategory, diameter, count) %>%
@@ -130,7 +129,6 @@ dens2016octo <- readxl::read_xlsx(
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
          count = octo_sponge_zoanthid_count_qaqc) %>%
-  filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, category, subcategory, count) %>%
   mutate(count = ifelse(is.na(count), 1, count),            # ASSUME MISSING COUNTS ARE 1
@@ -145,7 +143,6 @@ dens2016scler <- readxl::read_xlsx(
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = species,
          diameter = max_diameter) %>%
-  filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
   select(date, site, transect, coral_id, category, subcategory, diameter) %>%
   mutate(count = 1,  # 1 coral per row (no count data in sheet)
@@ -175,7 +172,6 @@ cs2016octo <- files %>%
 # Tidy data
 cs2016octo <- cs2016octo %>%
   clean_names() %>%
-  filter(grepl("^R2|^R3", station)) %>%               # get only R2 and R3 survey sites
   rename(site = station, transect = transect_ns_or_ew,
          category = organism_type_scl_spo_octo, 
          subcategory = species_scl_genera_octo_morph_spo) %>%
@@ -183,8 +179,8 @@ cs2016octo <- cs2016octo %>%
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
   mutate(dist = str_extract(site, "[[:digit:]]{2,3}")) %>%      # extract distance from site name
-  mutate(site2 = str_extract(site, "LR|RR")) %>%                 # extract LR or RR from site name
-  mutate(site = str_extract(site, "R[^-|_]*")) %>%                 # extract base site form site name
+  mutate(site2 = str_extract(site, "LR|RR|CP|SG|CR")) %>%            # extract LR or RR from site name
+  mutate(site = str_extract(site, "^.[^-|_]*")) %>%                 # extract base site form site name
   filter(!grepl("DEAD", condition_codes_all)) %>%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, count)
 
@@ -196,7 +192,6 @@ cs2016scler <- files %>%
 # Tidy data
 cs2016scler <- cs2016scler %>%
   clean_names() %>%
-  filter(grepl("^R2|^R3", station)) %>%               # get only R2 and R3 survey sites
   rename(site = station, transect = transect_ns_or_ew,
          category = organism_type_scl_spo_octo, 
          subcategory = species_scl_genera_octo_morph_spo,
@@ -205,8 +200,8 @@ cs2016scler <- cs2016scler %>%
   mutate(transect_area_m2 = case_when(transect == "EW" ~ 30,     # transect area, DCA 10/2017 p.23
                                       transect == "NS" ~ 20)) %>%  
   mutate(dist = str_extract(site, "[[:digit:]]{2,3}")) %>%      # extract distance from site name
-  mutate(site2 = str_extract(site, "LR|RR")) %>%                 # extract LR or RR from site name
-  mutate(site = str_extract(site, "R[^-|_]*")) %>%                 # extract base site form site name
+  mutate(site2 = str_extract(site, "LR|RR|CP|SG|CR")) %>%           # extract LR or RR from site name
+  mutate(site = str_extract(site, "^.[^-|_]*")) %>%                 # extract base site form site name
   filter(!grepl("DEAD", condition_codes_all)) %>%              # EXCLUDE DEAD CORALS!
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
@@ -307,7 +302,16 @@ all_counts <- all_counts %>%
 
 # Add distance from channel for each permanent site
 all_counts <- all_counts %>%
-  mutate(dist = ifelse(is.na(dist), case_when(           
+  mutate(dist = ifelse(is.na(dist), case_when(    
+    site=="HBNC1" ~ "2350",
+    site=="HBN3" ~ "48",
+    site=="HBSC1" ~ "1650",
+    site=="HBS4" ~ "32",
+    site=="HBS1" ~ "",      # GET DATA
+    site=="HBS2" ~ "",      # GET DATA
+    site=="HBS3" ~ "",      # GET DATA
+    site=="HBN1" ~ "",      # GET DATA
+    site=="HBN2" ~ "",      # GET DATA
     site=="R2N1" ~ "28",
     site=="R2NC2" ~ "9380",
     site=="R2N2" ~ "18",
@@ -338,7 +342,8 @@ all_counts <- all_counts %>%
     site %in% c("R2NC1", "R2NC3", "R2N1", "R2SC2", "R2S2", 
                 "R3NC1", "R3N1", "R3SC2", "R2S2",
                 "R2N2", "R3S2") ~ "LR",
-    site %in% c("R3S1", "R3SC1") ~ "CP",
+    site %in% c("R3S1", "R3SC1", "HBNC1", "HBS1", "HBS2", "HBS3", "HBN3") ~ "CP",
+    site %in% c("HBN1", "HBN2", "HBS4") ~ "CR",
     site %in% c("R3S3", "R3SC3") ~ "SG"),
     site2))
 ```
