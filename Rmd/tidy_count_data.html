@@ -480,7 +480,15 @@ all_counts &lt;- all_counts %&gt;%
     site %in% c(&quot;R3S1&quot;, &quot;R3SC1&quot;, &quot;HBNC1&quot;, &quot;HBS1&quot;, &quot;HBS2&quot;, &quot;HBS3&quot;, &quot;HBN3&quot;) ~ &quot;CP&quot;,
     site %in% c(&quot;HBN1&quot;, &quot;HBN2&quot;, &quot;HBS4&quot;) ~ &quot;CR&quot;,
     site %in% c(&quot;R3S3&quot;, &quot;R3SC3&quot;) ~ &quot;SG&quot;),
-    site2))</code></pre>
+    site2))
+
+
+# For transects with only single digit listed for transect number, change to site-site2-transect
+all_counts &lt;- all_counts %&gt;% 
+  mutate(transect = case_when(
+    nchar(transect) == 1 ~ paste(site, site2, transect, sep = &quot;-&quot;),
+    TRUE ~ transect)
+  )</code></pre>
 </div>
 <div id="save-count-data-as-.rdata-object" class="section level1">
 <h1>Save count data as .RData object</h1>

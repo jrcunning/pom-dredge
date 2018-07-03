@@ -383,6 +383,14 @@ all_counts <- all_counts %>%
     site %in% c("HBN1", "HBN2", "HBS4") ~ "CR",
     site %in% c("R3S3", "R3SC3") ~ "SG"),
     site2))
+
+
+# For transects with only single digit listed for transect number, change to site-site2-transect
+all_counts <- all_counts %>% 
+  mutate(transect = case_when(
+    nchar(transect) == 1 ~ paste(site, site2, transect, sep = "-"),
+    TRUE ~ transect)
+  )
 ```
 
 # Save count data as .RData object
