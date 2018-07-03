@@ -82,6 +82,8 @@ dens2013 <- bind_rows(dens2013r2, dens2013r3) %>%
 
 # Import data from 2015 - permanent sites
 ```{r}
+# 2015 data has multiple condition codes for the same coral recorded as separate lines.
+# need to aggregate these to a single line so one row = one coral
 dens2015 <- readxl::read_xlsx(
   path = "data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx",
   guess_max = 10000) %>%
@@ -94,7 +96,8 @@ dens2015 <- readxl::read_xlsx(
          dist = NA) %>%                                       # add dist column (NAs filled in later)
   filter(grepl("^R", site)) %>%                                    # select R2 and R3
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
-  select(date, site, transect, category, subcategory, diameter, count) %>%
+  select(date, site, transect, coral_id, category, subcategory, diameter, count) %>%
+  distinct() %>%      # reduces to single row for unique site/transect/coral_id
   mutate(count = ifelse(is.na(count), 1, count)) %>%                # ASSUME MISSING COUNTS ARE 1
   mutate(date = if_else(is.na(date), as.Date("2015-06-22"), date)) %>%  # fill in missing date
   mutate(diameter = as.numeric(diameter)) %>%
@@ -133,6 +136,8 @@ dens2016octo <- readxl::read_xlsx(
          date = as.Date(date))
 
 ## Corals are in another spreadsheet
+# 2015 data has multiple condition codes for the same coral recorded as separate lines.
+# need to aggregate these to a single line so one row = one coral
 dens2016scler <- readxl::read_xlsx(
   path = "data/Density_Data/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX",
   sheet = "Raw Data", skip = 1)  %>%
@@ -141,9 +146,10 @@ dens2016scler <- readxl::read_xlsx(
          diameter = max_diameter) %>%
   filter(grepl("^R", site)) %>%     # filter reef 2 and reef 3 only
   filter(!grepl("DEAD", condition_code_qaqc)) %>%              # EXCLUDE DEAD CORALS!
-  select(date, site, transect, category, subcategory, diameter) %>%
+  select(date, site, transect, coral_id, category, subcategory, diameter) %>%
   mutate(count = 1,  # 1 coral per row (no count data in sheet)
-         date = as.Date(date))
+         date = as.Date(date)) %>%
+  distinct()   # reduce to single row for each site/transect/coral_id (b/c multiple conditions/rows)
          
 ## Combine sponge, octocoral, and scleractinian data
 dens2016 <- bind_rows(dens2016octo, dens2016scler) %>%
