@@ -39,6 +39,7 @@ load("data/cpce_omit_nosand.RData")
 
 # Choose which version of CPCe data to use
 cpce <- cpce_spr_as_sand
+#cpce <- cpce_omit_nosand
 ```
 
 # Quantify sand cover
@@ -48,7 +49,8 @@ cpce <- cpce %>%
   mutate(sumpts = rowSums(select_if(., is.integer)),     # sum counts of all categories
          notsand = as.integer(sumpts - sand_sa)) %>%     # sum counts of not sand
   mutate_if(is.character, as.factor) %>%
-  mutate(weekn = (date - as.Date("2013-11-20")) / dweeks(1))  # create numeric weeks column
+  mutate(weekn = (date - min(date)) / dweeks(1),  # create numeric weeks column
+         dayn  = as.numeric(date - min(date)))
 
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
@@ -61,25 +63,25 @@ dredge.end.wk <- (dredge.end.date - as.Date("2013-11-20")) / dweeks(1)
 ```{r}
 # Calculate mean proportion sand cover at each site on each date 
 # (averaged across all frames from all transects)
-sand.summ <- cpce_spr_as_sand %>%
-  mutate(weekn = (date - as.Date("2013-11-20")) / dweeks(1),
-         sumpts = rowSums(select_if(., is.integer)),
-         propsand = sand_sa / sumpts) %>%
-  group_by(reef, dir, channel, site, date, weekn) %>%
+sand.summ <- cpce %>%
+  mutate(propsand = sand_sa / sumpts) %>%
+  group_by(reef, dir, channel, site, date) %>%
   summarise(meanpropsand = mean(propsand))
 
 # Plot by site
 ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, groups = site)) +
   facet_wrap(~ site) +
   geom_point() +
-  geom_line()
+  geom_line() +
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25)
 
 # Plot by reef and direction
 ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, groups = site,
                linetype = channel)) +
   facet_grid(dir ~ reef) +
   geom_point() +
-  geom_line()
+  geom_line() +
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25)
 ```
 
 # Model sand cover
@@ -89,11 +91,18 @@ ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, groups = site
 # Filter dataset to only fit over regions with less than 30-week gaps between data points
 cpce.f <- cpce %>%
   nest(-reef, -dir, -channel) %>%                                            # For each reef
-  mutate(weeks = map(data, ~ sort(unique(.$weekn))),                         # Which weeks have data
-          runs = map(weeks, ~ split(.x, cumsum(c(TRUE, diff(.x) > 20)))),    # Find runs w/o 20wk gaps
+  mutate(dates = map(data, ~ sort(unique(.$date))),                         # Which weeks have data
+          runs = map(dates, ~ split(.x, cumsum(c(TRUE, diff(.x) > 140)))),  # Find runs w/o 20wk gaps
        longest = map(runs, ~ .x[[which.max(sapply(.x, length))]]),           # Get longest run
-        data.f = map2(data, longest, ~ filter(.x, .$weekn %in% .y))) %>%     # Get data from those weeks
+        data.f = map2(data, longest, ~ filter(.x, .$date %in% .y))) %>%   # Get data from those dates
   unnest(data.f)
+
+# Add up the total number of points counted as sand and not sand across all frames from each transect/date
+cpce.f <- cpce.f %>%
+  group_by(reef, dir, channel, site, transect, dayn) %>%
+  summarise(sand = sum(sand_sa),
+            notsand = sum(notsand)) %>%
+  ungroup()
 
 # Fit GAMM models for each reef and direction
 gamms.reef.dir <- cpce.f %>%
@@ -101,11 +110,11 @@ gamms.reef.dir <- cpce.f %>%
   nest(-reef, -dir) %>%   # Nest by reef and direction
   mutate(
     # Fit gamm by channel (in parallel)
-    mod = future_map(data, 
-            ~ gamm4(cbind(sand_sa, notsand) ~ s(weekn, by = channel, k = 8, bs = "cs") + channel, 
+    mod = map(data, 
+            ~ gamm4(cbind(sand, notsand) ~ s(dayn, by = channel) + channel, ##, k = 8, bs = "cs"
                     random = ~(1|site/transect), data = ., family = "binomial")$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
-    newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn),
+    newdata = map(data, ~ expand.grid(dayn = min(.$dayn):max(.$dayn),
                                       channel = c("channelside", "control"))),
     # Get fitted values from GAMM using newdata frame
     fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
@@ -117,82 +126,19 @@ gamms.reef.dir <- cpce.f %>%
     uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
   )
 
-gamms.reef.dir.fits <- gamms.reef.dir %>% unnest(newdata, fit, lci, uci)
+gamms.reef.dir.fits <- gamms.reef.dir %>% 
+  unnest(newdata, fit, lci, uci) %>%
+  mutate(date = min(cpce$date) + dayn)
+
 ```
 
 ### Plot fitted models
 ```{r}
-ggplot(gamms.reef.dir.fits, aes(x = weekn, y = fit, color = channel)) +
+ggplot(gamms.reef.dir.fits, aes(x = date, y = fit, color = channel)) +
   facet_grid(dir ~ reef) +
   geom_point(data = sand.summ, aes(y = meanpropsand), alpha = 0.4) +
-  #scale_size(range = c(0.1, 2.5)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
   geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
-  labs(title = "Sand cover", x = "Time (weeks)", y = "Percent cover")
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
+  labs(title = "Sand cover", x = "Date", y = "Percent sand")
 ```
-
-```{r, eval = FALSE, include = FALSE}
-# GAMMs for each site
-
-### Fit models (site as fixed effect)
-
-
-# Filter dataset to only fit over regions with less than 20-week gaps between data points
-cpce.f2 <- cpce %>%
-  filter(site != "R2NC3") %>%            # Exclude R2NC3 because only three data points
-  nest(-reef, -dir, -channel, -site) %>%                                            # For each reef
-  mutate(weeks = map(data, ~ sort(unique(.$weekn))),                         # Which weeks have data
-          runs = map(weeks, ~ split(.x, cumsum(c(TRUE, diff(.x) > 20)))),    # Find runs w/o 20wk gaps
-       longest = map(runs, ~ .x[[which.max(sapply(.x, length))]]),           # Get longest run
-        data.f = map2(data, longest, ~ filter(.x, .$weekn %in% .y))) %>%     # Get data from those weeks
-  unnest(data.f)
-
-# Fit GAMM models for each site
-gamms.site <- cpce.f2 %>%
-  #filter(site == "R3S3") %>% ##TESTING
-  nest(-reef, -dir, -channel, -site) %>%   # Nest by site
-  mutate(
-    # Fit gamm
-    mod = future_map(data, 
-            ~ gamm4(cbind(sand_sa, notsand) ~ s(weekn, k = 8, bs = "cs"), random = ~(1|transect), 
-                    data = ., family = "binomial")$gam),
-    # Get newdata frame for predict() using the appropriate range of weeks
-    newdata = map(data, ~ expand.grid(weekn = min(.$weekn):max(.$weekn))),
-    # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
-    # Get confidence intervals by simulation
-    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
-    Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
-    sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
-    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
-    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
-  ) %>% unnest(newdata, fit, lci, uci)
-```
-
-```{r, eval = FALSE, include = FALSE}
-### Plot each site individually
-ggplot(gamms.site, aes(x = weekn, y = fit)) +
-  facet_wrap(~ site) +
-  geom_point(data = sand.summ, aes(y = meanpropsand), alpha = 0.4) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
-  geom_line(lwd = 1) +
-  #geom_smooth(method = "loess") +
-  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
-  labs(title = "Sand cover",
-       xlab = "Time (weeks)", ylab = "Percent cover")
-```
-
-```{r, eval = FALSE, include = FALSE}
-### Plot each site grouped by reef and direction
-ggplot(gamms.site, aes(x = weekn, y = fit, color = site, linetype = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_point(data = sand.summ, aes(y = meanpropsand), alpha = 0.4) +
-  #scale_size(range = c(0.1, 2.5)) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
-  geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.wk, dredge.end.wk), linetype = 1, lwd = 0.25) +
-  labs(title = "Sand cover",
-       xlab = "Time (weeks)", ylab = "Percent cover")
-```
-
