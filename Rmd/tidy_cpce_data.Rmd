@@ -78,7 +78,7 @@ cpce <- cpce %>%
 # Add date information
 # Use information from "POM PERM SITE INVENTORY (5 29 18).xlsx" to add date information
 # These are estimates of dates... actual dates may be in "Appendix H"
-# Add estimated dates first...
+# Use baseline report table 1 and "MonitoringMatrix_NEW" to get dates
 cpce <- cpce %>%
   mutate(date = case_when(
     str_detect(week, "B") ~ case_when(site == "HBN1" ~ as_date("2013-11-07"),
