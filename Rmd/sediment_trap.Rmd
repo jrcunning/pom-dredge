@@ -1,0 +1,80 @@
+---
+title: "sediment traps"
+author: "Ross Cunning"
+date: "7/20/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load packages
+library(readxl)
+library(tidyverse)
+library(lubridate)
+```
+
+
+# Plot sedimentation rate over time by site
+```{r}
+sedrate <- sedtrap %>%
+  group_by(reef, dir, channel, site, middate) %>%
+  summarise(meansed = mean(sedrate),
+            meanfine = mean(finerate),
+            sdsed = sd(sedrate),
+            sdfine = sd(finerate),
+            sesed = sdsed / sqrt(n()),
+            sefine = sdfine / sqrt(n()))
+
+ggplot(sedrate, aes(x = middate, y = meanfine)) +
+  facet_wrap(~ site) +
+  geom_point(size = 1) +
+  geom_line()
+
+ggplot(sedrate, aes(x = middate, y = meanfine, color = channel)) +
+  facet_wrap(dir ~ reef) +
+  geom_point(size = 1) +
+  geom_line()
+```
+
+```{r}
+sedrate %>%
+  group_by(reef, dir, channel) %>%
+  summarise(sumfine = sum(meanfine, na.rm = T)) %>%
+  arrange(sumfine)
+```
+
+
+
+
+```{r, eval = F, include = F}
+
+frac_fine <- trap %>%
+  group_by(site, date) %>%
+  summarise(mean = mean(frac_fine),
+            sd = sd(frac_fine),
+            se = sd / sqrt(n()))
+
+ggplot(frac_fine, aes(x = date, y = mean)) +
+  facet_wrap(~ site) +
+  geom_line()
+```
+
+```{r}
+trap <- trap %>%
+  mutate(fine = total_dry * frac_fine/100,
+         coarse = total_dry - fine)
+
+tot <- trap %>%
+  group_by(site, date) %>%
+  summarise(fine = mean(fine),
+            coarse = mean(coarse))
+
+tot <- gather(tot, type, tot, -site, -date)
+
+ggplot(tot, aes(x = date, y = tot, group = type)) +
+  facet_wrap(~ site) +
+  geom_line(aes(color = type))
+```
+
+# Sedimentation rate on x axis and percent mortality on y axis, point for each site

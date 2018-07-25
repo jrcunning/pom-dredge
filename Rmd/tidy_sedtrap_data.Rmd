@@ -1,0 +1,107 @@
+---
+title: "tidy_sediment_trap"
+author: "Ross Cunning"
+date: "7/25/2018"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+# Load packages
+library(readxl)
+library(tidyverse)
+library(lubridate)
+```
+
+
+# Load sediment trap dates data
+```{r}
+# DATE INFO COMPLETELY MISSING FOR c("HBN1", "HBN2", "HBS1", "HBS2", "R3S1", "R3S3", "R3SC1")
+
+
+dates <- readxl::read_xlsx("data/sediment_trap_data/sed_trap_dates.xlsx",
+                           col_names = FALSE)
+
+dates <- dates %>%
+  nest(-X__1) %>%
+  mutate(d2 = map(data, ~ drop_na(as.data.frame(t(.x[,-1])))),
+         d3 = map(d2, drop_na)) %>%
+  unnest(d3)
+
+dates <- dates %>%
+  setNames(c("site", "start", "end")) %>%
+  mutate(site = as_factor(site),
+         start = as.Date(start),
+         end = as.Date(end),
+         duration = as.numeric(end - start)) %>%
+  separate(site, into = c("site", "site2"))
+```
+
+
+# Load sediment trap data
+```{r}
+# Manual QC: Samples from compliance week 65 were entered in "29TH SET-0228" worksheet with a date of Jan 13, 2015, but should have been Feb 13, 2015 -- manually corrected in Excel.
+# in "2ND SET" - 12/17/13 changed to 12/18/13
+# in "4TH SET-0224" - 01/20/14 changed to 01/28/14
+#### Dates are missing from trap data for samples labeled Compliance week 70 ("C70"). Based on data in trap dates spreadsheet, we believe the end date for these to be 03/22/15 - manually changed.
+
+
+two_passes <- function(path, sheet = NULL) {
+  first_pass <- read_excel(path = path, sheet = sheet)
+  skip <- min(which(grepl("HB|Hb|R2|R3", first_pass[[1]])))
+  message("For sheet '", if (is.null(sheet)) 1 else sheet,
+          "' we'll skip ", skip, " rows.")  
+  second_pass <- read_excel(path, sheet = sheet, skip = skip - 1, 
+                            col_names = TRUE, col_types = NULL, guess_max = 15,
+                            na = c("", "----"))
+  second_pass <- second_pass %>% select(1, 
+                                        ifelse(sheet == "2ND SET", 4, 3), 
+                                        case_when(sheet == "2ND SET" ~ 8,
+                                                  sheet == "3RD SET-0206" ~ 6,
+                                                  TRUE ~ 7),
+                                        ncol(.))
+  second_pass <- setNames(second_pass, c("sample", "end", "total_dry", "frac_fine"))
+  second_pass <- second_pass %>% mutate(frac_fine = as.numeric(frac_fine),
+                                        end = as_date(end),
+                                        total_dry = as.numeric(total_dry))
+  second_pass
+}
+
+sheets <- readxl::excel_sheets("data/sediment_trap_data/Offshore Compliance Sediment Trap Data Final.xlsx")
+sheets <- setNames(sheets, sheets)
+trap <- lapply(sheets, two_passes, 
+               path = "data/sediment_trap_data/Offshore Compliance Sediment Trap Data Final.xlsx")
+
+trap <- bind_rows(trap)
+
+trap <- trap %>%
+  drop_na() %>%
+  separate(sample, into = c("site", "site2", "wk")) %>%
+  mutate(site = toupper(site),
+         site = recode(site, HBNC = "HBNC1"))
+
+# Baseline data is in other spreadsheets (is it really needed?)
+#trapbl <- two_passes(path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx")
+
+
+# Add site metadata
+trap <- trap %>%
+  mutate(reef = str_sub(site, 1, 2),
+         dir  = str_sub(site, 3, 3),
+         channel = if_else(grepl("C", site), "control", "channelside"))
+```
+
+# Merge sediment trap data with dates and calculate rates
+```{r}
+# Merge by site and end date
+sedtrap <- left_join(trap, dates, by = c("site", "end")) %>%
+  select(reef, dir, channel, site, start, end, duration, total_dry, frac_fine)
+
+# Calculate daily sedimentation rate
+sedtrap <- sedtrap %>%
+  mutate(sedrate = total_dry / duration,
+         finerate = total_dry * frac_fine / 100 / duration,
+         middate = start + (end - start)/2)
+```
