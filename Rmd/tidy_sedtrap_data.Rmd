@@ -111,6 +111,9 @@ sedtrap <- sedtrap %>%
          dir = factor(dir, levels = c("N", "S")),
          channel = factor(channel, levels = c("channelside", "control")))
 
+# There are three NAs -- this is likely data entry error. Omit these...
+sedtrap <- drop_na(sedtrap)
+
 # Save as .RData
 save(sedtrap, file = "data/sedtrap.RData")
 ```

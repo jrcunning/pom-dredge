@@ -217,6 +217,9 @@ sedtrap &lt;- sedtrap %&gt;%
          dir = factor(dir, levels = c(&quot;N&quot;, &quot;S&quot;)),
          channel = factor(channel, levels = c(&quot;channelside&quot;, &quot;control&quot;)))
 
+# There are three NAs -- this is likely data entry error. Omit these...
+sedtrap &lt;- drop_na(sedtrap)
+
 # Save as .RData
 save(sedtrap, file = &quot;data/sedtrap.RData&quot;)</code></pre>
 </div>
