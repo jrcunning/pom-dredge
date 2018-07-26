@@ -104,4 +104,25 @@ sedtrap <- sedtrap %>%
   mutate(sedrate = total_dry / duration,
          finerate = total_dry * frac_fine / 100 / duration,
          middate = start + (end - start)/2)
+
+# Save as .RData
+save(sedtrap, file = "data/sedtrap.RData")
 ```
+
+```{r, eval = FALSE}
+sedtrap <- sedtrap %>%
+  drop_na() %>%
+  mutate(full = pmap(list(start, end, finerate), function(start, end, finerate) {
+    expand.grid(datef = seq.Date(as_date(start), as_date(end), "day"), sfinerate = finerate)}))
+   
+#sedtrap$full[[1]]
+
+bb <- sedtrap %>% unnest(full) %>% select(reef, dir, channel, site, datef, sfinerate) %>% arrange(datef)
+
+
+
+ggplot(bb, aes(x = datef, y = sfinerate)) +
+  facet_wrap(~ site) +
+  geom_line()
+```
+
