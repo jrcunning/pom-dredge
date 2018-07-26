@@ -13,9 +13,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### [Tagged coral data](Rmd/tidy_tagged_corals.html)
 
-##### [Count data](Rmd/tidy_count_data.html)
+##### [Organism count data](Rmd/tidy_count_data.html)
 
 ##### [Benthic cover data](Rmd/tidy_cpce_data.html)
+
+##### [Sediment trap data](Rmd/tidy_sedtrap_data.html)
 
 -----
 
@@ -36,6 +38,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ##### [Octocoral density]
 
 ### Habitat
+
+##### [Sediment traps](Rmd/sediment_trap.html)
 
 ##### [Sediment cover](Rmd/sed_cover.html)
 
