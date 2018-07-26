@@ -18,9 +18,6 @@ library(lubridate)
 
 # Load sediment trap dates data
 ```{r}
-# DATE INFO COMPLETELY MISSING FOR c("HBN1", "HBN2", "HBS1", "HBS2", "R3S1", "R3S3", "R3SC1")
-
-
 dates <- readxl::read_xlsx("data/sediment_trap_data/sed_trap_dates.xlsx",
                            col_names = FALSE)
 
@@ -37,10 +34,40 @@ dates <- dates %>%
          end = as.Date(end),
          duration = as.numeric(end - start)) %>%
   separate(site, into = c("site", "site2"))
+
+#write.csv(dates, file = "data/sediment_trap_data/sedtrap_dates_clean.csv")
 ```
 
 
-# Load sediment trap data
+# Load baseline sediment trap data
+```{r}
+# Import Baseline sediment tables and charts- reef 3 31114.xlsx - baseline
+df1 <- readxl::read_xlsx(
+  path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx",
+  sheet = "baseline",
+  skip = 5, guess_max = 10, n_max = 38) # excludes one row where PVC was found in bottle...
+
+df1 <- df1 %>% 
+  select(4, 3, 8, 18) %>%
+  setNames(c("sample", "end", "total_dry", "frac_fine")) %>%
+  mutate(end = as.Date(end)) %>%
+  separate(sample, into = c("site", "site2"))
+
+#####
+# Import Baseline sediment tables and charts- reef 3 31114.xlsx - 02-06-14
+df2 <- readxl::read_xlsx(
+  path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx",
+  sheet = "02-06-14",
+  skip = 5, guess_max = 10, n_max = 38)
+
+df2 <- df2 %>%
+  select(1, 3, 6, 20) %>%
+  setNames(c("sample", "end", "total_dry", "frac_fine")) %>%
+  mutate(end = as.Date(end)) %>%
+  separate(sample, into = c("site", "site2"))
+```
+
+# Load compliance sediment trap data
 ```{r}
 # Manual QC: Samples from compliance week 65 were entered in "29TH SET-0228" worksheet with a date of Jan 13, 2015, but should have been Feb 13, 2015 -- manually corrected in Excel.
 # in "2ND SET" - 12/17/13 changed to 12/18/13
@@ -84,7 +111,13 @@ trap <- trap %>%
 
 # Baseline data is in other spreadsheets (is it really needed?)
 #trapbl <- two_passes(path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx")
+```
 
+# Merge baseline and compliance sediment trap data
+```{r}
+
+trap <- bind_rows(df1, df2, trap) %>% select(site, end, total_dry, frac_fine)
+trap <- distinct(trap)  # some rows duplicated because data present in multiple above spreadsheets
 
 # Add site metadata
 trap <- trap %>%

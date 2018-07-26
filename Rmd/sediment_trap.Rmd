@@ -70,7 +70,7 @@ ggplot(sedrate, aes(x = middate, y = meanfine)) +
 
 # Plot sedimentation rate over time for each reef and direction
 ```{r}
-# Get average sedimentation rates for each permanent monitoring site
+# Get average sedimentation rates for each reef/direction
 sedrate <- sedtrap %>%
   group_by(reef, dir, channel, start, end, middate) %>%
   summarise(meansed = mean(sedrate),
