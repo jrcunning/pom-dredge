@@ -107,9 +107,9 @@ sedtrap <- sedtrap %>%
 
 # Code factor levels
 sedtrap <- sedtrap %>%
-  mutate(reef = as_factor(reef, levels = c("HB", "R2", "R3")),
-         dir = as_factor(dir, levels = c("N", "S")),
-         channel = as_factor(channel, levels = c("channelside", "control")))
+  mutate(reef = factor(reef, levels = c("HB", "R2", "R3")),
+         dir = factor(dir, levels = c("N", "S")),
+         channel = factor(channel, levels = c("channelside", "control")))
 
 # Save as .RData
 save(sedtrap, file = "data/sedtrap.RData")

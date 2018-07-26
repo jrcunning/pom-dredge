@@ -213,9 +213,9 @@ sedtrap &lt;- sedtrap %&gt;%
 
 # Code factor levels
 sedtrap &lt;- sedtrap %&gt;%
-  mutate(reef = as_factor(reef, levels = c(&quot;HB&quot;, &quot;R2&quot;, &quot;R3&quot;)),
-         dir = as_factor(dir, levels = c(&quot;N&quot;, &quot;S&quot;)),
-         channel = as_factor(channel, levels = c(&quot;channelside&quot;, &quot;control&quot;)))
+  mutate(reef = factor(reef, levels = c(&quot;HB&quot;, &quot;R2&quot;, &quot;R3&quot;)),
+         dir = factor(dir, levels = c(&quot;N&quot;, &quot;S&quot;)),
+         channel = factor(channel, levels = c(&quot;channelside&quot;, &quot;control&quot;)))
 
 # Save as .RData
 save(sedtrap, file = &quot;data/sedtrap.RData&quot;)</code></pre>
