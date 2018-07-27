@@ -29,7 +29,7 @@ logit2prob <- function(logit){
 
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
-dredge.end.date <- as.Date("2014-12-31")                  # DCA report August 2015, page 3
+dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 2015, page 3
 ```
 
 # Load sediment trap data
@@ -66,6 +66,13 @@ ggplot(sedrate, aes(x = middate, y = meanfine)) +
   geom_line() + 
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
   labs(title = "Fine sediments", x = "Date", y = "Grams / day")
+```
+
+# Filter dataset
+```{r}
+sedtrap <- sedtrap %>%
+  filter(site != "HBN1")             # Omit HBN1 because was "buried" and not monitored for a long time
+                                     # Both here and in tagged coral data
 ```
 
 # Plot sedimentation rate over time for each reef and direction
@@ -176,6 +183,43 @@ ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) +
   labs(title = "Fine sediments", x = "Date", y = "Sedimentation rate")
 ```
 
+## Coarse sediments
+```{r}
+coarse.gamms.reef.dir <- sedtrap %>%
+  nest(-reef, -dir, -channel) %>%   # Nest by reef and direction
+  mutate(
+    # Fit gamm by channel (in parallel)
+    mod = future_map(data, 
+            ~ gamm(pmax(0, sedrate - finerate) ~ s(as.numeric(middate)),#, k = 16),
+                    weights = duration, data = ., family = "poisson")$gam),
+    # Get newdata frame for predict() using the appropriate range of days
+    newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)))),
+                                      #channel = c("channelside", "control"))),
+    # Get fitted values from GAMM using newdata frame
+    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, 
+                                       type = "link", se.fit = TRUE)$fit),
+    se.fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, 
+                                       type = "link", se.fit = TRUE)$se.fit),
+    lci = map2(fit, se.fit, ~ .x - (1.96 * .y)),
+    lcir = map2(mod, lci, ~ .x$family$linkinv(.y)),
+    uci = map2(fit, se.fit, ~ .x + (1.96 * .y)),
+    ucir = map2(mod, uci, ~ .x$family$linkinv(.y)),
+    fitr = map2(mod, fit, ~ .x$family$linkinv(.y))
+  )
+
+coarse.gamms.reef.dir.fits <- coarse.gamms.reef.dir %>% 
+  unnest(newdata, fitr, lcir, ucir) %>%
+  mutate(middate = zoo::as.Date.numeric(middate))
+
+### Plot fitted models
+ggplot(coarse.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) +
+  facet_grid(dir ~ reef) +
+  geom_segment(data=sedtrap, aes(x = start, xend = end, y = sedrate - finerate, yend = sedrate - finerate), alpha=0.4) +
+  geom_ribbon(aes(ymin = lcir, ymax = ucir, linetype = NA), alpha = 0.2) + 
+  geom_line(lwd = 1) +
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
+  labs(title = "Coarse sediments", x = "Date", y = "Sedimentation rate")
+```
 
 # Integrate to get total sediment deposition for each reef and direction
 
@@ -217,5 +261,23 @@ ggplot(fine.depo, aes(x = channel, y = int_fit, fill = channel)) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
   labs(title = paste("Fine sediment deposition", max(earliest$minmiddate), "- 2015-03-16"),
+       y = "Grams", x = "")
+```
+
+## Coarse sediments
+```{r}
+coarse.depo <- coarse.gamms.reef.dir.fits %>%
+  filter(middate >= max(earliest$minmiddate),  # Filter to dates after which all data available
+         middate <= "2015-03-16") %>%          # Filter up to date dredging ended
+  group_by(reef, dir, channel) %>%
+  summarise(int_min = sum(lcir),
+            int_fit = sum(fitr),
+            int_max = sum(ucir))
+
+ggplot(coarse.depo, aes(x = channel, y = int_fit, fill = channel)) +
+  facet_grid(dir ~ reef) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
+  labs(title = paste("Coarse sediment deposition", max(earliest$minmiddate), "- 2015-03-16"),
        y = "Grams", x = "")
 ```
