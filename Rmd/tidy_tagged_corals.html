@@ -91,6 +91,9 @@ img {
 .tabbed-pane {
   padding-top: 12px;
 }
+.html-widget {
+  margin-bottom: 20px;
+}
 button.code-folding-btn:focus {
   outline: none;
 }
@@ -130,757 +133,357 @@ library(tidyverse)
 library(stringr)
 library(lubridate)
 library(readxl)
+library(janitor)</code></pre>
+<div id="import-data" class="section level1">
+<h1>Import data</h1>
+<div id="baseline" class="section level3">
+<h3>Baseline</h3>
+<div id="hardbottom" class="section level5">
+<h5>Hardbottom</h5>
+<pre class="r"><code># Import data from file: Hardbottom_Baseline_POM_050714.xlsx
+bl_hb &lt;- readxl::read_xlsx(path = &quot;data/to_analyze/Hardbottom_Baseline_POM_050714.xlsx&quot;,
+                           sheet = &quot;Raw Data&quot;)
+# Tidy data
+bl_hb &lt;- bl_hb %&gt;%
+  clean_names() %&gt;%
+  filter(tagged_coral_y_n == &quot;Y&quot;) %&gt;%         # Tagged corals only
+  rename(site = site_e_g_hbnc1_cp,
+         transect = transect_e_g_hbna_1,
+         species = subcategory) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  select(date, site, transect, coral_id, species, condition_qa_qc, surveyor) %&gt;%
+  rename(condition = condition_qa_qc)
 
-# Function for accessing data for a specific coral from full dataset
-getCoral &lt;- function(d, s, t, c) {
-  with(d, d[Site==s &amp; Transect==t &amp; Coral.ID==c, ])
-}
+# Check and make sure no missing dates
+#bl_hb %&gt;% filter(is.na(date))
 
-# Function for accessing corals with specific condition codes
-hasCond &lt;- function(cond, Condition.Codes) {
-  unlist(lapply(Condition.Codes, FUN=function(x) any(grepl(cond, x))))
-}</code></pre>
-<div id="import-data" class="section level2">
-<h2>Import data</h2>
-<pre class="r"><code># REEF 2
-# File: Reef2_Baseline_POM_2013_050714.xlsx
-# Worksheet: &quot;Raw Data&quot;
-bl_r2 &lt;- read.csv(&quot;data/to_analyze/Reef2_Baseline_POM_2013_050714.csv&quot;)
-# Subset only tagged corals
-bl_r2 &lt;- droplevels(subset(bl_r2, bl_r2$Tagged.Coral..Y.N==&quot;Y&quot;))
-bl_r2 &lt;- within(bl_r2, {
-  Date &lt;- as.Date(Date, format=&quot;%m/%d/%y&quot;)
-  Condition.Code &lt;- as.character(Condition.QA.QC)
-  MaxDiam &lt;- Max.Diameter..cm.
-  Site &lt;- factor(str_replace_all(SITE..e.g..R2N1.RR., &quot;-..&quot;, &quot;&quot;))
-  Week &lt;- &quot;BL&quot;
-  Transect &lt;- str_extract(Transect..e.g..R2N1.RR.1., &quot;.$&quot;)
-  Species &lt;- str_replace_all(Subcategory,
-                             c(&quot;Stephanocoenia intersepta&quot;=&quot;SINT&quot;,
-                               &quot;Diploria strigosa&quot;=&quot;DSTR&quot;,
-                               &quot;Dichocoenia stokesii&quot;=&quot;DSTO&quot;,
-                               &quot;Solenastrea bournoni&quot;=&quot;SBOU&quot;,
-                               &quot;Montastraea cavernosa&quot;=&quot;MCAV&quot;,
-                               &quot;Siderastrea siderea&quot;=&quot;SSID&quot;,
-                               &quot;Meandrina meandrites&quot;=&quot;MMEA&quot;,
-                               &quot;Diploria clivosa&quot;=&quot;DCLI&quot;,
-                               &quot;Agaricia sp.&quot;=&quot;AGSP&quot;,
-                               &quot;Madracis formosa&quot;=&quot;MFOR&quot;,
-                               &quot;Madracis decactis&quot;=&quot;MDEC&quot;,
-                               &quot;Porites astreoides&quot;=&quot;PAST&quot;,
-                               &quot;Diplora strigosa&quot;=&quot;DSTR&quot;,
-                               &quot;Colpophyllia natans&quot;=&quot;CNAT&quot;,
-                               &quot;Eusmilia fastigiata&quot;=&quot;EFAS&quot;,
-                               &quot;Orbicella faveolata&quot;=&quot;OFAV&quot;,
-                               &quot;Acropora cervicornis&quot;=&quot;ACER&quot;,
-                               &quot;Agaricia agaricites&quot;=&quot;AAGA&quot;))
-})
-bl_r2 &lt;- bl_r2[, c(&quot;Week&quot;, &quot;Date&quot;, &quot;Site&quot;, &quot;Transect&quot;, &quot;Coral.ID&quot;, &quot;Species&quot;, &quot;Condition.Code&quot;, &quot;MaxDiam&quot;)]
-# Aggregate all conditions for each observed coral
-bl_r2 &lt;- with(bl_r2, {
-  aggregate(data.frame(Condition.Codes=Condition.Code), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
-            FUN=function(x) c(as.character(x)))
-})
+# Separate condition codes into multiple rows
+bl_hb &lt;- bl_hb %&gt;%
+  separate_rows(condition, sep = &quot;/&quot;)</code></pre>
+</div>
+<div id="middle-reef" class="section level5">
+<h5>Middle reef</h5>
+<pre class="r"><code># Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
+bl_r2 &lt;- readxl::read_xlsx(path = &quot;data/raw/Reef2_Baseline_POM_2013_050714.xlsx&quot;,
+                           sheet = &quot;Raw Data&quot;, guess_max = 3000)
 
-# Condition codes appear to have been all put together separated by slashes in the baseline data.
-# separate these into a list to match subsequent data points
-bl_r2$Condition.Codes &lt;- lapply(bl_r2$Condition.Codes, function(x) {
-  c(unlist(strsplit(x, split = &quot;/&quot;)))
-})
+# Tidy data
+bl_r2 &lt;- bl_r2 %&gt;%
+  clean_names() %&gt;%
+  filter(tagged_coral_y_n == &quot;Y&quot;) %&gt;%
+  rename(site = site_e_g_r2n1_rr,
+         transect = transect_e_g_r2n1_rr_1,
+         species = subcategory) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  select(date, site, transect, coral_id, species, condition_qa_qc, surveyor) %&gt;%
+  rename(condition = condition_qa_qc)
 
-####
-# REEF 3
-# File: Reef2_Baseline_POM_2013_050714.xlsx
-# Worksheet: &quot;Raw Data&quot;
-bl_r3 &lt;- read.csv(&quot;data/to_analyze/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).csv&quot;)
-# Subset only tagged corals
-bl_r3 &lt;- droplevels(subset(bl_r3, bl_r3$Tagged.Coral..Y.N==&quot;Y&quot;))
-bl_r3 &lt;- within(bl_r3, {
-  Date &lt;- as.Date(Date, format=&quot;%m/%d/%y&quot;)
-  Condition.Code &lt;- as.character(QA.QC.Condition.Code)
-  MaxDiam &lt;- Max.Diameter
-  Site &lt;- factor(str_replace_all(SITE..e.g..HBNC1.CP., &quot;-..&quot;, &quot;&quot;))
-  Week &lt;- &quot;BL&quot;
-  Transect &lt;- str_extract(Transect..e.g..HBNA.1., &quot;.$&quot;)
-  Species &lt;- str_replace_all(Subcategory,
-                             c(&quot;Stephanocoenia intersepta&quot;=&quot;SINT&quot;,
-                               &quot;Diploria strigosa&quot;=&quot;DSTR&quot;,
-                               &quot;Dichocoenia stokesii&quot;=&quot;DSTO&quot;,
-                               &quot;Dichocenia stokesii&quot;=&quot;DSTO&quot;,
-                               &quot;Solenastrea bournoni&quot;=&quot;SBOU&quot;,
-                               &quot;Montastraea cavernosa&quot;=&quot;MCAV&quot;,
-                               &quot;Siderastrea siderea&quot;=&quot;SSID&quot;,
-                               &quot;Meandrina meandrites&quot;=&quot;MMEA&quot;,
-                               &quot;Diploria clivosa&quot;=&quot;DCLI&quot;,
-                               &quot;Agaricia sp.&quot;=&quot;AGSP&quot;,
-                               &quot;Madracis formosa&quot;=&quot;MFOR&quot;,
-                               &quot;Madracis decactis&quot;=&quot;MDEC&quot;,
-                               &quot;Porites astreoides&quot;=&quot;PAST&quot;,
-                               &quot;Diplora strigosa&quot;=&quot;DSTR&quot;,
-                               &quot;Colpophyllia natans&quot;=&quot;CNAT&quot;,
-                               &quot;Eusmilia fastigiata&quot;=&quot;EFAS&quot;,
-                               &quot;Orbicella faveolata&quot;=&quot;OFAV&quot;,
-                               &quot;Acropora cervicornis&quot;=&quot;ACER&quot;,
-                               &quot;Agaricia agaricites&quot;=&quot;AAGA&quot;,
-                               &quot;Porites porites&quot;=&quot;PPOR&quot;,
-                               &quot;Agaricia lamarcki&quot;=&quot;ALAM&quot;,
-                               &quot;Diploria labyrinthiformis&quot;=&quot;DLAB&quot;))
-})
-bl_r3 &lt;- bl_r3[, c(&quot;Week&quot;, &quot;Date&quot;, &quot;Site&quot;, &quot;Transect&quot;, &quot;Coral.ID&quot;, &quot;Species&quot;, &quot;Condition.Code&quot;, &quot;MaxDiam&quot;)]
+# Check and make sure no missing dates
+#bl_r2 %&gt;% filter(is.na(date))
+# Correct date errors based on manual inspection of spreadsheet
+bl_r2 &lt;- bl_r2 %&gt;% 
+  mutate(date = case_when(
+    transect==&quot;R2N1-RR-1&quot; &amp; coral_id==10 &amp; is.na(date) ~ as_date(&quot;2013-11-02&quot;),
+    transect==&quot;R2NC3-LR-2&quot; &amp; coral_id==9 &amp; is.na(date) ~ as_date(&quot;2013-11-19&quot;),
+    TRUE ~ as_date(date)))
 
-# Aggregate all conditions for each observed coral
-bl_r3 &lt;- with(bl_r3, {
-  aggregate(data.frame(Condition.Codes=Condition.Code), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
-            FUN=function(x) c(as.character(x)))
-})
+# Separate condition codes into multiple rows
+bl_r2 &lt;- bl_r2 %&gt;%
+  separate_rows(condition, sep = &quot;/&quot;)</code></pre>
+</div>
+<div id="outer-reef" class="section level5">
+<h5>Outer reef</h5>
+<pre class="r"><code># Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
+bl_r3 &lt;- readxl::read_xlsx(path = &quot;data/raw/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx&quot;,
+                           sheet = &quot;Raw Data&quot;, guess_max = 3000)
 
-# Condition codes appear to have been all put together separated by slashes in the baseline data.
-# separate these into a list to match subsequent data points
-bl_r3$Condition.Codes &lt;- lapply(bl_r3$Condition.Codes, function(x) {
-  c(unlist(strsplit(x, split = &quot;/&quot;)))
-})
+# Tidy data
+bl_r3 &lt;- bl_r3 %&gt;%
+  clean_names() %&gt;%
+  filter(tagged_coral_y_n == &quot;Y&quot;) %&gt;%
+  rename(site = site_e_g_hbnc1_cp,
+         transect = transect_e_g_hbna_1,
+         species = subcategory) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  select(date, site, transect, coral_id, species, qa_qc_condition_code, surveyor) %&gt;%
+  rename(condition = qa_qc_condition_code)
 
-bl &lt;- rbind(bl_r2, bl_r3)
-bl$MaxDiam &lt;- as.numeric(as.character(bl$MaxDiam))</code></pre>
-<pre class="r"><code>### compliance monitoring during the project
-data &lt;- read.csv(&quot;data/to_analyze/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.csv&quot;,
-                 stringsAsFactors = FALSE)
-data &lt;- data[, 1:11]
-range(data$Date)</code></pre>
-<pre><code>## [1] &quot;&quot;       &quot;9/5/14&quot;</code></pre>
-<pre class="r"><code>data &lt;- within(data, {
-  Date &lt;- as.Date(Date, format=&quot;%m/%d/%y&quot;)
-  Condition.Code &lt;- as.character(Condition.Code)
-  Site &lt;- factor(str_replace_all(Site, &quot;-..&quot;, &quot;&quot;))
-})
-data &lt;- droplevels(data)
+# Check and make sure no missing dates
+#bl_r3 %&gt;% filter(is.na(date))
 
-# Identify rows with missing values
-na_data &lt;- data[rowSums(is.na(data)) &gt; 0, ]
-na_data</code></pre>
-<pre><code>##       Date Week Visit Surveyor Site N.Site Transect N.Transect Coral.ID
-## 31728 &lt;NA&gt;         NA                   NA       NA         NA       NA
-##       Species Condition.Code
-## 31728</code></pre>
-<pre class="r"><code># Omit rows with missing data (only one row of all NAs...)
-data &lt;- na.omit(data)
+# Separate condition codes into multiple rows
+bl_r3 &lt;- bl_r3 %&gt;%
+  separate_rows(condition, sep = &quot;/&quot;) %&gt;%
+  separate_rows(condition, sep = &quot; &quot;)</code></pre>
+</div>
+<div id="combine-baseline-data-for-hb-r2-r3" class="section level5">
+<h5>Combine baseline data for HB, R2, R3</h5>
+<pre class="r"><code>bl &lt;- bind_rows(bl_hb, bl_r2, bl_r3) %&gt;%
+  mutate_at(c(&quot;transect&quot;, &quot;coral_id&quot;), as.factor)</code></pre>
+</div>
+</div>
+<div id="compliance-monitoring-during-construction" class="section level3">
+<h3>Compliance monitoring (during construction)</h3>
+<p>Hardbottom, middle, and outer reef data are all in the same spreadsheet.</p>
+<pre class="r"><code># Import data from file: NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx
+comp &lt;- readxl::read_xlsx(
+  path = &quot;data/DEP_all/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx&quot;,
+  sheet = &quot;All Weeks&quot;, guess_max = 3000)
 
-# Look for errors in the data (date should correspond to week)
-levels(droplevels(interaction(data$Date, data$Week)))</code></pre>
-<pre><code>##   [1] &quot;2013-11-23.1&quot;     &quot;2013-11-24.1&quot;     &quot;2014-11-25.1&quot;    
-##   [4] &quot;2014-01-27.10&quot;    &quot;2014-01-28.10&quot;    &quot;2014-02-01.11&quot;   
-##   [7] &quot;2014-02-02.11&quot;    &quot;2014-02-04.11&quot;    &quot;2014-02-07.12&quot;   
-##  [10] &quot;2014-02-08.12&quot;    &quot;2014-02-09.12&quot;    &quot;2014-02-12.13&quot;   
-##  [13] &quot;2014-02-14.13&quot;    &quot;2014-02-17.13&quot;    &quot;2014-02-22.14&quot;   
-##  [16] &quot;2014-02-23.14&quot;    &quot;2014-03-05.16&quot;    &quot;2014-03-06.16&quot;   
-##  [19] &quot;2014-03-07.16&quot;    &quot;2014-03-09.16&quot;    &quot;2014-03-10.16&quot;   
-##  [22] &quot;2014-03-12.17&quot;    &quot;2014-03-20.18&quot;    &quot;2014-03-21.18&quot;   
-##  [25] &quot;2014-03-24.18&quot;    &quot;2013-12-02.2&quot;     &quot;2013-12-03.2&quot;    
-##  [28] &quot;2013-04-02.20&quot;    &quot;2014-04-02.20&quot;    &quot;2014-04-03.20&quot;   
-##  [31] &quot;2014-04-05.20&quot;    &quot;2014-04-14.21&quot;    &quot;2014-04-15.21&quot;   
-##  [34] &quot;2014-04-17.22&quot;    &quot;2014-04-19.22&quot;    &quot;2014-04-23.23&quot;   
-##  [37] &quot;2014-04-24.23&quot;    &quot;2014-04-25.23&quot;    &quot;2014-04-26.23&quot;   
-##  [40] &quot;2014-04-27.23&quot;    &quot;2014-04-28.23&quot;    &quot;2014-04-30.24&quot;   
-##  [43] &quot;2014-05-03.24&quot;    &quot;2014-05-04.24&quot;    &quot;2014-05-06.24&quot;   
-##  [46] &quot;2014-05-07.25&quot;    &quot;2014-05-22.27&quot;    &quot;2014-05-23.27&quot;   
-##  [49] &quot;2014-05-24.27&quot;    &quot;2014-05-25.27&quot;    &quot;2014-05-26.27&quot;   
-##  [52] &quot;2014-05-27.27&quot;    &quot;2014-05-28.27&quot;    &quot;2014-05-29.27&quot;   
-##  [55] &quot;2014-05-30.27&quot;    &quot;2014-05-31.27&quot;    &quot;2014-06-01.27&quot;   
-##  [58] &quot;2014-06-02.27&quot;    &quot;2014-06-03.27&quot;    &quot;2014-06-04.27&quot;   
-##  [61] &quot;2014-06-05.27&quot;    &quot;2014-06-06.27&quot;    &quot;2014-06-07.27&quot;   
-##  [64] &quot;2014-06-08.27&quot;    &quot;2014-06-09.27&quot;    &quot;2014-06-10.27&quot;   
-##  [67] &quot;2014-06-11.27&quot;    &quot;2014-06-12.27&quot;    &quot;2014-06-13.27&quot;   
-##  [70] &quot;2014-06-14.27&quot;    &quot;2014-06-15.27&quot;    &quot;2014-06-16.27&quot;   
-##  [73] &quot;2014-06-17.27&quot;    &quot;2014-06-18.27&quot;    &quot;2014-06-19.27&quot;   
-##  [76] &quot;2014-06-20.27&quot;    &quot;2014-06-21.27&quot;    &quot;2014-06-22.27&quot;   
-##  [79] &quot;2014-06-23.27&quot;    &quot;2014-06-24.27&quot;    &quot;2014-06-25.27&quot;   
-##  [82] &quot;2014-06-26.27&quot;    &quot;2014-06-27.27&quot;    &quot;2014-06-28.27&quot;   
-##  [85] &quot;2014-06-29.27&quot;    &quot;2014-06-30.27&quot;    &quot;2014-07-01.27&quot;   
-##  [88] &quot;2014-07-02.27&quot;    &quot;2014-07-03.27&quot;    &quot;2014-07-04.27&quot;   
-##  [91] &quot;2014-07-05.27&quot;    &quot;2014-07-06.27&quot;    &quot;2014-07-07.27&quot;   
-##  [94] &quot;2014-07-08.27&quot;    &quot;2014-07-09.27&quot;    &quot;2014-07-10.27&quot;   
-##  [97] &quot;2014-07-11.27&quot;    &quot;2014-07-12.27&quot;    &quot;2014-07-13.27&quot;   
-## [100] &quot;2014-07-14.27&quot;    &quot;2014-07-15.27&quot;    &quot;2014-07-16.27&quot;   
-## [103] &quot;2014-07-17.27&quot;    &quot;2014-07-18.27&quot;    &quot;2014-07-19.27&quot;   
-## [106] &quot;2014-07-20.27&quot;    &quot;2014-07-21.27&quot;    &quot;2014-07-22.27&quot;   
-## [109] &quot;2014-07-23.27&quot;    &quot;2014-05-28.28&quot;    &quot;2014-05-29.28&quot;   
-## [112] &quot;2014-05-30.28&quot;    &quot;2014-05-31.28&quot;    &quot;2014-06-01.28&quot;   
-## [115] &quot;2020-05-29.28&quot;    &quot;2014-06-04.29&quot;    &quot;2014-06-06.29&quot;   
-## [118] &quot;2014-06-10.29&quot;    &quot;2013-12-02.3&quot;     &quot;2013-12-03.3&quot;    
-## [121] &quot;2013-12-04.3&quot;     &quot;2013-12-05.3&quot;     &quot;2014-06-11.30&quot;   
-## [124] &quot;2014-06-12.30&quot;    &quot;2014-06-13.30&quot;    &quot;2014-06-14.30&quot;   
-## [127] &quot;2014-06-15.30&quot;    &quot;2014-06-16.30&quot;    &quot;2014-06-18.31&quot;   
-## [130] &quot;2014-06-19.31&quot;    &quot;2014-06-20.31&quot;    &quot;2014-06-21.31&quot;   
-## [133] &quot;2014-06-22.31&quot;    &quot;2014-06-23.31&quot;    &quot;2014-06-25.32&quot;   
-## [136] &quot;2014-06-26.32&quot;    &quot;2014-06-27.32&quot;    &quot;2014-06-28.32&quot;   
-## [139] &quot;2014-06-29.32&quot;    &quot;2014-06-30.32&quot;    &quot;2014-07-03.33&quot;   
-## [142] &quot;2014-07-05.33&quot;    &quot;2014-07-06.33&quot;    &quot;2014-07-07.33&quot;   
-## [145] &quot;2014-07-08.33&quot;    &quot;2014-07-09.34&quot;    &quot;2014-07-10.34&quot;   
-## [148] &quot;2014-07-11.34&quot;    &quot;2014-07-14.34&quot;    &quot;2014-07-16.35&quot;   
-## [151] &quot;2014-07-17.35&quot;    &quot;2014-07-18.35&quot;    &quot;2014-07-19.35&quot;   
-## [154] &quot;2014-07-20.35&quot;    &quot;2014-07-21.35&quot;    &quot;2014-07-22.35&quot;   
-## [157] &quot;2014-07-23.35&quot;    &quot;2014-07-24.35&quot;    &quot;2014-07-24.36&quot;   
-## [160] &quot;2014-07-25.36&quot;    &quot;2014-07-29.36&quot;    &quot;2014-08-06.38&quot;   
-## [163] &quot;2014-08-07.38&quot;    &quot;2014-08-08.38&quot;    &quot;2014-08-13.39&quot;   
-## [166] &quot;2014-08-14.39&quot;    &quot;2014-08-15.39&quot;    &quot;2014-08-16.39&quot;   
-## [169] &quot;2014-08-17.39&quot;    &quot;2013-12-10.4&quot;     &quot;2013-12-11.4&quot;    
-## [172] &quot;2013-12-12.4&quot;     &quot;2014-08-20.40&quot;    &quot;2014-08-21.40&quot;   
-## [175] &quot;2014-08-25.40&quot;    &quot;2014-08-28.41&quot;    &quot;2014-08-29.41&quot;   
-## [178] &quot;2014-09-02.41&quot;    &quot;2014-09-03.42&quot;    &quot;2014-09-04.42&quot;   
-## [181] &quot;2014-09-05.42&quot;    &quot;2014-09-10.43&quot;    &quot;2014-09-11.43&quot;   
-## [184] &quot;2014-09-12.43&quot;    &quot;2014-09-14.43&quot;    &quot;2014-09-15.43&quot;   
-## [187] &quot;2014-09-16.43&quot;    &quot;2014-09-17.44&quot;    &quot;2014-09-18.44&quot;   
-## [190] &quot;2014-09-19.44&quot;    &quot;2014-09-22.44&quot;    &quot;2014-09-25.45&quot;   
-## [193] &quot;2014-09-26.45&quot;    &quot;2014-09-27.45&quot;    &quot;2014-09-28.45&quot;   
-## [196] &quot;2014-09-29.45&quot;    &quot;2014-09-30.45&quot;    &quot;2014-10-01.46&quot;   
-## [199] &quot;2014-10-02.46&quot;    &quot;2014-10-03.46&quot;    &quot;2014-10-04.46&quot;   
-## [202] &quot;2014-10-08.47&quot;    &quot;2014-10-17.48&quot;    &quot;2014-10-18.48&quot;   
-## [205] &quot;2014-10-19.48&quot;    &quot;2014-10-20.48&quot;    &quot;2014-10-21.48&quot;   
-## [208] &quot;2014-10-22.49&quot;    &quot;2014-10-23.49&quot;    &quot;2014-10-29.50&quot;   
-## [211] &quot;2014-10-31.50&quot;    &quot;2014-11-07.51&quot;    &quot;2014-11-12.52&quot;   
-## [214] &quot;2014-11-13.52&quot;    &quot;2014-11-18.52&quot;    &quot;2014-12-12.56&quot;   
-## [217] &quot;2014-12-13.56&quot;    &quot;2014-12-14.56&quot;    &quot;2014-12-15.56&quot;   
-## [220] &quot;2014-12-17.57&quot;    &quot;2014-12-18.57&quot;    &quot;2015-01-22.62&quot;   
-## [223] &quot;2015-01-26.62&quot;    &quot;2015-01-30.62&quot;    &quot;2015-02-24.66/67&quot;
-## [226] &quot;2015-02-25.66/67&quot; &quot;2015-03-06.68&quot;    &quot;2015-03-17.69/70&quot;
-## [229] &quot;2015-03-18.69/70&quot; &quot;2015-03-21.69/70&quot; &quot;2013-12-10.7&quot;    
-## [232] &quot;2014-01-06.7&quot;     &quot;2014-01-13.8&quot;     &quot;2014-01-14.8&quot;    
-## [235] &quot;2014-01-15.8&quot;     &quot;2014-01-15.9&quot;     &quot;2014-01-18.9&quot;    
-## [238] &quot;2014-01-20.9&quot;     &quot;2014-01-21.9&quot;</code></pre>
-<pre class="r"><code># 2014-11-25 should be 2013-11-25 because it is Week #1
-data[data$Date==&quot;2014-11-25&quot;, &quot;Date&quot;] &lt;- as.Date(&quot;2013-11-25&quot;)
-# Look for errors in the data (date should correspond to week)
-levels(droplevels(interaction(data$Date, data$Week)))</code></pre>
-<pre><code>##   [1] &quot;2013-11-23.1&quot;     &quot;2013-11-24.1&quot;     &quot;2013-11-25.1&quot;    
-##   [4] &quot;2014-01-27.10&quot;    &quot;2014-01-28.10&quot;    &quot;2014-02-01.11&quot;   
-##   [7] &quot;2014-02-02.11&quot;    &quot;2014-02-04.11&quot;    &quot;2014-02-07.12&quot;   
-##  [10] &quot;2014-02-08.12&quot;    &quot;2014-02-09.12&quot;    &quot;2014-02-12.13&quot;   
-##  [13] &quot;2014-02-14.13&quot;    &quot;2014-02-17.13&quot;    &quot;2014-02-22.14&quot;   
-##  [16] &quot;2014-02-23.14&quot;    &quot;2014-03-05.16&quot;    &quot;2014-03-06.16&quot;   
-##  [19] &quot;2014-03-07.16&quot;    &quot;2014-03-09.16&quot;    &quot;2014-03-10.16&quot;   
-##  [22] &quot;2014-03-12.17&quot;    &quot;2014-03-20.18&quot;    &quot;2014-03-21.18&quot;   
-##  [25] &quot;2014-03-24.18&quot;    &quot;2013-12-02.2&quot;     &quot;2013-12-03.2&quot;    
-##  [28] &quot;2013-04-02.20&quot;    &quot;2014-04-02.20&quot;    &quot;2014-04-03.20&quot;   
-##  [31] &quot;2014-04-05.20&quot;    &quot;2014-04-14.21&quot;    &quot;2014-04-15.21&quot;   
-##  [34] &quot;2014-04-17.22&quot;    &quot;2014-04-19.22&quot;    &quot;2014-04-23.23&quot;   
-##  [37] &quot;2014-04-24.23&quot;    &quot;2014-04-25.23&quot;    &quot;2014-04-26.23&quot;   
-##  [40] &quot;2014-04-27.23&quot;    &quot;2014-04-28.23&quot;    &quot;2014-04-30.24&quot;   
-##  [43] &quot;2014-05-03.24&quot;    &quot;2014-05-04.24&quot;    &quot;2014-05-06.24&quot;   
-##  [46] &quot;2014-05-07.25&quot;    &quot;2014-05-22.27&quot;    &quot;2014-05-23.27&quot;   
-##  [49] &quot;2014-05-24.27&quot;    &quot;2014-05-25.27&quot;    &quot;2014-05-26.27&quot;   
-##  [52] &quot;2014-05-27.27&quot;    &quot;2014-05-28.27&quot;    &quot;2014-05-29.27&quot;   
-##  [55] &quot;2014-05-30.27&quot;    &quot;2014-05-31.27&quot;    &quot;2014-06-01.27&quot;   
-##  [58] &quot;2014-06-02.27&quot;    &quot;2014-06-03.27&quot;    &quot;2014-06-04.27&quot;   
-##  [61] &quot;2014-06-05.27&quot;    &quot;2014-06-06.27&quot;    &quot;2014-06-07.27&quot;   
-##  [64] &quot;2014-06-08.27&quot;    &quot;2014-06-09.27&quot;    &quot;2014-06-10.27&quot;   
-##  [67] &quot;2014-06-11.27&quot;    &quot;2014-06-12.27&quot;    &quot;2014-06-13.27&quot;   
-##  [70] &quot;2014-06-14.27&quot;    &quot;2014-06-15.27&quot;    &quot;2014-06-16.27&quot;   
-##  [73] &quot;2014-06-17.27&quot;    &quot;2014-06-18.27&quot;    &quot;2014-06-19.27&quot;   
-##  [76] &quot;2014-06-20.27&quot;    &quot;2014-06-21.27&quot;    &quot;2014-06-22.27&quot;   
-##  [79] &quot;2014-06-23.27&quot;    &quot;2014-06-24.27&quot;    &quot;2014-06-25.27&quot;   
-##  [82] &quot;2014-06-26.27&quot;    &quot;2014-06-27.27&quot;    &quot;2014-06-28.27&quot;   
-##  [85] &quot;2014-06-29.27&quot;    &quot;2014-06-30.27&quot;    &quot;2014-07-01.27&quot;   
-##  [88] &quot;2014-07-02.27&quot;    &quot;2014-07-03.27&quot;    &quot;2014-07-04.27&quot;   
-##  [91] &quot;2014-07-05.27&quot;    &quot;2014-07-06.27&quot;    &quot;2014-07-07.27&quot;   
-##  [94] &quot;2014-07-08.27&quot;    &quot;2014-07-09.27&quot;    &quot;2014-07-10.27&quot;   
-##  [97] &quot;2014-07-11.27&quot;    &quot;2014-07-12.27&quot;    &quot;2014-07-13.27&quot;   
-## [100] &quot;2014-07-14.27&quot;    &quot;2014-07-15.27&quot;    &quot;2014-07-16.27&quot;   
-## [103] &quot;2014-07-17.27&quot;    &quot;2014-07-18.27&quot;    &quot;2014-07-19.27&quot;   
-## [106] &quot;2014-07-20.27&quot;    &quot;2014-07-21.27&quot;    &quot;2014-07-22.27&quot;   
-## [109] &quot;2014-07-23.27&quot;    &quot;2014-05-28.28&quot;    &quot;2014-05-29.28&quot;   
-## [112] &quot;2014-05-30.28&quot;    &quot;2014-05-31.28&quot;    &quot;2014-06-01.28&quot;   
-## [115] &quot;2020-05-29.28&quot;    &quot;2014-06-04.29&quot;    &quot;2014-06-06.29&quot;   
-## [118] &quot;2014-06-10.29&quot;    &quot;2013-12-02.3&quot;     &quot;2013-12-03.3&quot;    
-## [121] &quot;2013-12-04.3&quot;     &quot;2013-12-05.3&quot;     &quot;2014-06-11.30&quot;   
-## [124] &quot;2014-06-12.30&quot;    &quot;2014-06-13.30&quot;    &quot;2014-06-14.30&quot;   
-## [127] &quot;2014-06-15.30&quot;    &quot;2014-06-16.30&quot;    &quot;2014-06-18.31&quot;   
-## [130] &quot;2014-06-19.31&quot;    &quot;2014-06-20.31&quot;    &quot;2014-06-21.31&quot;   
-## [133] &quot;2014-06-22.31&quot;    &quot;2014-06-23.31&quot;    &quot;2014-06-25.32&quot;   
-## [136] &quot;2014-06-26.32&quot;    &quot;2014-06-27.32&quot;    &quot;2014-06-28.32&quot;   
-## [139] &quot;2014-06-29.32&quot;    &quot;2014-06-30.32&quot;    &quot;2014-07-03.33&quot;   
-## [142] &quot;2014-07-05.33&quot;    &quot;2014-07-06.33&quot;    &quot;2014-07-07.33&quot;   
-## [145] &quot;2014-07-08.33&quot;    &quot;2014-07-09.34&quot;    &quot;2014-07-10.34&quot;   
-## [148] &quot;2014-07-11.34&quot;    &quot;2014-07-14.34&quot;    &quot;2014-07-16.35&quot;   
-## [151] &quot;2014-07-17.35&quot;    &quot;2014-07-18.35&quot;    &quot;2014-07-19.35&quot;   
-## [154] &quot;2014-07-20.35&quot;    &quot;2014-07-21.35&quot;    &quot;2014-07-22.35&quot;   
-## [157] &quot;2014-07-23.35&quot;    &quot;2014-07-24.35&quot;    &quot;2014-07-24.36&quot;   
-## [160] &quot;2014-07-25.36&quot;    &quot;2014-07-29.36&quot;    &quot;2014-08-06.38&quot;   
-## [163] &quot;2014-08-07.38&quot;    &quot;2014-08-08.38&quot;    &quot;2014-08-13.39&quot;   
-## [166] &quot;2014-08-14.39&quot;    &quot;2014-08-15.39&quot;    &quot;2014-08-16.39&quot;   
-## [169] &quot;2014-08-17.39&quot;    &quot;2013-12-10.4&quot;     &quot;2013-12-11.4&quot;    
-## [172] &quot;2013-12-12.4&quot;     &quot;2014-08-20.40&quot;    &quot;2014-08-21.40&quot;   
-## [175] &quot;2014-08-25.40&quot;    &quot;2014-08-28.41&quot;    &quot;2014-08-29.41&quot;   
-## [178] &quot;2014-09-02.41&quot;    &quot;2014-09-03.42&quot;    &quot;2014-09-04.42&quot;   
-## [181] &quot;2014-09-05.42&quot;    &quot;2014-09-10.43&quot;    &quot;2014-09-11.43&quot;   
-## [184] &quot;2014-09-12.43&quot;    &quot;2014-09-14.43&quot;    &quot;2014-09-15.43&quot;   
-## [187] &quot;2014-09-16.43&quot;    &quot;2014-09-17.44&quot;    &quot;2014-09-18.44&quot;   
-## [190] &quot;2014-09-19.44&quot;    &quot;2014-09-22.44&quot;    &quot;2014-09-25.45&quot;   
-## [193] &quot;2014-09-26.45&quot;    &quot;2014-09-27.45&quot;    &quot;2014-09-28.45&quot;   
-## [196] &quot;2014-09-29.45&quot;    &quot;2014-09-30.45&quot;    &quot;2014-10-01.46&quot;   
-## [199] &quot;2014-10-02.46&quot;    &quot;2014-10-03.46&quot;    &quot;2014-10-04.46&quot;   
-## [202] &quot;2014-10-08.47&quot;    &quot;2014-10-17.48&quot;    &quot;2014-10-18.48&quot;   
-## [205] &quot;2014-10-19.48&quot;    &quot;2014-10-20.48&quot;    &quot;2014-10-21.48&quot;   
-## [208] &quot;2014-10-22.49&quot;    &quot;2014-10-23.49&quot;    &quot;2014-10-29.50&quot;   
-## [211] &quot;2014-10-31.50&quot;    &quot;2014-11-07.51&quot;    &quot;2014-11-12.52&quot;   
-## [214] &quot;2014-11-13.52&quot;    &quot;2014-11-18.52&quot;    &quot;2014-12-12.56&quot;   
-## [217] &quot;2014-12-13.56&quot;    &quot;2014-12-14.56&quot;    &quot;2014-12-15.56&quot;   
-## [220] &quot;2014-12-17.57&quot;    &quot;2014-12-18.57&quot;    &quot;2015-01-22.62&quot;   
-## [223] &quot;2015-01-26.62&quot;    &quot;2015-01-30.62&quot;    &quot;2015-02-24.66/67&quot;
-## [226] &quot;2015-02-25.66/67&quot; &quot;2015-03-06.68&quot;    &quot;2015-03-17.69/70&quot;
-## [229] &quot;2015-03-18.69/70&quot; &quot;2015-03-21.69/70&quot; &quot;2013-12-10.7&quot;    
-## [232] &quot;2014-01-06.7&quot;     &quot;2014-01-13.8&quot;     &quot;2014-01-14.8&quot;    
-## [235] &quot;2014-01-15.8&quot;     &quot;2014-01-15.9&quot;     &quot;2014-01-18.9&quot;    
-## [238] &quot;2014-01-20.9&quot;     &quot;2014-01-21.9&quot;</code></pre>
-<pre class="r"><code># 2013-04-02 should be 2014-04-02
-data[data$Date==&quot;2013-04-02&quot;, &quot;Date&quot;] &lt;- as.Date(&quot;2014-04-02&quot;)
-# Look for errors in the data (date should correspond to week)
-levels(droplevels(interaction(data$Date, data$Week)))</code></pre>
-<pre><code>##   [1] &quot;2013-11-23.1&quot;     &quot;2013-11-24.1&quot;     &quot;2013-11-25.1&quot;    
-##   [4] &quot;2014-01-27.10&quot;    &quot;2014-01-28.10&quot;    &quot;2014-02-01.11&quot;   
-##   [7] &quot;2014-02-02.11&quot;    &quot;2014-02-04.11&quot;    &quot;2014-02-07.12&quot;   
-##  [10] &quot;2014-02-08.12&quot;    &quot;2014-02-09.12&quot;    &quot;2014-02-12.13&quot;   
-##  [13] &quot;2014-02-14.13&quot;    &quot;2014-02-17.13&quot;    &quot;2014-02-22.14&quot;   
-##  [16] &quot;2014-02-23.14&quot;    &quot;2014-03-05.16&quot;    &quot;2014-03-06.16&quot;   
-##  [19] &quot;2014-03-07.16&quot;    &quot;2014-03-09.16&quot;    &quot;2014-03-10.16&quot;   
-##  [22] &quot;2014-03-12.17&quot;    &quot;2014-03-20.18&quot;    &quot;2014-03-21.18&quot;   
-##  [25] &quot;2014-03-24.18&quot;    &quot;2013-12-02.2&quot;     &quot;2013-12-03.2&quot;    
-##  [28] &quot;2014-04-02.20&quot;    &quot;2014-04-03.20&quot;    &quot;2014-04-05.20&quot;   
-##  [31] &quot;2014-04-14.21&quot;    &quot;2014-04-15.21&quot;    &quot;2014-04-17.22&quot;   
-##  [34] &quot;2014-04-19.22&quot;    &quot;2014-04-23.23&quot;    &quot;2014-04-24.23&quot;   
-##  [37] &quot;2014-04-25.23&quot;    &quot;2014-04-26.23&quot;    &quot;2014-04-27.23&quot;   
-##  [40] &quot;2014-04-28.23&quot;    &quot;2014-04-30.24&quot;    &quot;2014-05-03.24&quot;   
-##  [43] &quot;2014-05-04.24&quot;    &quot;2014-05-06.24&quot;    &quot;2014-05-07.25&quot;   
-##  [46] &quot;2014-05-22.27&quot;    &quot;2014-05-23.27&quot;    &quot;2014-05-24.27&quot;   
-##  [49] &quot;2014-05-25.27&quot;    &quot;2014-05-26.27&quot;    &quot;2014-05-27.27&quot;   
-##  [52] &quot;2014-05-28.27&quot;    &quot;2014-05-29.27&quot;    &quot;2014-05-30.27&quot;   
-##  [55] &quot;2014-05-31.27&quot;    &quot;2014-06-01.27&quot;    &quot;2014-06-02.27&quot;   
-##  [58] &quot;2014-06-03.27&quot;    &quot;2014-06-04.27&quot;    &quot;2014-06-05.27&quot;   
-##  [61] &quot;2014-06-06.27&quot;    &quot;2014-06-07.27&quot;    &quot;2014-06-08.27&quot;   
-##  [64] &quot;2014-06-09.27&quot;    &quot;2014-06-10.27&quot;    &quot;2014-06-11.27&quot;   
-##  [67] &quot;2014-06-12.27&quot;    &quot;2014-06-13.27&quot;    &quot;2014-06-14.27&quot;   
-##  [70] &quot;2014-06-15.27&quot;    &quot;2014-06-16.27&quot;    &quot;2014-06-17.27&quot;   
-##  [73] &quot;2014-06-18.27&quot;    &quot;2014-06-19.27&quot;    &quot;2014-06-20.27&quot;   
-##  [76] &quot;2014-06-21.27&quot;    &quot;2014-06-22.27&quot;    &quot;2014-06-23.27&quot;   
-##  [79] &quot;2014-06-24.27&quot;    &quot;2014-06-25.27&quot;    &quot;2014-06-26.27&quot;   
-##  [82] &quot;2014-06-27.27&quot;    &quot;2014-06-28.27&quot;    &quot;2014-06-29.27&quot;   
-##  [85] &quot;2014-06-30.27&quot;    &quot;2014-07-01.27&quot;    &quot;2014-07-02.27&quot;   
-##  [88] &quot;2014-07-03.27&quot;    &quot;2014-07-04.27&quot;    &quot;2014-07-05.27&quot;   
-##  [91] &quot;2014-07-06.27&quot;    &quot;2014-07-07.27&quot;    &quot;2014-07-08.27&quot;   
-##  [94] &quot;2014-07-09.27&quot;    &quot;2014-07-10.27&quot;    &quot;2014-07-11.27&quot;   
-##  [97] &quot;2014-07-12.27&quot;    &quot;2014-07-13.27&quot;    &quot;2014-07-14.27&quot;   
-## [100] &quot;2014-07-15.27&quot;    &quot;2014-07-16.27&quot;    &quot;2014-07-17.27&quot;   
-## [103] &quot;2014-07-18.27&quot;    &quot;2014-07-19.27&quot;    &quot;2014-07-20.27&quot;   
-## [106] &quot;2014-07-21.27&quot;    &quot;2014-07-22.27&quot;    &quot;2014-07-23.27&quot;   
-## [109] &quot;2014-05-28.28&quot;    &quot;2014-05-29.28&quot;    &quot;2014-05-30.28&quot;   
-## [112] &quot;2014-05-31.28&quot;    &quot;2014-06-01.28&quot;    &quot;2020-05-29.28&quot;   
-## [115] &quot;2014-06-04.29&quot;    &quot;2014-06-06.29&quot;    &quot;2014-06-10.29&quot;   
-## [118] &quot;2013-12-02.3&quot;     &quot;2013-12-03.3&quot;     &quot;2013-12-04.3&quot;    
-## [121] &quot;2013-12-05.3&quot;     &quot;2014-06-11.30&quot;    &quot;2014-06-12.30&quot;   
-## [124] &quot;2014-06-13.30&quot;    &quot;2014-06-14.30&quot;    &quot;2014-06-15.30&quot;   
-## [127] &quot;2014-06-16.30&quot;    &quot;2014-06-18.31&quot;    &quot;2014-06-19.31&quot;   
-## [130] &quot;2014-06-20.31&quot;    &quot;2014-06-21.31&quot;    &quot;2014-06-22.31&quot;   
-## [133] &quot;2014-06-23.31&quot;    &quot;2014-06-25.32&quot;    &quot;2014-06-26.32&quot;   
-## [136] &quot;2014-06-27.32&quot;    &quot;2014-06-28.32&quot;    &quot;2014-06-29.32&quot;   
-## [139] &quot;2014-06-30.32&quot;    &quot;2014-07-03.33&quot;    &quot;2014-07-05.33&quot;   
-## [142] &quot;2014-07-06.33&quot;    &quot;2014-07-07.33&quot;    &quot;2014-07-08.33&quot;   
-## [145] &quot;2014-07-09.34&quot;    &quot;2014-07-10.34&quot;    &quot;2014-07-11.34&quot;   
-## [148] &quot;2014-07-14.34&quot;    &quot;2014-07-16.35&quot;    &quot;2014-07-17.35&quot;   
-## [151] &quot;2014-07-18.35&quot;    &quot;2014-07-19.35&quot;    &quot;2014-07-20.35&quot;   
-## [154] &quot;2014-07-21.35&quot;    &quot;2014-07-22.35&quot;    &quot;2014-07-23.35&quot;   
-## [157] &quot;2014-07-24.35&quot;    &quot;2014-07-24.36&quot;    &quot;2014-07-25.36&quot;   
-## [160] &quot;2014-07-29.36&quot;    &quot;2014-08-06.38&quot;    &quot;2014-08-07.38&quot;   
-## [163] &quot;2014-08-08.38&quot;    &quot;2014-08-13.39&quot;    &quot;2014-08-14.39&quot;   
-## [166] &quot;2014-08-15.39&quot;    &quot;2014-08-16.39&quot;    &quot;2014-08-17.39&quot;   
-## [169] &quot;2013-12-10.4&quot;     &quot;2013-12-11.4&quot;     &quot;2013-12-12.4&quot;    
-## [172] &quot;2014-08-20.40&quot;    &quot;2014-08-21.40&quot;    &quot;2014-08-25.40&quot;   
-## [175] &quot;2014-08-28.41&quot;    &quot;2014-08-29.41&quot;    &quot;2014-09-02.41&quot;   
-## [178] &quot;2014-09-03.42&quot;    &quot;2014-09-04.42&quot;    &quot;2014-09-05.42&quot;   
-## [181] &quot;2014-09-10.43&quot;    &quot;2014-09-11.43&quot;    &quot;2014-09-12.43&quot;   
-## [184] &quot;2014-09-14.43&quot;    &quot;2014-09-15.43&quot;    &quot;2014-09-16.43&quot;   
-## [187] &quot;2014-09-17.44&quot;    &quot;2014-09-18.44&quot;    &quot;2014-09-19.44&quot;   
-## [190] &quot;2014-09-22.44&quot;    &quot;2014-09-25.45&quot;    &quot;2014-09-26.45&quot;   
-## [193] &quot;2014-09-27.45&quot;    &quot;2014-09-28.45&quot;    &quot;2014-09-29.45&quot;   
-## [196] &quot;2014-09-30.45&quot;    &quot;2014-10-01.46&quot;    &quot;2014-10-02.46&quot;   
-## [199] &quot;2014-10-03.46&quot;    &quot;2014-10-04.46&quot;    &quot;2014-10-08.47&quot;   
-## [202] &quot;2014-10-17.48&quot;    &quot;2014-10-18.48&quot;    &quot;2014-10-19.48&quot;   
-## [205] &quot;2014-10-20.48&quot;    &quot;2014-10-21.48&quot;    &quot;2014-10-22.49&quot;   
-## [208] &quot;2014-10-23.49&quot;    &quot;2014-10-29.50&quot;    &quot;2014-10-31.50&quot;   
-## [211] &quot;2014-11-07.51&quot;    &quot;2014-11-12.52&quot;    &quot;2014-11-13.52&quot;   
-## [214] &quot;2014-11-18.52&quot;    &quot;2014-12-12.56&quot;    &quot;2014-12-13.56&quot;   
-## [217] &quot;2014-12-14.56&quot;    &quot;2014-12-15.56&quot;    &quot;2014-12-17.57&quot;   
-## [220] &quot;2014-12-18.57&quot;    &quot;2015-01-22.62&quot;    &quot;2015-01-26.62&quot;   
-## [223] &quot;2015-01-30.62&quot;    &quot;2015-02-24.66/67&quot; &quot;2015-02-25.66/67&quot;
-## [226] &quot;2015-03-06.68&quot;    &quot;2015-03-17.69/70&quot; &quot;2015-03-18.69/70&quot;
-## [229] &quot;2015-03-21.69/70&quot; &quot;2013-12-10.7&quot;     &quot;2014-01-06.7&quot;    
-## [232] &quot;2014-01-13.8&quot;     &quot;2014-01-14.8&quot;     &quot;2014-01-15.8&quot;    
-## [235] &quot;2014-01-15.9&quot;     &quot;2014-01-18.9&quot;     &quot;2014-01-20.9&quot;    
-## [238] &quot;2014-01-21.9&quot;</code></pre>
-<pre class="r"><code># Why does &quot;Week 27&quot; include dates fom May 22 until July 23, 2014?
-# Looks like a mistake from filling down Date in Excel for Surveyor MLR 
-# Change all Week 27 dates greater than May 23, 2014 to May 23, 2014
-data[data$Date &gt; &quot;2014-05-23&quot; &amp; data$Week==27 &amp; data$Surveyor==&quot;MLR&quot;, &quot;Date&quot;] &lt;- as.Date(&quot;2014-05-23&quot;)
-# Look for errors in the data (date should correspond to week)
-levels(droplevels(interaction(data$Date, data$Week)))</code></pre>
-<pre><code>##   [1] &quot;2013-11-23.1&quot;     &quot;2013-11-24.1&quot;     &quot;2013-11-25.1&quot;    
-##   [4] &quot;2014-01-27.10&quot;    &quot;2014-01-28.10&quot;    &quot;2014-02-01.11&quot;   
-##   [7] &quot;2014-02-02.11&quot;    &quot;2014-02-04.11&quot;    &quot;2014-02-07.12&quot;   
-##  [10] &quot;2014-02-08.12&quot;    &quot;2014-02-09.12&quot;    &quot;2014-02-12.13&quot;   
-##  [13] &quot;2014-02-14.13&quot;    &quot;2014-02-17.13&quot;    &quot;2014-02-22.14&quot;   
-##  [16] &quot;2014-02-23.14&quot;    &quot;2014-03-05.16&quot;    &quot;2014-03-06.16&quot;   
-##  [19] &quot;2014-03-07.16&quot;    &quot;2014-03-09.16&quot;    &quot;2014-03-10.16&quot;   
-##  [22] &quot;2014-03-12.17&quot;    &quot;2014-03-20.18&quot;    &quot;2014-03-21.18&quot;   
-##  [25] &quot;2014-03-24.18&quot;    &quot;2013-12-02.2&quot;     &quot;2013-12-03.2&quot;    
-##  [28] &quot;2014-04-02.20&quot;    &quot;2014-04-03.20&quot;    &quot;2014-04-05.20&quot;   
-##  [31] &quot;2014-04-14.21&quot;    &quot;2014-04-15.21&quot;    &quot;2014-04-17.22&quot;   
-##  [34] &quot;2014-04-19.22&quot;    &quot;2014-04-23.23&quot;    &quot;2014-04-24.23&quot;   
-##  [37] &quot;2014-04-25.23&quot;    &quot;2014-04-26.23&quot;    &quot;2014-04-27.23&quot;   
-##  [40] &quot;2014-04-28.23&quot;    &quot;2014-04-30.24&quot;    &quot;2014-05-03.24&quot;   
-##  [43] &quot;2014-05-04.24&quot;    &quot;2014-05-06.24&quot;    &quot;2014-05-07.25&quot;   
-##  [46] &quot;2014-05-22.27&quot;    &quot;2014-05-23.27&quot;    &quot;2014-05-25.27&quot;   
-##  [49] &quot;2014-05-26.27&quot;    &quot;2014-05-27.27&quot;    &quot;2014-05-28.28&quot;   
-##  [52] &quot;2014-05-29.28&quot;    &quot;2014-05-30.28&quot;    &quot;2014-05-31.28&quot;   
-##  [55] &quot;2014-06-01.28&quot;    &quot;2020-05-29.28&quot;    &quot;2014-06-04.29&quot;   
-##  [58] &quot;2014-06-06.29&quot;    &quot;2014-06-10.29&quot;    &quot;2013-12-02.3&quot;    
-##  [61] &quot;2013-12-03.3&quot;     &quot;2013-12-04.3&quot;     &quot;2013-12-05.3&quot;    
-##  [64] &quot;2014-06-11.30&quot;    &quot;2014-06-12.30&quot;    &quot;2014-06-13.30&quot;   
-##  [67] &quot;2014-06-14.30&quot;    &quot;2014-06-15.30&quot;    &quot;2014-06-16.30&quot;   
-##  [70] &quot;2014-06-18.31&quot;    &quot;2014-06-19.31&quot;    &quot;2014-06-20.31&quot;   
-##  [73] &quot;2014-06-21.31&quot;    &quot;2014-06-22.31&quot;    &quot;2014-06-23.31&quot;   
-##  [76] &quot;2014-06-25.32&quot;    &quot;2014-06-26.32&quot;    &quot;2014-06-27.32&quot;   
-##  [79] &quot;2014-06-28.32&quot;    &quot;2014-06-29.32&quot;    &quot;2014-06-30.32&quot;   
-##  [82] &quot;2014-07-03.33&quot;    &quot;2014-07-05.33&quot;    &quot;2014-07-06.33&quot;   
-##  [85] &quot;2014-07-07.33&quot;    &quot;2014-07-08.33&quot;    &quot;2014-07-09.34&quot;   
-##  [88] &quot;2014-07-10.34&quot;    &quot;2014-07-11.34&quot;    &quot;2014-07-14.34&quot;   
-##  [91] &quot;2014-07-16.35&quot;    &quot;2014-07-17.35&quot;    &quot;2014-07-18.35&quot;   
-##  [94] &quot;2014-07-19.35&quot;    &quot;2014-07-20.35&quot;    &quot;2014-07-21.35&quot;   
-##  [97] &quot;2014-07-22.35&quot;    &quot;2014-07-23.35&quot;    &quot;2014-07-24.35&quot;   
-## [100] &quot;2014-07-24.36&quot;    &quot;2014-07-25.36&quot;    &quot;2014-07-29.36&quot;   
-## [103] &quot;2014-08-06.38&quot;    &quot;2014-08-07.38&quot;    &quot;2014-08-08.38&quot;   
-## [106] &quot;2014-08-13.39&quot;    &quot;2014-08-14.39&quot;    &quot;2014-08-15.39&quot;   
-## [109] &quot;2014-08-16.39&quot;    &quot;2014-08-17.39&quot;    &quot;2013-12-10.4&quot;    
-## [112] &quot;2013-12-11.4&quot;     &quot;2013-12-12.4&quot;     &quot;2014-08-20.40&quot;   
-## [115] &quot;2014-08-21.40&quot;    &quot;2014-08-25.40&quot;    &quot;2014-08-28.41&quot;   
-## [118] &quot;2014-08-29.41&quot;    &quot;2014-09-02.41&quot;    &quot;2014-09-03.42&quot;   
-## [121] &quot;2014-09-04.42&quot;    &quot;2014-09-05.42&quot;    &quot;2014-09-10.43&quot;   
-## [124] &quot;2014-09-11.43&quot;    &quot;2014-09-12.43&quot;    &quot;2014-09-14.43&quot;   
-## [127] &quot;2014-09-15.43&quot;    &quot;2014-09-16.43&quot;    &quot;2014-09-17.44&quot;   
-## [130] &quot;2014-09-18.44&quot;    &quot;2014-09-19.44&quot;    &quot;2014-09-22.44&quot;   
-## [133] &quot;2014-09-25.45&quot;    &quot;2014-09-26.45&quot;    &quot;2014-09-27.45&quot;   
-## [136] &quot;2014-09-28.45&quot;    &quot;2014-09-29.45&quot;    &quot;2014-09-30.45&quot;   
-## [139] &quot;2014-10-01.46&quot;    &quot;2014-10-02.46&quot;    &quot;2014-10-03.46&quot;   
-## [142] &quot;2014-10-04.46&quot;    &quot;2014-10-08.47&quot;    &quot;2014-10-17.48&quot;   
-## [145] &quot;2014-10-18.48&quot;    &quot;2014-10-19.48&quot;    &quot;2014-10-20.48&quot;   
-## [148] &quot;2014-10-21.48&quot;    &quot;2014-10-22.49&quot;    &quot;2014-10-23.49&quot;   
-## [151] &quot;2014-10-29.50&quot;    &quot;2014-10-31.50&quot;    &quot;2014-11-07.51&quot;   
-## [154] &quot;2014-11-12.52&quot;    &quot;2014-11-13.52&quot;    &quot;2014-11-18.52&quot;   
-## [157] &quot;2014-12-12.56&quot;    &quot;2014-12-13.56&quot;    &quot;2014-12-14.56&quot;   
-## [160] &quot;2014-12-15.56&quot;    &quot;2014-12-17.57&quot;    &quot;2014-12-18.57&quot;   
-## [163] &quot;2015-01-22.62&quot;    &quot;2015-01-26.62&quot;    &quot;2015-01-30.62&quot;   
-## [166] &quot;2015-02-24.66/67&quot; &quot;2015-02-25.66/67&quot; &quot;2015-03-06.68&quot;   
-## [169] &quot;2015-03-17.69/70&quot; &quot;2015-03-18.69/70&quot; &quot;2015-03-21.69/70&quot;
-## [172] &quot;2013-12-10.7&quot;     &quot;2014-01-06.7&quot;     &quot;2014-01-13.8&quot;    
-## [175] &quot;2014-01-14.8&quot;     &quot;2014-01-15.8&quot;     &quot;2014-01-15.9&quot;    
-## [178] &quot;2014-01-18.9&quot;     &quot;2014-01-20.9&quot;     &quot;2014-01-21.9&quot;</code></pre>
-<pre class="r"><code># 2020-05-29 should be 2014-05-29
-data[data$Date==&quot;2020-05-29&quot;, &quot;Date&quot;] &lt;- as.Date(&quot;2014-05-29&quot;)
-# Look for errors in the data (date should correspond to week)
-levels(droplevels(interaction(data$Date, data$Week)))</code></pre>
-<pre><code>##   [1] &quot;2013-11-23.1&quot;     &quot;2013-11-24.1&quot;     &quot;2013-11-25.1&quot;    
-##   [4] &quot;2014-01-27.10&quot;    &quot;2014-01-28.10&quot;    &quot;2014-02-01.11&quot;   
-##   [7] &quot;2014-02-02.11&quot;    &quot;2014-02-04.11&quot;    &quot;2014-02-07.12&quot;   
-##  [10] &quot;2014-02-08.12&quot;    &quot;2014-02-09.12&quot;    &quot;2014-02-12.13&quot;   
-##  [13] &quot;2014-02-14.13&quot;    &quot;2014-02-17.13&quot;    &quot;2014-02-22.14&quot;   
-##  [16] &quot;2014-02-23.14&quot;    &quot;2014-03-05.16&quot;    &quot;2014-03-06.16&quot;   
-##  [19] &quot;2014-03-07.16&quot;    &quot;2014-03-09.16&quot;    &quot;2014-03-10.16&quot;   
-##  [22] &quot;2014-03-12.17&quot;    &quot;2014-03-20.18&quot;    &quot;2014-03-21.18&quot;   
-##  [25] &quot;2014-03-24.18&quot;    &quot;2013-12-02.2&quot;     &quot;2013-12-03.2&quot;    
-##  [28] &quot;2014-04-02.20&quot;    &quot;2014-04-03.20&quot;    &quot;2014-04-05.20&quot;   
-##  [31] &quot;2014-04-14.21&quot;    &quot;2014-04-15.21&quot;    &quot;2014-04-17.22&quot;   
-##  [34] &quot;2014-04-19.22&quot;    &quot;2014-04-23.23&quot;    &quot;2014-04-24.23&quot;   
-##  [37] &quot;2014-04-25.23&quot;    &quot;2014-04-26.23&quot;    &quot;2014-04-27.23&quot;   
-##  [40] &quot;2014-04-28.23&quot;    &quot;2014-04-30.24&quot;    &quot;2014-05-03.24&quot;   
-##  [43] &quot;2014-05-04.24&quot;    &quot;2014-05-06.24&quot;    &quot;2014-05-07.25&quot;   
-##  [46] &quot;2014-05-22.27&quot;    &quot;2014-05-23.27&quot;    &quot;2014-05-25.27&quot;   
-##  [49] &quot;2014-05-26.27&quot;    &quot;2014-05-27.27&quot;    &quot;2014-05-28.28&quot;   
-##  [52] &quot;2014-05-29.28&quot;    &quot;2014-05-30.28&quot;    &quot;2014-05-31.28&quot;   
-##  [55] &quot;2014-06-01.28&quot;    &quot;2014-06-04.29&quot;    &quot;2014-06-06.29&quot;   
-##  [58] &quot;2014-06-10.29&quot;    &quot;2013-12-02.3&quot;     &quot;2013-12-03.3&quot;    
-##  [61] &quot;2013-12-04.3&quot;     &quot;2013-12-05.3&quot;     &quot;2014-06-11.30&quot;   
-##  [64] &quot;2014-06-12.30&quot;    &quot;2014-06-13.30&quot;    &quot;2014-06-14.30&quot;   
-##  [67] &quot;2014-06-15.30&quot;    &quot;2014-06-16.30&quot;    &quot;2014-06-18.31&quot;   
-##  [70] &quot;2014-06-19.31&quot;    &quot;2014-06-20.31&quot;    &quot;2014-06-21.31&quot;   
-##  [73] &quot;2014-06-22.31&quot;    &quot;2014-06-23.31&quot;    &quot;2014-06-25.32&quot;   
-##  [76] &quot;2014-06-26.32&quot;    &quot;2014-06-27.32&quot;    &quot;2014-06-28.32&quot;   
-##  [79] &quot;2014-06-29.32&quot;    &quot;2014-06-30.32&quot;    &quot;2014-07-03.33&quot;   
-##  [82] &quot;2014-07-05.33&quot;    &quot;2014-07-06.33&quot;    &quot;2014-07-07.33&quot;   
-##  [85] &quot;2014-07-08.33&quot;    &quot;2014-07-09.34&quot;    &quot;2014-07-10.34&quot;   
-##  [88] &quot;2014-07-11.34&quot;    &quot;2014-07-14.34&quot;    &quot;2014-07-16.35&quot;   
-##  [91] &quot;2014-07-17.35&quot;    &quot;2014-07-18.35&quot;    &quot;2014-07-19.35&quot;   
-##  [94] &quot;2014-07-20.35&quot;    &quot;2014-07-21.35&quot;    &quot;2014-07-22.35&quot;   
-##  [97] &quot;2014-07-23.35&quot;    &quot;2014-07-24.35&quot;    &quot;2014-07-24.36&quot;   
-## [100] &quot;2014-07-25.36&quot;    &quot;2014-07-29.36&quot;    &quot;2014-08-06.38&quot;   
-## [103] &quot;2014-08-07.38&quot;    &quot;2014-08-08.38&quot;    &quot;2014-08-13.39&quot;   
-## [106] &quot;2014-08-14.39&quot;    &quot;2014-08-15.39&quot;    &quot;2014-08-16.39&quot;   
-## [109] &quot;2014-08-17.39&quot;    &quot;2013-12-10.4&quot;     &quot;2013-12-11.4&quot;    
-## [112] &quot;2013-12-12.4&quot;     &quot;2014-08-20.40&quot;    &quot;2014-08-21.40&quot;   
-## [115] &quot;2014-08-25.40&quot;    &quot;2014-08-28.41&quot;    &quot;2014-08-29.41&quot;   
-## [118] &quot;2014-09-02.41&quot;    &quot;2014-09-03.42&quot;    &quot;2014-09-04.42&quot;   
-## [121] &quot;2014-09-05.42&quot;    &quot;2014-09-10.43&quot;    &quot;2014-09-11.43&quot;   
-## [124] &quot;2014-09-12.43&quot;    &quot;2014-09-14.43&quot;    &quot;2014-09-15.43&quot;   
-## [127] &quot;2014-09-16.43&quot;    &quot;2014-09-17.44&quot;    &quot;2014-09-18.44&quot;   
-## [130] &quot;2014-09-19.44&quot;    &quot;2014-09-22.44&quot;    &quot;2014-09-25.45&quot;   
-## [133] &quot;2014-09-26.45&quot;    &quot;2014-09-27.45&quot;    &quot;2014-09-28.45&quot;   
-## [136] &quot;2014-09-29.45&quot;    &quot;2014-09-30.45&quot;    &quot;2014-10-01.46&quot;   
-## [139] &quot;2014-10-02.46&quot;    &quot;2014-10-03.46&quot;    &quot;2014-10-04.46&quot;   
-## [142] &quot;2014-10-08.47&quot;    &quot;2014-10-17.48&quot;    &quot;2014-10-18.48&quot;   
-## [145] &quot;2014-10-19.48&quot;    &quot;2014-10-20.48&quot;    &quot;2014-10-21.48&quot;   
-## [148] &quot;2014-10-22.49&quot;    &quot;2014-10-23.49&quot;    &quot;2014-10-29.50&quot;   
-## [151] &quot;2014-10-31.50&quot;    &quot;2014-11-07.51&quot;    &quot;2014-11-12.52&quot;   
-## [154] &quot;2014-11-13.52&quot;    &quot;2014-11-18.52&quot;    &quot;2014-12-12.56&quot;   
-## [157] &quot;2014-12-13.56&quot;    &quot;2014-12-14.56&quot;    &quot;2014-12-15.56&quot;   
-## [160] &quot;2014-12-17.57&quot;    &quot;2014-12-18.57&quot;    &quot;2015-01-22.62&quot;   
-## [163] &quot;2015-01-26.62&quot;    &quot;2015-01-30.62&quot;    &quot;2015-02-24.66/67&quot;
-## [166] &quot;2015-02-25.66/67&quot; &quot;2015-03-06.68&quot;    &quot;2015-03-17.69/70&quot;
-## [169] &quot;2015-03-18.69/70&quot; &quot;2015-03-21.69/70&quot; &quot;2013-12-10.7&quot;    
-## [172] &quot;2014-01-06.7&quot;     &quot;2014-01-13.8&quot;     &quot;2014-01-14.8&quot;    
-## [175] &quot;2014-01-15.8&quot;     &quot;2014-01-15.9&quot;     &quot;2014-01-18.9&quot;    
-## [178] &quot;2014-01-20.9&quot;     &quot;2014-01-21.9&quot;</code></pre>
-<pre class="r"><code># Change Week '66/67' to 67
-data[data$Week==&quot;66/67&quot;, &quot;Week&quot;] &lt;- 67
-# Change Week '69/70' to 70
-data[data$Week==&quot;69/70&quot;, &quot;Week&quot;] &lt;- 70
-# Rows with dat 2013-12-10 say either Week 4 or Week 7... Week 7 appears to be wrong. 
-data[data$Date==&quot;2013-12-10&quot; &amp; data$Week==7, &quot;Week&quot;] &lt;- 4
-# 2014-01-15 should be Week 9, not Week 8. (both present in data)
-data[data$Date==&quot;2014-01-15&quot; &amp; data$Week==8, &quot;Week&quot;] &lt;- 9
+# Tidy data
+comp &lt;- comp %&gt;%
+  clean_names() %&gt;%
+  rename(condition = condition_code) %&gt;%
+  select(date, week, visit, site, transect, coral_id, species, condition, surveyor) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  mutate_at(c(&quot;transect&quot;, &quot;coral_id&quot;), as.factor)
 
-# Change &quot;SBOU &quot; to &quot;SBOU&quot;
-data[data$Species==&quot;SBOU &quot;, &quot;Species&quot;] &lt;- &quot;SBOU&quot;
+# Correct typos and errors in date column (detected by looking at distinct date/week combinations)
+comp &lt;- comp %&gt;%
+  # 2014-11-25 should be 2013-11-25 because it is Week #1
+  mutate(date = if_else(date == &quot;2014-11-25&quot;, as_date(&quot;2013-11-25&quot;), as_date(date))) %&gt;%
+  # 2013-04-02 should be 2014-04-02
+  mutate(date = if_else(date == &quot;2013-04-02&quot;, as_date(&quot;2014-04-02&quot;), as_date(date))) %&gt;%
+  # Looks like a mistake from filling down Date in Excel for Surveyor MLR 
+  # Change all Week 27 dates for R2SC1-RR visit 1 to May 23, 2014
+  mutate(date = case_when(site == &quot;R2SC1-RR&quot; &amp; week == 27 &amp; visit == 1 ~ as_date(&quot;2014-05-23&quot;),
+                          TRUE ~ as_date(date))) %&gt;%
+  # 2020-05-29 should be 2014-05-29
+  mutate(date = if_else(date == &quot;2020-05-29&quot;, as_date(&quot;2014-05-29&quot;), as_date(date))) %&gt;%
+  # Fix missing dates for HBS1-CP week 28
+  mutate(date = case_when(site==&quot;HBS1-CP&quot; &amp; week == 28 &amp; is.na(date) ~ as_date(&quot;2014-05-29&quot;),
+                          TRUE ~ as_date(date)))
 
-data$Week &lt;- as.integer(data$Week)
-data$Site &lt;- factor(data$Site)
-levels(data$Site)</code></pre>
-<pre><code>##  [1] &quot;HBN1&quot;  &quot;HBN2&quot;  &quot;HBN3&quot;  &quot;HBNC1&quot; &quot;HBS1&quot;  &quot;HBS2&quot;  &quot;HBS3&quot;  &quot;HBS4&quot; 
-##  [9] &quot;HBSC1&quot; &quot;R2N1&quot;  &quot;R2N2&quot;  &quot;R2NC1&quot; &quot;R2NC2&quot; &quot;R2S1&quot;  &quot;R2S2&quot;  &quot;R2SC1&quot;
-## [17] &quot;R2SC2&quot; &quot;R3N1&quot;  &quot;R3NC1&quot; &quot;R3S1&quot;  &quot;R3S2&quot;  &quot;R3S3&quot;  &quot;R3SC1&quot; &quot;R3SC2&quot;
-## [25] &quot;R3SC3&quot;</code></pre>
-<pre class="r"><code>data$Species &lt;- factor(data$Species)
-levels(data$Species)</code></pre>
-<pre><code>##  [1] &quot;AAGA&quot;  &quot;ACER&quot;  &quot;ALAM&quot;  &quot;CNAT&quot;  &quot;DCLI&quot;  &quot;DLAB&quot;  &quot;DSTO&quot;  &quot;DSTR&quot; 
-##  [9] &quot;EFAS&quot;  &quot;MALI&quot;  &quot;MCAV&quot;  &quot;MDEC&quot;  &quot;MMEA&quot;  &quot;ODIF&quot;  &quot;OFAV&quot;  &quot;PAST&quot; 
-## [17] &quot;PPOR&quot;  &quot;SBOU&quot;  &quot;SIDSP&quot; &quot;SINT&quot;  &quot;SSID&quot;</code></pre>
-<pre class="r"><code>head(data)</code></pre>
-<pre><code>##         Date Week Visit Surveyor Site N.Site Transect N.Transect Coral.ID
-## 1 2013-11-25    1     1      JDC HBN1     23        1          9        1
-## 2 2013-11-25    1     1      JDC HBN1     23        1          9        2
-## 3 2013-11-25    1     1      JDC HBN1     23        1          9        3
-## 4 2013-11-25    1     1      JDC HBN1     23        1          9        4
-## 5 2013-11-25    1     1      JDC HBN1     23        1          9        5
-## 6 2013-11-25    1     1      JDC HBN1     23        1          9        6
-##   Species Condition.Code
-## 1    SSID            BUR
-## 2    SSID            BUR
-## 3    SSID            BUR
-## 4    SSID            BUR
-## 5    SSID            BUR
-## 6    SSID            BUR</code></pre>
-<pre class="r"><code>data$unique.id &lt;- interaction(data$Site, data$Transect, data$Coral.ID)
-levels(data$Site)</code></pre>
-<pre><code>##  [1] &quot;HBN1&quot;  &quot;HBN2&quot;  &quot;HBN3&quot;  &quot;HBNC1&quot; &quot;HBS1&quot;  &quot;HBS2&quot;  &quot;HBS3&quot;  &quot;HBS4&quot; 
-##  [9] &quot;HBSC1&quot; &quot;R2N1&quot;  &quot;R2N2&quot;  &quot;R2NC1&quot; &quot;R2NC2&quot; &quot;R2S1&quot;  &quot;R2S2&quot;  &quot;R2SC1&quot;
-## [17] &quot;R2SC2&quot; &quot;R3N1&quot;  &quot;R3NC1&quot; &quot;R3S1&quot;  &quot;R3S2&quot;  &quot;R3S3&quot;  &quot;R3SC1&quot; &quot;R3SC2&quot;
-## [25] &quot;R3SC3&quot;</code></pre>
-<pre class="r"><code>sitesused &lt;- c(&quot;R2NC1-LR&quot;, &quot;R2NC2-RR&quot;, &quot;R2NC3-LR&quot;, &quot;R3NC1-LR&quot;, &quot;HBNC1-CP&quot;, &quot;HBN3-CP&quot;,
-               &quot;HBS4-CR&quot;, &quot;HBS3-CP&quot;, &quot;HBSC1-CP&quot;, &quot;R2SC1-RR&quot;, &quot;R2SC2-LR&quot;, &quot;R2S1-RR&quot;, 
-               &quot;R2S2-LR&quot;, &quot;R2N1-RR&quot;, &quot;R2N2-LR&quot;, &quot;R3SC2-LR&quot;, &quot;R3SC3-SG&quot;, &quot;R3S2-LR&quot;,
-               &quot;R3N1-LR&quot;)
-## SUBSET ONLY THE 19 SITES IN THE REPORT?
-#data &lt;- data[data$Site %in% sitesused, ]
-compliance_alldata &lt;- data   # make a copy of all data including the hardbottom sites
-## SUBSET ONLY REEF 2 and 3 sites?
-data &lt;- droplevels(data[grepl(&quot;^R&quot;, data$Site), ])
-##############
+# Select columns
+comp &lt;- comp %&gt;% select(date, site, transect, coral_id, species, condition, surveyor)
 
-# Aggregate all conditions for each observed coral
-data &lt;- with(data, {
-  aggregate(data.frame(Condition.Codes=Condition.Code), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species), 
-            FUN=function(x) c(as.character(x)))
-})
-data &lt;- data[with(data, order(Site, Transect, Coral.ID, Week)), ]
+# Check and make sure no missing dates
+#comp %&gt;% filter(is.na(date))</code></pre>
+</div>
+<div id="immediate-post-construction" class="section level3">
+<h3>Immediate post-construction</h3>
+<div id="april---may-2015" class="section level4">
+<h4>April - May 2015</h4>
+<pre class="r"><code># Import data from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
+pc1 &lt;- readxl::read_xlsx(
+  path = &quot;data/raw/2015data/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx&quot;,
+  sheet = &quot;IA TAGGED ONLY&quot;)
 
-data$MaxDiam &lt;- NA    # Max Diameter data was not collected during compliance
-data &lt;- data %&gt;% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)</code></pre>
-<pre class="r"><code># from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
-# worksheet name: IA TAGGED ONLY
-ia &lt;- read.csv(&quot;data/to_analyze/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.csv&quot;)
-ia &lt;- within(ia, {
-  Date &lt;- as.Date(Date, format=&quot;%m/%d/%y&quot;)
-  Site &lt;- factor(str_replace_all(Site, &quot;-..&quot;, &quot;&quot;))
-})
-ia &lt;- ia[, c(2, 1, 5, 7, 9, 10, 11)]
-# Aggregate all conditions for each observed coral
-ia &lt;- with(ia, {
-  aggregate(data.frame(Condition.Codes=Condition.Code), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species), 
-            FUN=function(x) c(as.character(x)))
-})
-ia$MaxDiam &lt;- NA    # Max Diameter data was not collected at this time
-ia &lt;- ia %&gt;% select(Week, Date, Site, Transect, Coral.ID, Species, MaxDiam, Condition.Codes)</code></pre>
-<pre class="r"><code># NEED TO ASSIGN CORRECT WEEK NUMBERS
-ia2 &lt;- read.csv(&quot;data/to_analyze/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.csv&quot;)
-# Subset only tagged corals
-ia2 &lt;- ia2[ia2$Tagged.coral..Y.N.==&quot;Y&quot;,]
-# Subset only R2 R3
-ia2 &lt;- droplevels(ia2[grepl(&quot;^R&quot;, ia2$Site), ])
-# Reformat date and site
-ia2 &lt;- within(ia2, {
-  Date &lt;- as.Date(Date, format=&quot;%m/%d/%y&quot;)
-  Site &lt;- factor(str_replace_all(Site, &quot;-..&quot;, &quot;&quot;))
-  Transect &lt;- str_extract(Transect, &quot;.$&quot;)
-  MaxDiam &lt;- as.character(Max.Diameter)
-})
-# Subset columns of interest
-#ia2 &lt;- ia2[, c(2,1,3,4,22,23,24)]
-ia2 &lt;- ia2[, c(&quot;Week&quot;, &quot;Date&quot;, &quot;Site&quot;, &quot;Transect&quot;, &quot;Coral.ID&quot;, &quot;Species&quot;, &quot;MaxDiam&quot;, &quot;Condition.Code.qaqc&quot;)]
-# Aggregate all conditions for each observed coral
-ia2 &lt;- with(ia2, {
-  aggregate(data.frame(Condition.Codes=Condition.Code.qaqc), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
-            FUN=function(x) c(as.character(x)))
-})</code></pre>
-<pre class="r"><code>#### newer csi data - one year post-construction - permanent sites
-csi &lt;- read.csv(&quot;data/to_analyze/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.csv&quot;, skip=1)
-# Subset tagged corals only
-csi &lt;- subset(csi, Tagged.coral..Y.N.==&quot;Y&quot;)
-#csi &lt;- csi[,c(2,1,3,4,21,22,23)]
-csi &lt;- csi[,c(&quot;Week&quot;, &quot;Date&quot;, &quot;Site&quot;, &quot;Transect&quot;, &quot;Coral.ID&quot;, &quot;Species&quot;, &quot;Max.Diameter&quot;, &quot;Condition.Code.qaqc&quot;)]
-csi$Date &lt;- as.Date(csi$Date, format=&quot;%m/%d/%y&quot;)
-csi$MaxDiam &lt;- as.character(csi$Max.Diameter)
-csi$MaxDiam[is.na(csi$MaxDiam)] &lt;- &quot;-&quot;
-# Subset only R2 and R3
-csi &lt;- droplevels(csi[grepl(&quot;^R&quot;, csi$Site), ])
+# Tidy data
+pc1 &lt;- pc1 %&gt;%
+  clean_names() %&gt;%
+  rename(condition = condition_code) %&gt;%
+  select(date, site, transect, coral_id, species, condition, surveyor) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  mutate_at(c(&quot;transect&quot;, &quot;coral_id&quot;), as.factor)
 
+# Check and make sure no missing dates
+#pc1 %&gt;% filter(is.na(date))</code></pre>
+</div>
+<div id="june---july-2015" class="section level4">
+<h4>June - July 2015</h4>
+<pre class="r"><code># Import data from file: NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx
+pc2 &lt;- readxl::read_xlsx(
+  path = &quot;data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx&quot;,
+  sheet = &quot;Raw Data&quot;, guess_max = 3000)
 
-# Aggregate all conditions for each observed coral
-csi &lt;- with(csi, {
-  aggregate(data.frame(Condition.Codes=Condition.Code.qaqc), 
-            by=list(Week=Week, Date=Date, Site=Site, Transect=Transect, 
-                    Coral.ID=Coral.ID, Species=Species, MaxDiam=MaxDiam), 
-            FUN=function(x) c(as.character(x)))
-})
-csi &lt;- csi[with(csi, order(Site, Transect, Coral.ID, Week)), ]
-csi &lt;- droplevels(csi)</code></pre>
+# Tidy data
+pc2 &lt;- pc2 %&gt;%
+  clean_names() %&gt;%
+  filter(tagged_coral_y_n == &quot;Y&quot;) %&gt;%           # Tagged corals only
+  rename(condition = condition_code_qaqc) %&gt;%
+  select(date, site, transect, coral_id, species, condition, surveyor) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  mutate_at(c(&quot;transect&quot;, &quot;coral_id&quot;), as.factor)
+
+# Check and make sure no missing dates
+#pc2 %&gt;% filter(is.na(date))</code></pre>
+</div>
+</div>
+<div id="one-year-post-construction-aug-2016" class="section level3">
+<h3>One year post-construction (Aug 2016)</h3>
+<pre class="r"><code># Import data from file: permanent_sites_impact_assessment_corals_2016_CSI_QAQC.xlsx
+pc3 &lt;- readxl::read_xlsx(
+  path = &quot;data/raw/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX&quot;,
+  sheet = &quot;Raw Data&quot;, guess_max = 3000, skip = 1)
+
+# Tidy data
+pc3 &lt;- pc3 %&gt;%
+  clean_names() %&gt;%
+  filter(tagged_coral_y_n == &quot;Y&quot;) %&gt;%              # Tagged corals only
+  rename(condition = condition_code_qaqc) %&gt;%
+  select(date, site, transect, coral_id, species, condition, surveyor) %&gt;%
+  mutate(date = as_date(date)) %&gt;%
+  mutate_at(c(&quot;transect&quot;, &quot;coral_id&quot;), as.factor)
+
+# Check and make sure no missing dates
+#pc3 %&gt;% filter(is.na(date))
+
+# Aggregate condition codes into single row for each observation
+# pc3 &lt;- pc3 %&gt;%
+#   group_by(date, site, transect, coral_id, species) %&gt;%
+#   summarise(condition = list(condition_code_qaqc)) %&gt;%
+#   ungroup()</code></pre>
+</div>
+</div>
+<div id="combine-all-tagged-coral-data" class="section level1">
+<h1>Combine all tagged coral data</h1>
 <pre class="r"><code># Combine all data
-alldata &lt;- rbind(bl, data, ia, ia2, csi)
+tagged &lt;- bind_rows(bl, comp, pc1, pc2, pc3)</code></pre>
+<div id="homogenize-site-transect-coral-id-and-species-codes" class="section level3">
+<h3>Homogenize site, transect, coral ID, and species codes</h3>
+<pre class="r"><code>tagged &lt;- tagged %&gt;%
+  mutate(site = str_extract(site, pattern = &quot;[^-]+&quot;)) %&gt;%           # Remove &quot;-RR&quot; etc.
+  mutate(transect = str_extract(transect, pattern = &quot;.$&quot;)) %&gt;%      # Get transect as single digit
+  unite(coral, site, transect, coral_id, sep = &quot;.&quot;, remove = FALSE)
 
-# Add grouping factors
-alldata$Channel &lt;- ifelse(grepl(&quot;C&quot;, alldata$Site), &quot;control&quot;, &quot;channelside&quot;)
-alldata$reef &lt;- substr(alldata$Site, 1, 2)
-alldata$dir &lt;- substr(alldata$Site, 3, 3)
+tagged &lt;- tagged %&gt;%
+  mutate(species = case_when(
+    species %in% c(&quot;MFOR&quot;) ~ &quot;MDEC&quot;,
+    species %in% c(&quot;MFER&quot;, &quot;MALI&quot;, &quot;Mycetophyllia ferox&quot;) ~ &quot;MYCE&quot;,
+    species %in% c(&quot;Orbicella annularis&quot;) ~ &quot;OANN&quot;,
+    species %in% c(&quot;stephanoceonia intersepta&quot;, &quot;Stephanocoenia intersepta&quot;,
+                   &quot;Stephanocoenia intercepta&quot;, &quot;stephanocoenia intersepta&quot;) ~ &quot;SINT&quot;,
+    species %in% c(&quot;Dichocoenia stokesii&quot;, &quot;Dichocenia stokesii&quot;) ~ &quot;DSTO&quot;,
+    species %in% c(&quot;Solenastrea bournoni&quot;) ~ &quot;SBOU&quot;,
+    species %in% c(&quot;Montastraea cavernosa&quot;) ~ &quot;MCAV&quot;,
+    species %in% c(&quot;Siderastrea siderea&quot;) ~ &quot;SSID&quot;,
+    species %in% c(&quot;Meandrina meandrites&quot;) ~ &quot;MMEA&quot;,
+    species %in% c(&quot;Diploria clivosa&quot;) ~ &quot;DCLI&quot;,
+    species %in% c(&quot;Agaricia sp.&quot;) ~ &quot;AGSP&quot;,
+    species %in% c(&quot;Madracis formosa&quot;) ~ &quot;MFOR&quot;,
+    species %in% c(&quot;Madracis decactis&quot;) ~ &quot;MDEC&quot;,
+    species %in% c(&quot;Porites astreoides&quot;) ~ &quot;PAST&quot;,
+    species %in% c(&quot;Porites porites&quot;) ~ &quot;PPOR&quot;,
+    species %in% c(&quot;Siderastrea sp.&quot;) ~ &quot;SIDSP&quot;,
+    species %in% c(&quot;Oculina diffusa&quot;) ~ &quot;ODIF&quot;,
+    species %in% c(&quot;Diploria strigosa&quot;, &quot;Diplora strigosa&quot;, &quot;DSTR&quot;) ~ &quot;PSTR&quot;,
+    species %in% c(&quot;Diploria labyrinthiformis&quot;) ~ &quot;DLAB&quot;,
+    species %in% c(&quot;Colpophyllia natans&quot;, &quot;Colophyllia natans&quot;) ~ &quot;CNAT&quot;,
+    species %in% c(&quot;Eusmilia fastigiata&quot;) ~ &quot;EFAS&quot;,
+    species %in% c(&quot;Orbicella faveolata&quot;) ~ &quot;OFAV&quot;,
+    species %in% c(&quot;Acropora cervicornis&quot;) ~ &quot;ACER&quot;,
+    species %in% c(&quot;Agaricia agaricites&quot;) ~ &quot;AAGA&quot;,
+    species %in% c(&quot;Agaricia lamarcki&quot;) ~ &quot;ALAM&quot;,
+    TRUE ~ as.character(species)))
 
-# Find any remaining species names errors to fix
-levels(droplevels(factor(alldata$Species)))</code></pre>
-<pre><code>##  [1] &quot;&quot;                          &quot;AAGA&quot;                     
-##  [3] &quot;ACER&quot;                      &quot;AGSP&quot;                     
-##  [5] &quot;ALAM&quot;                      &quot;CNAT&quot;                     
-##  [7] &quot;DCLI&quot;                      &quot;DLAB&quot;                     
-##  [9] &quot;DSTO&quot;                      &quot;DSTR&quot;                     
-## [11] &quot;EFAS&quot;                      &quot;MALI&quot;                     
-## [13] &quot;MCAV&quot;                      &quot;MDEC&quot;                     
-## [15] &quot;MFER&quot;                      &quot;MFOR&quot;                     
-## [17] &quot;MMEA&quot;                      &quot;Mycetophyllia ferox&quot;      
-## [19] &quot;OFAV&quot;                      &quot;Orbicella annularis&quot;      
-## [21] &quot;PAST&quot;                      &quot;PPOR&quot;                     
-## [23] &quot;SBOU&quot;                      &quot;SINT&quot;                     
-## [25] &quot;SSID&quot;                      &quot;stephanocoenia intersepta&quot;
-## [27] &quot;Tag not found&quot;</code></pre>
-<pre class="r"><code># Coral that was labele MDEC at all other time points was labeled MFOR once
-alldata[alldata$Species==&quot;MFOR&quot;, &quot;Species&quot;] &lt;- &quot;MDEC&quot;
-# Apparently MFER and MALI (Mycetolphyllia ferox vs. aliciae) were both used for some corals, rename to MYCE
-alldata[alldata$Species==&quot;MFER&quot;, &quot;Species&quot;] &lt;- &quot;MYCE&quot;
-alldata[alldata$Species==&quot;MALI&quot;, &quot;Species&quot;] &lt;- &quot;MYCE&quot;
-alldata[alldata$Species==&quot;Mycetophyllia ferox&quot;, &quot;Species&quot;] &lt;- &quot;MYCE&quot;
-# Change Orbicella annularis to OANN
-alldata[alldata$Species==&quot;Orbicella annularis&quot;, &quot;Species&quot;] &lt;- &quot;OANN&quot;
-# Change stephanocoenia intersepta to SINT
-alldata[alldata$Species==&quot;stephanocoenia intersepta&quot;, &quot;Species&quot;] &lt;- &quot;SINT&quot;
-
-# Strip whitespace from condition codes
-alldata$Condition.Codes &lt;- lapply(alldata$Condition.Codes, trimws)
-
-# Add column for individual coral unique identifier
-alldata$coral &lt;- with(alldata, interaction(Site, Transect, Coral.ID))
-alldata &lt;- droplevels(alldata)
-
-# Write all data to spreadsheet (STILL CONTAINS UNCORRECTED SPP CONFLICTS)
-dd &lt;- alldata %&gt;% 
-  arrange(coral, Date) %&gt;%
-  select(-Channel, -reef, -dir, -coral)
-
-dd$Condition.Codes &lt;- vapply(dd$Condition.Codes, paste, collapse = &quot;, &quot;, character(1L))
-
-write.table(dd, file=&quot;alldatatable.txt&quot;, row.names = FALSE, quote = FALSE, sep = &quot;\t&quot;)</code></pre>
-<div id="check-for-conflicting-species-assignments-for-individual-corals" class="section level4">
-<h4>Check for conflicting species assignments for individual corals</h4>
-<pre class="r"><code># How many corals have multiple species assignments? (e.g., indicative of an error in data entry)
-spp &lt;- with(alldata, aggregate(Species, by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
-                     FUN=function(x) unique(c(as.character(x)))))
-table(sapply(spp$x, length)&gt;1)</code></pre>
-<pre><code>## 
-## FALSE  TRUE 
-##   356    87</code></pre>
-<pre class="r"><code>capture.output(spp, file=&quot;all_spp_conflicts.txt&quot;)</code></pre>
-<p>Out of 115 corals, 23 have multiple species IDs associated with them at different points in time, indicative of some (unidentifiable) error in data entry. These errors might be resolved by going back to the raw data collection sheets.</p>
+# Remove row with missing data
+tagged &lt;- tagged %&gt;% drop_na(date)</code></pre>
 </div>
-<div id="change-conflicting-species-assignments-to-reflect-most-frequently-assigned-species" class="section level4">
-<h4>Change conflicting species assignments to reflect most frequently assigned species</h4>
-<p>We attempt to fix some of these conflicting species assignments by changing species assignments for each coral (defined as unique site-transect-coralID) to the most frequently assigned species.</p>
-<pre class="r"><code># There are several instances where a given Site-Transect-Coral.ID has multiple spp. assignments...
-# Find which name was used most frequently for each Site-Transect-Coral.ID
-which.spp &lt;- with(alldata, {
-  aggregate(data.frame(Species=Species), by=list(Site=Site, Transect=Transect, Coral.ID=Coral.ID), 
-            FUN=function(x) {
-              names(table(c(as.character(x))))[which.max(table(c(as.character(x))))]
-            })
-})
-
-# Reassign all values of Species for each coral to the most freq used Species
-for (i in 1:nrow(which.spp)) {
-  alldata[alldata$Site==which.spp[i, &quot;Site&quot;] &amp; 
-          alldata$Transect==which.spp[i, &quot;Transect&quot;] &amp;
-          alldata$Coral.ID==which.spp[i, &quot;Coral.ID&quot;],
-          &quot;Species&quot;] &lt;- which.spp[i, &quot;Species&quot;]
-}</code></pre>
 </div>
-<div id="identify-colonies-that-died-after-having-wp" class="section level4">
-<h4>Identify colonies that died after having WP</h4>
-<pre class="r"><code>wpbeforedead &lt;- alldata %&gt;%
+<div id="additional-data-qc" class="section level1">
+<h1>Additional data QC</h1>
+<div id="check-condition-codes" class="section level4">
+<h4>Check condition codes</h4>
+<pre class="r"><code># tagged %&gt;%
+#   distinct(condition) %&gt;%
+#   print(n = nrow(.))
+
+tagged &lt;- tagged %&gt;%
+  mutate(condition = recode(condition, `sed dust` = &quot;SED&quot;))</code></pre>
+<pre class="r"><code># Downstream analysis revealed a single observation from R2SC1 on May 18, 2015, but the rest of the data from this site were taken May 19, 2015. The coral 'observed' on May 18 was also observed on May 19, so the May 18 entry may be some kind of error.  Omit.
+tagged &lt;- tagged %&gt;% 
+  filter(date != &quot;2015-05-18&quot;)  #(this was the only observation on this date)
+
+# Downstream analysis revealed a single observation from R3NC1 on April 25, 2015, but the rest of the data from this site were taken April 26, 2015. The coral 'observed' on April 25 was also observed on April 26, so the April 25 entry may be some kind of error.  Omit.
+tagged &lt;- tagged %&gt;% 
+  filter(!(date == &quot;2015-04-25&quot; &amp; coral == &quot;R3NC1.1.3&quot;))</code></pre>
+</div>
+<div id="check-for-conflicting-species-ids" class="section level4">
+<h4>Check for conflicting species IDs</h4>
+<pre class="r"><code>spp_conflicts &lt;- tagged %&gt;% 
+  distinct(coral, species) %&gt;%
   group_by(coral) %&gt;%
-  summarise(WP = as.character(min(Date[hasCond(&quot;^WP$&quot;, Condition.Codes)])),
-            DEAD = as.character(min(Date[hasCond(&quot;^DEAD$&quot;, Condition.Codes)]))) %&gt;%
-  drop_na() %&gt;%
-  mutate(WPbeforeDEAD = as.Date(WP) &lt; as.Date(DEAD))
+  filter(n() &gt; 1) %&gt;%
+  arrange(coral) %&gt;%
+  summarise(conflicting_species = list(species))</code></pre>
+<p>183 of the tagged corals have conflicting species information.</p>
+</div>
+<div id="correct-conflicting-ids-by-assigning-most-frequently-noted-species" class="section level4">
+<h4>Correct conflicting IDs by assigning most frequently noted species</h4>
+<pre class="r"><code># Get most frequently used species ID for each coral
+spp_ids &lt;- tagged %&gt;%
+  group_by(coral) %&gt;%
+  count(species) %&gt;%
+  summarise(most_freq_species = species[which.max(n)])
 
-# For these corals that had WP before DEAD, change DEAD to WPDEAD
-alldata[alldata$coral %in% wpbeforedead$coral &amp; hasCond(&quot;DEAD&quot;, alldata$Condition.Codes), &quot;Condition.Codes&quot;] &lt;- &quot;WPDEAD&quot;</code></pre>
+# Replace species ID with most frequently used species ID for each coral
+tagged &lt;- tagged %&gt;%
+  left_join(spp_ids, by = &quot;coral&quot;) %&gt;%
+  select(date, site, transect, coral_id, coral, most_freq_species, condition, surveyor) %&gt;%
+  rename(species = most_freq_species) </code></pre>
 </div>
 <div id="change-a.-cervicornis-wp-records-to-wb" class="section level4">
 <h4>Change <em>A. cervicornis</em> WP records to WB</h4>
-<pre class="r"><code>cond &lt;- alldata[alldata$Species==&quot;ACER&quot; &amp; hasCond(&quot;^WP$&quot;, alldata$Condition.Codes), &quot;Condition.Codes&quot;]
-alldata[alldata$Species==&quot;ACER&quot; &amp; hasCond(&quot;^WP$&quot;, alldata$Condition.Codes), &quot;Condition.Codes&quot;] &lt;- str_replace_all(cond, &quot;WP&quot;, &quot;WB&quot;)</code></pre>
+<pre class="r"><code>tagged &lt;- tagged %&gt;%
+  mutate(condition = if_else(species == &quot;ACER&quot;, 
+                             str_replace(condition, &quot;WP&quot;, &quot;WB&quot;),
+                             condition))</code></pre>
+</div>
+<div id="check-surveyor-ids" class="section level4">
+<h4>Check surveyor IDs</h4>
+<pre class="r"><code>tagged %&gt;% count(surveyor)</code></pre>
+<pre><code>## # A tibble: 10 x 2
+##    surveyor     n
+##    &lt;chr&gt;    &lt;int&gt;
+##  1 AS       10080
+##  2 BG        5024
+##  3 JC          18
+##  4 JDC        944
+##  5 MLR       1721
+##  6 MR          30
+##  7 RF       14673
+##  8 WFP       5771
+##  9 WP         414
+## 10 WPF         32</code></pre>
+<pre class="r"><code># Change WP and WPF to WFP
+# Change MR to MLR
+# Change JC to JDC
+tagged &lt;- tagged %&gt;%
+  mutate(surveyor = recode(surveyor, 
+                           WP = &quot;WFP&quot;, WPF = &quot;WFP&quot;,
+                           MR = &quot;MLR&quot;,
+                           JC = &quot;JDC&quot;))</code></pre>
+</div>
+<div id="add-site-metadata" class="section level4">
+<h4>Add site metadata</h4>
+<pre class="r"><code>tagged &lt;- tagged %&gt;%
+  mutate(channel = if_else(str_detect(site, &quot;C&quot;), &quot;control&quot;, &quot;channelside&quot;),
+            reef = str_sub(site, 1, 2),
+             dir = str_sub(site, 3, 3)) %&gt;%
+  select(date, reef, dir, channel, site, transect, coral, species, condition, surveyor)</code></pre>
+</div>
+<div id="spread-all-conditions-to-boolean-columns-for-each-observation" class="section level4">
+<h4>Spread all conditions to boolean columns for each observation</h4>
+<pre class="r"><code>tagged_bool &lt;- tagged %&gt;% 
+  mutate(hasCond = TRUE) %&gt;%
+  distinct() %&gt;%
+  spread(condition, hasCond, fill = FALSE)</code></pre>
+</div>
+<div id="nest-all-condition-codes-for-each-observation" class="section level4">
+<h4>Nest all condition codes for each observation</h4>
+<pre class="r"><code>tagged_nest &lt;- tagged %&gt;% nest(condition, .key = &quot;condition&quot;)</code></pre>
+</div>
+<div id="concatenate-all-condition-codes-for-each-obervation" class="section level4">
+<h4>Concatenate all condition codes for each obervation</h4>
+<pre class="r"><code>tagged_c &lt;- tagged %&gt;%
+  group_by(date, reef, dir, channel, site, transect, coral, species) %&gt;%
+  summarise(condition = paste(condition, collapse = &quot;, &quot;)) %&gt;%
+  ungroup()</code></pre>
 </div>
 </div>
 <div id="save-tagged-coral-data-as-.rdata" class="section level1">
 <h1>Save tagged coral data as .RData</h1>
-<pre class="r"><code>save(alldata, file = &quot;data/tagged_corals.RData&quot;)</code></pre>
+<pre class="r"><code>save(tagged, tagged_bool, tagged_nest, tagged_c, file = &quot;data/tagged.RData&quot;)</code></pre>
+</div>
+<div id="write-concatenated-data-to-file" class="section level1">
+<h1>Write concatenated data to file</h1>
+<pre class="r"><code># Write all data to spreadsheet
+dd &lt;- tagged_c %&gt;% 
+  arrange(coral, date) %&gt;%
+  select(-channel, -reef, -dir, -coral)
+
+write.table(dd, file=&quot;data/tagged_c.txt&quot;, row.names = FALSE, quote = FALSE, sep = &quot;\t&quot;)</code></pre>
 </div>
 
 

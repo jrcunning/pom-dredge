@@ -279,6 +279,17 @@ tagged <- tagged %>%
 ```
 
 
+```{r}
+# Downstream analysis revealed a single observation from R2SC1 on May 18, 2015, but the rest of the data from this site were taken May 19, 2015. The coral 'observed' on May 18 was also observed on May 19, so the May 18 entry may be some kind of error.  Omit.
+tagged <- tagged %>% 
+  filter(date != "2015-05-18")  #(this was the only observation on this date)
+
+# Downstream analysis revealed a single observation from R3NC1 on April 25, 2015, but the rest of the data from this site were taken April 26, 2015. The coral 'observed' on April 25 was also observed on April 26, so the April 25 entry may be some kind of error.  Omit.
+tagged <- tagged %>% 
+  filter(!(date == "2015-04-25" & coral == "R3NC1.1.3"))
+```
+
+
 #### Check for conflicting species IDs
 ```{r}
 spp_conflicts <- tagged %>% 
@@ -366,7 +377,7 @@ save(tagged, tagged_bool, tagged_nest, tagged_c, file = "data/tagged.RData")
 
 # Write concatenated data to file
 ```{r}
-# Write all data to spreadsheet (STILL CONTAINS UNCORRECTED SPP CONFLICTS)
+# Write all data to spreadsheet
 dd <- tagged_c %>% 
   arrange(coral, date) %>%
   select(-channel, -reef, -dir, -coral)
