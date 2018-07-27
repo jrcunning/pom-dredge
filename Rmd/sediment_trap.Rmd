@@ -115,7 +115,8 @@ total.gamms.reef.dir <- sedtrap %>%
     # Fit gamm by channel (in parallel)
     mod = future_map(data, 
             ~ gamm(sedrate ~ s(as.numeric(middate)),#, k = 16),
-                    weights = duration, data = ., family = "poisson")$gam),
+                   weights = duration, data = ., family = "poisson",
+                   verbosePQL = FALSE)$gam),
     # Get newdata frame for predict() using the appropriate range of days
     newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)))),
                                       #channel = c("channelside", "control"))),
@@ -143,7 +144,31 @@ ggplot(total.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) +
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
   labs(title = "Total sediments", x = "Date", y = "Sedimentation rate")
+
+# Integrate to get total sediment deposited
+## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, let's assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
+total.gamms.reef.dir.fits.complete <- total.gamms.reef.dir.fits %>%
+  complete(nesting(reef, dir, channel), middate) %>%
+  group_by(reef, dir, channel) %>%
+  fill(fitr, lcir, ucir, .direction = "up") %>%
+  ungroup()
+
+total.depo <- total.gamms.reef.dir.fits.complete %>%
+  filter(middate >= "2013-11-20",              # Filter from start of dredging
+         middate <= "2015-03-23") %>%          # Filter up to a week after date dredging ended
+  group_by(reef, dir, channel) %>%
+  summarise(int_min = sum(lcir),
+            int_fit = sum(fitr),
+            int_max = sum(ucir))
+
+ggplot(total.depo, aes(x = channel, y = int_fit, fill = channel)) +
+  facet_grid(dir ~ reef) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
+  labs(title = "Total sediment deposition 2014-11-20 to 2015-03-23",
+       y = "Grams", x = "")
 ```
+
 
 ## Fine sediments
 ```{r}
@@ -153,7 +178,8 @@ fine.gamms.reef.dir <- sedtrap %>%
     # Fit gamm by channel (in parallel)
     mod = future_map(data, 
             ~ gamm(finerate ~ s(as.numeric(middate)),#, k = 16),
-                    weights = duration, data = ., family = "poisson")$gam),
+                   weights = duration, data = ., family = "poisson",
+                   verbosePQL = FALSE)$gam),
     # Get newdata frame for predict() using the appropriate range of days
     newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)))),
                                       #channel = c("channelside", "control"))),
@@ -181,6 +207,29 @@ ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) +
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
   labs(title = "Fine sediments", x = "Date", y = "Sedimentation rate")
+
+# Integrate to get total sediment deposited
+## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, let's assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
+fine.gamms.reef.dir.fits.complete <- fine.gamms.reef.dir.fits %>%
+  complete(nesting(reef, dir, channel), middate) %>%
+  group_by(reef, dir, channel) %>%
+  fill(fitr, lcir, ucir, .direction = "up") %>%
+  ungroup()
+
+fine.depo <- fine.gamms.reef.dir.fits.complete %>%
+  filter(middate >= "2013-11-20",              # Filter from start of dredging
+         middate <= "2015-03-23") %>%          # Filter up to a week after date dredging ended
+  group_by(reef, dir, channel) %>%
+  summarise(int_min = sum(lcir),
+            int_fit = sum(fitr),
+            int_max = sum(ucir))
+
+ggplot(fine.depo, aes(x = channel, y = int_fit, fill = channel)) +
+  facet_grid(dir ~ reef) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
+  labs(title = "Fine sediment deposition 2014-11-20 to 2015-03-23",
+       y = "Grams", x = "")
 ```
 
 ## Coarse sediments
@@ -191,7 +240,8 @@ coarse.gamms.reef.dir <- sedtrap %>%
     # Fit gamm by channel (in parallel)
     mod = future_map(data, 
             ~ gamm(pmax(0, sedrate - finerate) ~ s(as.numeric(middate)),#, k = 16),
-                    weights = duration, data = ., family = "poisson")$gam),
+                   weights = duration, data = ., family = "poisson",
+                   verbosePQL = FALSE)$gam),
     # Get newdata frame for predict() using the appropriate range of days
     newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)))),
                                       #channel = c("channelside", "control"))),
@@ -219,56 +269,18 @@ ggplot(coarse.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) 
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
   labs(title = "Coarse sediments", x = "Date", y = "Sedimentation rate")
-```
 
-# Integrate to get total sediment deposition for each reef and direction
-
-## Total sediments
-```{r}
-# Find earliest data available from each reef/dir
-earliest <- sedtrap %>%
+# Integrate to get total sediment deposited
+## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, let's assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
+coarse.gamms.reef.dir.fits.complete <- coarse.gamms.reef.dir.fits %>%
+  complete(nesting(reef, dir, channel), middate) %>%
   group_by(reef, dir, channel) %>%
-  summarise(minmiddate = min(middate))
+  fill(fitr, lcir, ucir, .direction = "up") %>%
+  ungroup()
 
-total.depo <- total.gamms.reef.dir.fits %>%
-  filter(middate >= max(earliest$minmiddate),  # Filter to dates after which all data available
-         middate <= "2015-03-16") %>%          # Filter up to date dredging ended
-  group_by(reef, dir, channel) %>%
-  summarise(int_min = sum(lcir),
-            int_fit = sum(fitr),
-            int_max = sum(ucir))
-
-ggplot(total.depo, aes(x = channel, y = int_fit, fill = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = paste("Total sediment deposition", max(earliest$minmiddate), "- 2015-03-16"),
-       y = "Grams", x = "")
-```
-
-## Fine sediments
-```{r}
-fine.depo <- fine.gamms.reef.dir.fits %>%
-  filter(middate >= max(earliest$minmiddate),  # Filter to dates after which all data available
-         middate <= "2015-03-16") %>%          # Filter up to date dredging ended
-  group_by(reef, dir, channel) %>%
-  summarise(int_min = sum(lcir),
-            int_fit = sum(fitr),
-            int_max = sum(ucir))
-
-ggplot(fine.depo, aes(x = channel, y = int_fit, fill = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = paste("Fine sediment deposition", max(earliest$minmiddate), "- 2015-03-16"),
-       y = "Grams", x = "")
-```
-
-## Coarse sediments
-```{r}
-coarse.depo <- coarse.gamms.reef.dir.fits %>%
-  filter(middate >= max(earliest$minmiddate),  # Filter to dates after which all data available
-         middate <= "2015-03-16") %>%          # Filter up to date dredging ended
+coarse.depo <- coarse.gamms.reef.dir.fits.complete %>%
+  filter(middate >= "2013-11-20",              # Filter from start of dredging
+         middate <= "2015-03-23") %>%          # Filter up to a week after date dredging ended
   group_by(reef, dir, channel) %>%
   summarise(int_min = sum(lcir),
             int_fit = sum(fitr),
@@ -278,6 +290,12 @@ ggplot(coarse.depo, aes(x = channel, y = int_fit, fill = channel)) +
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = paste("Coarse sediment deposition", max(earliest$minmiddate), "- 2015-03-16"),
+  labs(title = "Coarse sediment deposition 2014-11-20 to 2015-03-23",
        y = "Grams", x = "")
 ```
+
+## Save sediment integrations as .RData
+```{r}
+save(total.depo, fine.depo, coarse.depo, file = "data/sed_deposited.RData")
+```
+
