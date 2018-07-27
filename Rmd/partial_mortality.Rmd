@@ -11,7 +11,6 @@ editor_options:
 ```{r setup, include = FALSE}
 # Set knitr options
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-knitr::opts_knit$set(root.dir = normalizePath(".."))
 ```
 
 ```{r}
@@ -21,6 +20,8 @@ library(janitor)
 library(lubridate)
 library(lme4)
 library(lsmeans)
+library(ggrepel)
+library(ggthemes)
 ```
 
 # Import data
@@ -47,8 +48,6 @@ ia <- read_csv("data/DEP_responsive_records_May_2017/permanent_sites_impact_asse
 pmor <- full_join(ia, tagged_bool, by=c("date", "coral", "species"))
 pmor <- pmor[!is.na(pmor$channel),]  # A couple of spp IDs didn't match (data entry error?), so other columns did not merge. omit these rows.
 
-pmor
-
 # # Aggregate all data by week number
 # ## Different sites were observed on different dates. For this reason, we will bin dates by week number 
 # ## starting at the earliest date on which data were collected.
@@ -69,20 +68,29 @@ The DCA November 2015 report (page 14) indicates that the "PM" condition code is
 Show the cumulative proportion of corals experiencing partial mortality at each site over time.
 
 ```{r}
-cumpm <- tagged_bool %>%
+# Fill in missing observations (if a specific coral was missed on a day) 
+tagged_bool_complete <- tagged_bool %>% 
+  group_by(site) %>%
+  complete(date, coral, fill = list(PM = FALSE)) %>%
+  fill(reef, dir, channel) %>%
+  ungroup()
+
+# If PM ever observed for a coral, change all future observations of PM to TRUE
+cumpm <- tagged_bool_complete %>%
   group_by(coral) %>%
-  mutate(PM = ifelse(any(PM) & day > min(day[PM]), TRUE, PM)) %>%
-  group_by(day, reef, dir, channel, site) %>%
+  mutate(PM = ifelse(any(PM) & date > min(date[PM]), TRUE, PM)) %>%
+  group_by(date, reef, dir, channel, site) %>%
   summarise(prop = sum(PM) / n())
 
-ggplot(cumpm, aes(x = day, y = prop)) + 
+# Plot cumulative proportion of corals with PM (ever) over time
+ggplot(cumpm, aes(x = date, y = prop)) + 
   facet_wrap(~ site) +
   geom_line(aes(color = channel, group = channel)) +
   labs(title = "Cumulative PM", x = "Time (weeks)", y = "Proportion of corals")
 
-ggplot(cumpm, aes(x = day, y = prop, color = channel, group = site)) + 
+ggplot(cumpm, aes(x = date, y = prop, color = channel, group = site)) + 
   geom_line() +
-  labs(title = "Cumulative PM", x = "Time (weeks)", y = "Proportion of corals")
+  labs(title = "Cumulative PM", x = "Date", y = "Proportion of corals")
 ```
 
 Calculate the total number of corals at each site that experienced partial mortality (up to July 2015), and plot as a barplot.
@@ -90,7 +98,9 @@ Calculate the total number of corals at each site that experienced partial morta
 ```{r, fig.width = 10, fig.height = 3}
 # Quantify occurrence of PM during compliance and post-con:
 pm <- tagged_bool %>%
-  filter(date < "2015-07-31") %>%     # Filter up to July 2015 (post-construction monitoring)
+  #filter(date < "2015-07-31") %>%     # Filter up to July 2015 (post-construction monitoring)
+  filter(date <= "2015-05-01") %>%
+  filter(site != "HBN1") %>%           # Remove site because corals all BUR => no opp for PM?
   group_by(reef, dir, channel, site, transect, species, coral) %>%
   summarise(PM = any(PM))
 
@@ -117,6 +127,7 @@ pm.mod1 <- glmer(PM ~ channel * reef * dir + (1|site/transect) + (1|species),
                  family = "binomial", data = pm)
 
 # Generate lsmeans for each reef/direction/channelside
+#### ERRORS HAVE CHANGED AND ARE MUCH SMALLER... DUE TO UPDATE TO LSMEANS PACKAGE?
 pm.lsm1 <- lsmeans(pm.mod1, specs = c("channel", "reef", "dir"), type = "response")
 
 # Test channelside vs. control mortality for each reef/direction
@@ -226,6 +237,122 @@ ggplot(summary(pmor.lsm2), aes(x = channel, y = prob, fill = channel)) +
 For *Stephanocoenia intersepta*, tissue loss is also higher at channelside relative to control sites (57.0% vs. 8.3%), but this difference was not significant. For *P. astreoides*, there were no tagged corals at the channelside sites at the northern middle reef.
 
 
+# Look at SSID and PAST at other sites or across all sites?
+
+# Is partial mortality related to amount of fine sediments deposited in an area?
+```{r finesed.pm}
+# Load sediment deposition data (see Rmd/sediment_trap.Rmd)
+load("data/sed_deposited.RData")
+
+# Join partial mortality results with fine sediment deposition data
+finesed.pm <- full_join(fine.depo, summary(pm.lsm1))
+finesed.pm <- ungroup(finesed.pm)
+
+# Fit linear model with weights inverse to standard error of y-axis
+lmod <- lm(prob ~ int_fit, data = finesed.pm, weights = 1 / SE)
+lpred <- data.frame(int_fit = finesed.pm$int_fit, prob = predict(lmod, finesed.pm))
+summary(lmod)$r.squared
+summary(lmod)$coefficients[,4][2]
+
+# Fit a Weibull type 2 curve using 1/SE as weights
+nls1 <- nls(prob ~ c + (d - c) * (1 - exp(-exp(b * (log(int_fit) - log(e))))), data = finesed.pm,
+            weights = 1 / SE,
+            start = list(b = 2.2, c = 0.08, d = 0.8, e = 254))
+nls1pred <- data.frame(int_fit = min(finesed.pm$int_fit):max(finesed.pm$int_fit))
+nls1pred$prob <-  predict(nls1, newdata = nls1pred)
+
+# Plot
+fine <- ggplot(finesed.pm, aes(x = int_fit, y = prob)) + 
+  geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
+  geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
+  geom_point() +
+  geom_line(data = nls1pred, linetype = 2) +
+  #geom_line(data = lpred, linetype = 2) +
+  #geom_smooth(method='lm') +
+  labs(x = "Total fine sediment deposited (g)",
+       y = "Probability of partial mortality to coral",
+       title = "Fine sediments") +
+  geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  #annotate("text", x = 350, y = 0.1, label = as.character(expression(R^{2}*" = 0.74")), parse = TRUE) +
+  #annotate("text", x = 350, y = 0.05, label = "p = 0.0003") +
+  theme_few()
+fine
+```
+
+# Is partial mortality related to amount of coarse sediments deposited in an area?
+```{r coarsesed.pm}
+# Join partial mortality results with coarse sediment deposition data
+coarsesed.pm <- full_join(coarse.depo, summary(pm.lsm1))
+coarsesed.pm <- ungroup(coarsesed.pm)
 
 
+# Fit linear model with weights inverse to standard error of y-axis
+lmod <- lm(prob ~ log(int_fit), data = coarsesed.pm, weights = 1 / SE)
+lpred <- data.frame(int_fit = coarsesed.pm $int_fit, prob = predict(lmod, coarsesed.pm))
+summary(lmod)$r.squared
+summary(lmod)$coefficients[,4][2]
 
+#drm1 <- drm(prob ~ int_fit, data = coarsesed.pm, fct = W2.4())
+#drm1
+#plot(drm1)
+
+# Fit a Weibull type 2 curve using 1/SE as weights
+nls1 <- nls(prob ~ c + (d - c) * (1 - exp(-exp(b * (log(int_fit) - log(e))))), data = coarsesed.pm,
+            weights = 1 / SE,
+            start = list(b = 2.3, c = 0.09, d = 0.7, e = 129))
+nls1pred <- data.frame(int_fit = min(coarsesed.pm$int_fit):max(coarsesed.pm$int_fit))
+nls1pred$prob <-  predict(nls1, newdata = nls1pred)
+
+# Plot
+coarse <- ggplot(coarsesed.pm, aes(x = int_fit, y = prob)) + 
+  geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
+  geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
+  geom_point() +
+  geom_line(data = lpred, linetype = 1) +
+  #geom_smooth(method='lm') +
+  labs(x = "log Total coarse sediment deposited (g)",
+       y = "Probability of partial mortality to coral",
+       title = "Coarse sediments") +
+  geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  #annotate("text", x = 750, y = 0.1, label = as.character(expression(R^{2}*" = 0.28")), parse = TRUE) +
+  #annotate("text", x = 750, y = 0.05, label = "p = 0.079") +
+  theme_few()
+coarse
+```
+
+# Is partial mortality related to amount of ALL sediments deposited in an area?
+```{r totsed.pm}
+# Join partial mortality results with total sediment deposition data
+totsed.pm <- full_join(total.depo, summary(pm.lsm1))
+totsed.pm <- ungroup(totsed.pm)
+
+# Fit linear model with weights inverse to standard error of y-axis
+lmod <- lm(prob ~ log(int_fit), data = totsed.pm , weights = 1 / SE)
+lpred <- data.frame(int_fit = totsed.pm $int_fit, prob = predict(lmod, totsed.pm ))
+summary(lmod)$r.squared
+summary(lmod)$coefficients[,4][2]
+
+#drm1 <- drm(prob ~ int_fit, data = bb, fct = W2.4())
+#drm1
+#plot(drm1)
+
+# Fit a Weibull type 2 curve using 1/SE as weights
+nls1 <- nls(prob ~ c + (d - c) * (1 - exp(-exp(b * (log(int_fit) - log(e))))), data = totsed.pm ,
+            weights = 1 / SE,
+            start = list(b = 2.6, c = 0.13, d = 0.6, e = 242))
+nls1pred <- data.frame(int_fit = min(totsed.pm $int_fit):max(totsed.pm $int_fit))
+nls1pred$prob <-  predict(nls1, newdata = nls1pred)
+
+# Plot
+total <- ggplot(totsed.pm , aes(x = int_fit, y = prob)) + 
+  geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
+  geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
+  geom_point() +
+  geom_line(data = lpred, linetype = 1) +
+  labs(x = "Total ALL sediment deposited (g)",
+       y = "Probability of partial mortality to coral",
+       title = "All sediments") +
+  geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  theme_few()
+total
+```
