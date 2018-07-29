@@ -165,7 +165,7 @@ ggplot(total.depo, aes(x = channel, y = int_fit, fill = channel)) +
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = "Total sediment deposition 2014-11-20 to 2015-03-23",
+  labs(title = "Total sediment deposition 2013-11-20 to 2015-03-23",
        y = "Grams", x = "")
 ```
 
@@ -228,7 +228,7 @@ ggplot(fine.depo, aes(x = channel, y = int_fit, fill = channel)) +
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = "Fine sediment deposition 2014-11-20 to 2015-03-23",
+  labs(title = "Fine sediment deposition 2013-11-20 to 2015-03-23",
        y = "Grams", x = "")
 ```
 
@@ -290,7 +290,7 @@ ggplot(coarse.depo, aes(x = channel, y = int_fit, fill = channel)) +
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = "Coarse sediment deposition 2014-11-20 to 2015-03-23",
+  labs(title = "Coarse sediment deposition 2013-11-20 to 2015-03-23",
        y = "Grams", x = "")
 ```
 
