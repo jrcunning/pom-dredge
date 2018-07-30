@@ -146,7 +146,7 @@ gamms.reef.dir.fits <- gamms.reef.dir %>%
   unnest(newdata, fit, lci, uci) %>%
   mutate(date = min(cpce$date) + dayn)
 
-save(gamms.reef.dir.fits, file = "data/sedcov.gamms.RData")
+save(sand.summ, gamms.reef.dir.fits, file = "data/sedcov.gamms.RData")
 
 ```
 
