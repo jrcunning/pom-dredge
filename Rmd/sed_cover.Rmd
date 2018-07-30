@@ -9,7 +9,6 @@ editor_options:
 
 ```{r, setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-knitr::opts_knit$set(root.dir = normalizePath(".."))
 
 # Load packages
 library(furrr)
@@ -66,22 +65,39 @@ dredge.end.wk <- (dredge.end.date - as.Date("2013-11-20")) / dweeks(1)
 sand.summ <- cpce %>%
   mutate(propsand = sand_sa / sumpts) %>%
   group_by(reef, dir, channel, site, date) %>%
-  summarise(meanpropsand = mean(propsand))
+  summarise(meanpropsand = mean(propsand)) %>%
+  ungroup()
 
 # Plot by site
-ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, groups = site)) +
+ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, group = site)) +
   facet_wrap(~ site) +
   geom_point() +
   geom_line() +
-  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25)
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25)
 
 # Plot by reef and direction
-ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, groups = site,
+ggplot(sand.summ, aes(x = date, y = meanpropsand, color = channel, group = site,
                linetype = channel)) +
   facet_grid(dir ~ reef) +
   geom_point() +
   geom_line() +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25)
+```
+
+# Filter out HBN1 and HBN2
+
+Sites HBN1 and HBN2 have a high amount of sand cover to begin with, and they are classified in DCA reports as "Scattered Coral/Rock in Sand". The rest of the sites are all categorized as "Colonized Pavement", "Ridge Reef", "Linear Reef", or "Spur and Groove", and generally have lower amounts of sand. Therefore, the HBN1 and HBN2 sites should be omitted.
+```{r}
+cpce <- cpce %>% 
+  filter(!site %in% c("HBN1", "HBN2"))
+
+# Calculate mean proportion sand cover at each site on each date 
+# (averaged across all frames from all transects)
+sand.summ <- cpce %>%
+  mutate(propsand = sand_sa / sumpts) %>%
+  group_by(reef, dir, channel, site, date) %>%
+  summarise(meanpropsand = mean(propsand)) %>%
+  ungroup()
 ```
 
 # Model sand cover
@@ -110,7 +126,7 @@ gamms.reef.dir <- cpce.f %>%
   nest(-reef, -dir) %>%   # Nest by reef and direction
   mutate(
     # Fit gamm by channel (in parallel)
-    mod = map(data, 
+    mod = future_map(data, 
             ~ gamm4(cbind(sand, notsand) ~ s(dayn, by = channel) + channel, ##, k = 8, bs = "cs"
                     random = ~(1|site/transect), data = ., family = "binomial")$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
@@ -129,6 +145,8 @@ gamms.reef.dir <- cpce.f %>%
 gamms.reef.dir.fits <- gamms.reef.dir %>% 
   unnest(newdata, fit, lci, uci) %>%
   mutate(date = min(cpce$date) + dayn)
+
+save(gamms.reef.dir.fits, file = "data/sedcov.gamms.RData")
 
 ```
 
