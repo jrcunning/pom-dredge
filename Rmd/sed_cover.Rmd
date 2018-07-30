@@ -125,7 +125,7 @@ gamms.reef.dir <- cpce.f %>%
   mutate(
     # Fit gamm by channel (in parallel)
     mod = future_map(data, 
-            ~ gamm4(cbind(sand, notsand) ~ s(dayn, by = channel, k = 7) + channel, ##, k = 8, bs = "cs"
+            ~ gamm4(cbind(sand, notsand) ~ s(dayn, by = channel) + channel, ##, k = 8, bs = "cs"
                     random = ~(1|site/transect), data = ., family = "binomial")$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(dayn = min(.$dayn):max(.$dayn),
