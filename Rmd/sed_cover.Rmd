@@ -53,9 +53,7 @@ cpce <- cpce %>%
 
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
-dredge.start.wk <- (dredge.start.date - as.Date("2013-11-20")) / dweeks(1)
-dredge.end.date <- as.Date("2014-12-31")                    # DCA report August 2015, page 3
-dredge.end.wk <- (dredge.end.date - as.Date("2013-11-20")) / dweeks(1)
+dredge.end.date <- as.Date("2015-03-16")                    # DCA report August 2015, page 3
 ```
 
 # Visualize mean sand cover over time at each site
@@ -127,7 +125,7 @@ gamms.reef.dir <- cpce.f %>%
   mutate(
     # Fit gamm by channel (in parallel)
     mod = future_map(data, 
-            ~ gamm4(cbind(sand, notsand) ~ s(dayn, by = channel) + channel, ##, k = 8, bs = "cs"
+            ~ gamm4(cbind(sand, notsand) ~ s(dayn, by = channel, k = 7) + channel, ##, k = 8, bs = "cs"
                     random = ~(1|site/transect), data = ., family = "binomial")$gam),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(dayn = min(.$dayn):max(.$dayn),
@@ -157,6 +155,6 @@ ggplot(gamms.reef.dir.fits, aes(x = date, y = fit, color = channel)) +
   geom_point(data = sand.summ, aes(y = meanpropsand), alpha = 0.4) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
   geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
   labs(title = "Sand cover", x = "Date", y = "Percent sand")
 ```
