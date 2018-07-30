@@ -199,6 +199,8 @@ fine.gamms.reef.dir.fits <- fine.gamms.reef.dir %>%
   unnest(newdata, fitr, lcir, ucir) %>%
   mutate(middate = zoo::as.Date.numeric(middate))
 
+save(fine.gamms.reef.dir.fits, file = "data/sedtrap.fine.gamms.RData")
+
 ### Plot fitted models
 ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) +
   facet_grid(dir ~ reef) +
