@@ -43,7 +43,7 @@ We will analyze the complete tagged coral dataset.
 # Import tidy tagged coral data
 load("data/tagged.RData") 
 tagged_bool <- tagged_bool %>%
-  filter(site != "HBN1") %>%                    # Omit HBN1
+  filter(!site %in% c("HBN1", "HBN2")) %>%                    # Omit HBN1 and HBN2
   mutate(day = (date - min(date)) / ddays(1))
 
 # Define start and end of dredging (for plotting)
@@ -95,7 +95,7 @@ tagged_bool_f <- tagged_bool %>%
   filter(!DEAD) %>%
   nest(-reef, -dir, -channel) %>%                                            # For each reef
   mutate(dates = map(data, ~ sort(unique(.$date))),                           # Which weeks have data
-          runs = map(dates, ~ split(.x, cumsum(c(TRUE, diff(.x) > 70)))), # Find runs w/o 140d gaps
+          runs = map(dates, ~ split(.x, cumsum(c(TRUE, diff(.x) > 140)))), # Find runs w/o 140d gaps
        longest = map(runs, ~ .x[[which.max(sapply(.x, length))]]),           # Get longest run
         data.f = map2(data, longest, ~ filter(.x, .$date %in% .y))) %>%  # Get data from those days
   unnest(data.f)
