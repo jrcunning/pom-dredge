@@ -1,7 +1,7 @@
 ---
 title: "Coral count data analysis"
 author: "Ross Cunning"
-date: "`r Sys.date()`"
+date: "`r Sys.Date()`"
 output: html_document
 ---
 
@@ -221,6 +221,8 @@ anno <- full_join(fit20, sig20) %>%
   mutate(rel = abs(estimate) / `pre-2014` * 100,
          sig = gtools::stars.pval(p.value))
 
+# Save as RData
+save(newdata2, anno, file = "data/dens.mod.RData")
 
 # Plot results
 ggplot(data = newdata2, aes(x = dist, y = fit, color = timepoint)) +
