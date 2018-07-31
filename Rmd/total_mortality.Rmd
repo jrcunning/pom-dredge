@@ -4,7 +4,7 @@ author: "Ross Cunning"
 date: "5/22/2018"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 # Setup
@@ -18,12 +18,18 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(tidyverse)
 library(lme4)
 library(lsmeans)
+library(ggrepel)
+library(ggthemes)
 ```
 
 # Import data
 ```{r}
 # Import tidy tagged coral data
-load("../data/tagged.RData")
+load("data/tagged.RData")
+
+# Omit HBN1
+tagged_bool <- tagged_bool %>%
+  filter(site != "HBN1")
 ```
 
 # Prevalence of total colony mortality
@@ -82,6 +88,8 @@ sus.spp <- c("CNAT", "DSTO", "DLAB", "EFAS", "MMEA", "MCAV", "ODIF", "DCLI", "DS
 
 # Subset only disease-resistant corals
 dead.nonsus <- filter(dead, !species %in% sus.spp)
+dead.nonsus %>% ungroup() %>% distinct(species)
+dead.nonsus %>% group_by(reef, dir, channel) %>% count(DEAD)
 
 # Fit generalized linear mixed model for disease-resistant corals
 dead.mod4 <- glmer(DEAD ~ channel * reef * dir + (1|site/transect) + (1|species), 
@@ -94,6 +102,9 @@ dead.lsm4 <- lsmeans(dead.mod4, specs = c("channel", "reef", "dir"), type = "res
 dead.lsm4.sig <- rbind(pairs(dead.lsm4, by = c("reef", "dir")), adjust = "none")
 knitr::kable(summary(dead.lsm4.sig))
 
+# Save lsmeans and sig tests as RData
+save(dead.lsm4, dead.lsm4.sig, file = "data/tm.lsm.RData")
+
 # Plot
 ggplot(summary(dead.lsm4), aes(x = channel, y = prob, fill = channel)) + 
   facet_grid(dir ~ reef) +
@@ -103,4 +114,95 @@ ggplot(summary(dead.lsm4), aes(x = channel, y = prob, fill = channel)) +
             aes(x = 1.5, y = 0.9, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 ```
 
-**For disease-resistant corals, there was significantly higher total mortality at channelside sites (59%) relative to control sites (11%) on the northern middle reef.** For the southern middle reef and the outer reef, there was no significant difference in total mortality of disease-resistant corals detected between channelside and control sites.
+**For disease-resistant corals, there was significantly higher total mortality at channelside sites (57%) relative to control sites (13%) on the northern middle reef.** For the southern middle reef and the outer reef, there was no significant difference in total mortality of disease-resistant corals detected between channelside and control sites.
+
+# Is total mortality related to amount of fine sediments deposited in an area?
+```{r finesed.pm}
+# Load sediment deposition data (see Rmd/sediment_trap.Rmd)
+load("data/sed_deposited.RData")
+
+# Join total mortality results with fine sediment deposition data
+finesed.tm <- full_join(fine.depo, summary(dead.lsm4))
+finesed.tm <- ungroup(finesed.tm)
+
+# Fit linear model with weights inverse to standard error of y-axis
+lmod <- lm(prob ~ int_fit, data = finesed.tm, weights = 1 / SE)
+lpred <- data.frame(int_fit = finesed.tm$int_fit, prob = predict(lmod, finesed.tm))
+summary(lmod)$r.squared
+summary(lmod)$coefficients[,4][2]
+
+# Plot
+fine <- ggplot(finesed.tm, aes(x = int_fit, y = prob)) + 
+  geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
+  geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
+  geom_point() +
+  #geom_line(data = nls1pred, linetype = 2) +
+  #geom_line(data = lpred, linetype = 2) +
+  #geom_smooth(method='lm') +
+  labs(x = "Total fine sediment deposited (g)",
+       y = "Probability of total mortality to coral",
+       title = "Fine sediments") +
+  geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  #annotate("text", x = 350, y = 0.1, label = as.character(expression(R^{2}*" = 0.74")), parse = TRUE) +
+  #annotate("text", x = 350, y = 0.05, label = "p = 0.0003") +
+  theme_few()
+fine
+```
+
+# Is total mortality related to amount of coarse sediments deposited in an area?
+```{r coarsesed.pm}
+# Join total mortality results with coarse sediment deposition data
+coarsesed.tm <- full_join(coarse.depo, summary(dead.lsm4))
+coarsesed.tm <- ungroup(coarsesed.tm)
+
+
+# Fit linear model with weights inverse to standard error of y-axis
+lmod <- lm(prob ~ int_fit, data = coarsesed.tm)
+lpred <- data.frame(int_fit = coarsesed.tm$int_fit, prob = predict(lmod, coarsesed.tm))
+summary(lmod)$r.squared
+summary(lmod)$coefficients[,4][2]
+
+# Plot
+coarse <- ggplot(coarsesed.tm, aes(x = int_fit, y = prob)) + 
+  geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
+  geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
+  geom_point() +
+  #geom_line(data = lpred, linetype = 1) +
+  #geom_smooth(method='lm') +
+  labs(x = "Total coarse sediment deposited (g)",
+       y = "Probability of total mortality",
+       title = "Coarse sediments") +
+  geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  #annotate("text", x = 750, y = 0.1, label = as.character(expression(R^{2}*" = 0.28")), parse = TRUE) +
+  #annotate("text", x = 750, y = 0.05, label = "p = 0.079") +
+  theme_few()
+coarse
+```
+
+# Is total mortality related to amount of ALL sediments deposited in an area?
+```{r totsed.pm}
+# Join total mortality results with total sediment deposition data
+totsed.tm <- full_join(total.depo, summary(dead.lsm4))
+totsed.tm <- ungroup(totsed.tm)
+
+# Fit linear model with weights inverse to standard error of y-axis
+lmod <- lm(prob ~ int_fit, data = totsed.tm)
+lpred <- data.frame(int_fit = totsed.tm$int_fit, prob = predict(lmod, totsed.tm ))
+summary(lmod)$r.squared
+summary(lmod)$coefficients[,4][2]
+
+
+# Plot
+total <- ggplot(totsed.tm , aes(x = int_fit, y = prob)) + 
+  geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
+  geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
+  geom_point() +
+  #geom_line(data = lpred, linetype = 1) +
+  labs(x = "Total ALL sediment deposited (g)",
+       y = "Probability of total mortality",
+       title = "All sediments") +
+  geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  theme_few()
+total
+```
+
