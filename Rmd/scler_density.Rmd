@@ -49,94 +49,7 @@ scler_3 <- scler %>%
 
 Decreases in coral density could have resulted from mortality due to disease, or mortality due to dredging sedimentation. Disease impacts should not show a relationship to distance from the dredging channel, but dredge impacts should. Therefore, analyzing changes in density as a function of distance from channel is one way to get at impacts due to dredging.
 
-## Baseline (2009) vs. cross-site surveys (2016/2017)
-Transects at increasing distances from channel were recorded in 2009 baseline surveys and 2016/2017 cross-site surveys. Since small corals were recorded at all these times, can use all data.
-
-```{r}
-# Subset 2009 baseline and 2016/2017 cross-site survey data <1000 m from channel
-df <- scler %>%                # Select dataset that includes all corals, including small
-  filter(perm == "no" | transect %in% c("NS", "EW"), dist < 1000) %>%
-  group_by(reef, dir, channel, site, site2, dist, date, year, transect, transect_area_m2, perm) %>%
-  summarise(n = sum(count)) %>%
-  mutate(dens = n / transect_area_m2,
-         timepoint = cut(year, breaks = c(-Inf, 2010, Inf), 
-                         labels = c("2009 baseline", "2016/2017 cross-site surveys"))) %>%
-  ungroup()
-```
-
-### Fit poisson regression on count data
-```{r}
-# Fit model
-mod <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
-             offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
-             (1|site/transect) + (1|date),            # random effects
-             data = df, family = "poisson")           # poisson model
-
-# Get fitted responses
-newdata <- df %>%
-  tidyr::expand(nesting(reef, dir, timepoint, dist), 
-                transect_area_m2 = 1)        # transect area of 1 m2 will predict count per m2
-newdata$fit <- predict(mod, newdata, type = "response", re.form = NA)
-
-# Get confidence intervals by simulation
-bootfit <- bootMer(mod, FUN = function(x) predict(x, newdata, type = "response", re.form = NA), 
-                   nsim = 20, parallel = "multicore", ncpus = 4)
-newdata$lci <- apply(bootfit$t, 2, quantile, 0.08)
-newdata$uci <- apply(bootfit$t, 2, quantile, 0.92)
-```
-
-### Plot fits and test for change in density near channel
-```{r}
-# Plot raw data and fitted results
-ggplot(newdata, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
-  geom_line() +
-  geom_point(data = df, aes(y = dens)) +
-  labs(x = "Distance from channel", y = "# corals per m2")
-
-# Get fitted value of coral density adjacent to channel (i.e., dist = 20 m)
-lsm20 <- lsmeans(mod, specs = c("reef", "dir", "timepoint"),
-                 at = list(dist = 20, transect_area_m2 = 1), transform = "response")
-
-# Gather fitted values for annotating plot
-fit20 <- summary(lsm20) %>%
-  mutate(dist = 20) %>%
-  select(reef, dir, timepoint, rate, dist) %>%
-  spread(timepoint, rate)
-
-# Test for significant differences by timepoint for fitted values
-diff20 <- rbind(pairs(lsm20, by = c("reef", "dir")), adjust = "none")
-
-# Gather fitted values for annotating plot
-sig20 <- summary(diff20) %>%
-  mutate(dist = 20) %>%
-  select(reef, dir, estimate, p.value, dist)
-
-#anno <- full_join(fits, sigs)
-anno <- full_join(fit20, sig20) %>%
-  mutate(rel = abs(estimate) / `2009 baseline` * 100,
-         sig = gtools::stars.pval(p.value))
-
-
-# Plot fitted results
-ggplot(data = newdata, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef, scales = "free_x") +
-  geom_line() +
-  scale_x_continuous(limits = c(0, 500)) +
-  scale_y_continuous(limits = c(0, 3.8), expand = c(0,0)) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
-  geom_segment(data = anno, inherit.aes = FALSE,
-               aes(x = dist, y = `2009 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
-               arrow = arrow(length = unit(0.03, "npc"))) +
-  geom_text(data = anno, inherit.aes = FALSE, hjust = "left",
-            aes(x = dist, y = `2016/2017 cross-site surveys` - 0.1, 
-                label = paste0(round(-rel, 1), "%", sig))) +
-  labs(x = "Distance from channel", y = "# corals per m2")
-  
-```
-
-## All pre-dredging vs. post-dredging coral count data (corals >3 cm)
+## Change in density of larger corals (>3cm) -- all pre-dredging vs. post-dredging count data
 The full coral count dataset includes permanent sites and non-permanent sites, with data from 2009, 2013, 2015, and 2016/2017. Since corals <3 cm were not recorded in 2013 and 2015 surveys, we need to use the dataset excluding <3 cm corals.
 ```{r}
 # Subset
@@ -237,9 +150,96 @@ ggplot(data = newdata2, aes(x = dist, y = fit, color = timepoint)) +
   
 ```
 
-# Analyze coral size frequency distributions
+# Change in density of small corals (1-2cm) (2009 vs. 2016-2017)
+Transects at increasing distances from channel were recorded in 2009 baseline surveys and 2016/2017 cross-site surveys, when small corals were recorded.
 
-### Did small corals get buried by dredging sediment?
+```{r}
+# Subset 2009 baseline and 2016/2017 cross-site survey data <1000 m from channel
+df3 <- scler %>%                # Select dataset that includes all corals, including small
+  filter(perm == "no" | transect %in% c("NS", "EW"), dist < 1000) %>%
+  filter(diameter < 3) %>%   # ONLY 1-2cm CORALS
+  group_by(reef, dir, channel, site, site2, dist, date, year, transect, transect_area_m2, perm) %>%
+  summarise(n = sum(count)) %>%
+  mutate(dens = n / transect_area_m2,
+         timepoint = cut(year, breaks = c(-Inf, 2010, Inf), 
+                         labels = c("2009 baseline", "2016/2017 cross-site surveys"))) %>%
+  ungroup()
+```
+
+### Fit poisson regression on count data
+```{r}
+# Fit model
+mod3 <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
+             offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
+             (1|site/site2/transect) + (1|date),            # random effects
+             data = df3, family = "poisson")           # poisson model
+
+# Get fitted responses
+newdata3 <- df3 %>%
+  tidyr::expand(nesting(reef, dir, timepoint, dist), 
+                transect_area_m2 = 1)        # transect area of 1 m2 will predict count per m2
+newdata3$fit <- predict(mod3, newdata3, type = "response", re.form = NA)
+
+# Get confidence intervals by simulation
+bootfit3 <- bootMer(mod3, FUN = function(x) predict(x, newdata3, type = "response", re.form = NA), 
+                   nsim = 20, parallel = "multicore", ncpus = 4)
+newdata3$lci <- apply(bootfit3$t, 2, quantile, 0.08)
+newdata3$uci <- apply(bootfit3$t, 2, quantile, 0.92)
+```
+
+### Plot fits and test for change in density near channel
+```{r}
+# Plot raw data and fitted results
+ggplot(newdata3, aes(x = dist, y = fit, color = timepoint)) +
+  facet_grid(dir ~ reef) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
+  geom_line() +
+  geom_point(data = df3, aes(y = dens)) +
+  labs(x = "Distance from channel", y = "# corals per m2")
+
+# Get fitted value of coral density adjacent to channel (i.e., dist = 20 m)
+lsm20 <- lsmeans(mod3, specs = c("reef", "dir", "timepoint"),
+                 at = list(dist = 20, transect_area_m2 = 1), transform = "response")
+
+# Gather fitted values for annotating plot
+fit20 <- summary(lsm20) %>%
+  mutate(dist = 20) %>%
+  select(reef, dir, timepoint, rate, dist) %>%
+  spread(timepoint, rate)
+
+# Test for significant differences by timepoint for fitted values
+diff20 <- rbind(pairs(lsm20, by = c("reef", "dir")), adjust = "none")
+
+# Gather fitted values for annotating plot
+sig20 <- summary(diff20) %>%
+  mutate(dist = 20) %>%
+  select(reef, dir, estimate, p.value, dist)
+
+#anno <- full_join(fits, sigs)
+anno <- full_join(fit20, sig20) %>%
+  mutate(rel = abs(estimate) / `2009 baseline` * 100,
+         sig = gtools::stars.pval(p.value))
+
+save(newdata3, anno, file = "data/small.dens.mod.RData")
+
+# Plot fitted results
+ggplot(data = newdata3, aes(x = dist, y = fit, color = timepoint)) +
+  facet_grid(dir ~ reef, scales = "free_x") +
+  geom_line() +
+  scale_x_continuous(limits = c(0, 500)) +
+  scale_y_continuous(limits = c(0, 3.8)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
+  geom_segment(data = anno, inherit.aes = FALSE,
+               aes(x = dist, y = `2009 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
+               arrow = arrow(length = unit(0.03, "npc"))) +
+  geom_text(data = anno, inherit.aes = FALSE, hjust = "left",
+            aes(x = dist, y = `2016/2017 cross-site surveys` - 0.1, 
+                label = paste0(round(-rel, 1), "%", sig))) +
+  labs(x = "Distance from channel", y = "# corals per m2")
+  
+```
+
+# Analyze coral size frequency distributions
 
 Look at tiny corals (< 3cm) abundance before and after dredging. Corals <3cm in diameter were only recorded in 2009 (within 500 m of channel) and in 2016/2017 at cross-sites and permanent monitoring sites. The surveys that are most comparable are those within 100m of channel (see DCA cross site report page 2). Unfortunately, there are no "control" locations at which we can compare size frequency distributions. We currently don't have HB data from 2009, so we can only compare R2 and R3 locations.
 
@@ -265,6 +265,8 @@ kwtest <- df %>%
 
 kwtest <- kwtest %>% mutate(x = 15, y = 0.1)
 
+save("df", "kwtest", file = "data/sizefreq.RData")
+
 # Plot size frequency distributions and annotate with KW test p values
 ggplot(df, aes(x = diameter, fill = year <= 2009)) + 
   geom_histogram(aes(y = ..density..),    # Scales each histogram so the total area = 1
@@ -281,13 +283,103 @@ ggplot(df, aes(x = diameter, fill = year <= 2009)) +
   geom_text(data = kwtest, aes(fill = NULL, x = x, y = y, 
             label = paste("p =", formatC(p, format = "e", digits = 2))))
 
-
-
 ```
 
 
 
+
 *****
+
+```{r oldstuff1, eval = FALSE, include = FALSE}
+## Baseline (2009) vs. cross-site surveys (2016/2017)
+Transects at increasing distances from channel were recorded in 2009 baseline surveys and 2016/2017 cross-site surveys. Since small corals were recorded at all these times, can use all data.
+
+#```{r}
+# Subset 2009 baseline and 2016/2017 cross-site survey data <1000 m from channel
+df <- scler %>%                # Select dataset that includes all corals, including small
+  filter(perm == "no" | transect %in% c("NS", "EW"), dist < 1000) %>%
+  group_by(reef, dir, channel, site, site2, dist, date, year, transect, transect_area_m2, perm) %>%
+  summarise(n = sum(count)) %>%
+  mutate(dens = n / transect_area_m2,
+         timepoint = cut(year, breaks = c(-Inf, 2010, Inf), 
+                         labels = c("2009 baseline", "2016/2017 cross-site surveys"))) %>%
+  ungroup()
+#```
+
+### Fit poisson regression on count data
+#```{r}
+# Fit model
+mod <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
+             offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
+             (1|site/transect) + (1|date),            # random effects
+             data = df, family = "poisson")           # poisson model
+
+# Get fitted responses
+newdata <- df %>%
+  tidyr::expand(nesting(reef, dir, timepoint, dist), 
+                transect_area_m2 = 1)        # transect area of 1 m2 will predict count per m2
+newdata$fit <- predict(mod, newdata, type = "response", re.form = NA)
+
+# Get confidence intervals by simulation
+bootfit <- bootMer(mod, FUN = function(x) predict(x, newdata, type = "response", re.form = NA), 
+                   nsim = 20, parallel = "multicore", ncpus = 4)
+newdata$lci <- apply(bootfit$t, 2, quantile, 0.08)
+newdata$uci <- apply(bootfit$t, 2, quantile, 0.92)
+#```
+
+### Plot fits and test for change in density near channel
+#```{r}
+# Plot raw data and fitted results
+ggplot(newdata, aes(x = dist, y = fit, color = timepoint)) +
+  facet_grid(dir ~ reef) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
+  geom_line() +
+  geom_point(data = df, aes(y = dens)) +
+  labs(x = "Distance from channel", y = "# corals per m2")
+
+# Get fitted value of coral density adjacent to channel (i.e., dist = 20 m)
+lsm20 <- lsmeans(mod, specs = c("reef", "dir", "timepoint"),
+                 at = list(dist = 20, transect_area_m2 = 1), transform = "response")
+
+# Gather fitted values for annotating plot
+fit20 <- summary(lsm20) %>%
+  mutate(dist = 20) %>%
+  select(reef, dir, timepoint, rate, dist) %>%
+  spread(timepoint, rate)
+
+# Test for significant differences by timepoint for fitted values
+diff20 <- rbind(pairs(lsm20, by = c("reef", "dir")), adjust = "none")
+
+# Gather fitted values for annotating plot
+sig20 <- summary(diff20) %>%
+  mutate(dist = 20) %>%
+  select(reef, dir, estimate, p.value, dist)
+
+#anno <- full_join(fits, sigs)
+anno <- full_join(fit20, sig20) %>%
+  mutate(rel = abs(estimate) / `2009 baseline` * 100,
+         sig = gtools::stars.pval(p.value))
+
+
+# Plot fitted results
+ggplot(data = newdata, aes(x = dist, y = fit, color = timepoint)) +
+  facet_grid(dir ~ reef, scales = "free_x") +
+  geom_line() +
+  scale_x_continuous(limits = c(0, 500)) +
+  scale_y_continuous(limits = c(0, 3.8), expand = c(0,0)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
+  geom_segment(data = anno, inherit.aes = FALSE,
+               aes(x = dist, y = `2009 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
+               arrow = arrow(length = unit(0.03, "npc"))) +
+  geom_text(data = anno, inherit.aes = FALSE, hjust = "left",
+            aes(x = dist, y = `2016/2017 cross-site surveys` - 0.1, 
+                label = paste0(round(-rel, 1), "%", sig))) +
+  labs(x = "Distance from channel", y = "# corals per m2")
+  
+#```
+
+```
+
 ```{r oldstuff, eval = FALSE, include = FALSE}
 # Permanent sites
  #```{r, eval = FALSE}
