@@ -7,7 +7,7 @@ output: html_document
 
 ```{r setup, include = FALSE}
 # Set knitr options
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FALSE)
 
 # Load packages
 library(tidyverse)
@@ -25,9 +25,6 @@ load("data/all_counts.RData")
 scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleractinians only
   dplyr::select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
                 transect, transect_area_m2, genus, species, diameter, count, perm)
-
-# Remove two rows with unknown date
-scler <- filter(scler, !is.na(year))
 ```
 
 # Coral size distributions: were small corals recorded?
@@ -72,7 +69,7 @@ df <- scler %>%                # Select dataset that includes all corals, includ
 # Fit model
 mod <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
              offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
-             (1|site/transect),# + (1|date),            # random effects
+             (1|site/transect) + (1|date),            # random effects
              data = df, family = "poisson")           # poisson model
 
 # Get fitted responses
@@ -158,7 +155,7 @@ df2 <- scler_3 %>%                # Select dataset that omits small corals
 # Fit model
 mod2 <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
              offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
-             (1|site/transect),# + (1|year),            # random effects
+             (1|site/site2/transect) + (1|date),            # random effects
              data = df2, family = "poisson")           # poisson model
 
 # Get fitted responses
@@ -229,7 +226,7 @@ ggplot(data = newdata2, aes(x = dist, y = fit, color = timepoint)) +
   facet_grid(dir ~ reef, scales = "free_x") +
   geom_line() +
   scale_x_continuous(limits = c(0, 500)) +
-  scale_y_continuous(limits = c(0, 2), expand = c(0,0)) +
+  scale_y_continuous(limits = c(0, 2.2), expand = c(0,0)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
   geom_segment(data = anno, inherit.aes = FALSE,
                aes(x = dist, y = `pre-2014`, xend = dist, yend = `post-2014`), 
@@ -266,6 +263,8 @@ kwtest <- df %>%
   mutate(kw = map(data, ~ kruskal.test(diameter ~ timepoint, data = .)),
          p = map_dbl(kw, ~ .$p.value))
 
+kwtest <- kwtest %>% mutate(x = 15, y = 0.1)
+
 # Plot size frequency distributions and annotate with KW test p values
 ggplot(df, aes(x = diameter, fill = year <= 2009)) + 
   geom_histogram(aes(y = ..density..),    # Scales each histogram so the total area = 1
@@ -279,9 +278,11 @@ ggplot(df, aes(x = diameter, fill = year <= 2009)) +
         legend.position = c(0.3, 0.9),
         legend.background = element_blank()) +
   xlim(0, 20) +
-  annotate("text", x = 15, y = 0.1, label = formatC(kwtest$p, format = "e", digits = 2))
+  geom_text(data = kwtest, aes(fill = NULL, x = x, y = y, 
+            label = paste("p =", formatC(p, format = "e", digits = 2))))
 
-kwtest
+
+
 ```
 
 
