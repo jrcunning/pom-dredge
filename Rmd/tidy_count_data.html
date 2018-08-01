@@ -91,6 +91,9 @@ img {
 .tabbed-pane {
   padding-top: 12px;
 }
+.html-widget {
+  margin-bottom: 20px;
+}
 button.code-folding-btn:focus {
   outline: none;
 }
@@ -344,6 +347,7 @@ cs2016scler &lt;- cs2016scler %&gt;%
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
 
+
 # Combine octocoral and scleractinian data
 cs2016 &lt;- bind_rows(cs2016octo, cs2016scler) %&gt;%
   mutate(dist = as.numeric(dist),
@@ -377,6 +381,8 @@ all_counts &lt;- all_counts %&gt;%
              &quot;Coral&quot; = &quot;scleractinian&quot;,
              &quot;CORAL&quot; = &quot;scleractinian&quot;))) %&gt;%
   filter(category == &quot;scleractinian&quot; | category == &quot;octocoral&quot;)
+
+
 
 # Tidy taxonomy
 all_counts &lt;- all_counts %&gt;%
@@ -477,10 +483,29 @@ all_counts &lt;- all_counts %&gt;%
     site %in% c(&quot;R2NC1&quot;, &quot;R2NC3&quot;, &quot;R2N1&quot;, &quot;R2SC2&quot;, &quot;R2S2&quot;, 
                 &quot;R3NC1&quot;, &quot;R3N1&quot;, &quot;R3SC2&quot;, &quot;R2S2&quot;,
                 &quot;R2N2&quot;, &quot;R3S2&quot;) ~ &quot;LR&quot;,
-    site %in% c(&quot;R3S1&quot;, &quot;R3SC1&quot;, &quot;HBNC1&quot;, &quot;HBS1&quot;, &quot;HBS2&quot;, &quot;HBS3&quot;, &quot;HBN3&quot;) ~ &quot;CP&quot;,
+    site %in% c(&quot;R3S1&quot;, &quot;R3SC1&quot;, &quot;HBNC1&quot;, &quot;HBS1&quot;, &quot;HBS2&quot;, &quot;HBS3&quot;, &quot;HBN3&quot;, &quot;HBSC1&quot;) ~ &quot;CP&quot;,
     site %in% c(&quot;HBN1&quot;, &quot;HBN2&quot;, &quot;HBS4&quot;) ~ &quot;CR&quot;,
     site %in% c(&quot;R3S3&quot;, &quot;R3SC3&quot;) ~ &quot;SG&quot;),
     site2))
+
+# Add missing site metadata
+### Look at map on page 2 of october 2017 cross_impact report
+##### Reef 2 N:: 2009 transects below 100 m are all same general area as R2N1(-RR)
+##### Reef 2 S:: 2009 transects below 100 m are all same general area as R2S1(-RR)
+##### Reef 3 N:: 2009 transects below 100 m are all same general area as R3N1(-LR)
+##### Reef 3 S:: 2009 transects LR are all same general area as R3S2
+all_counts &lt;- all_counts %&gt;%
+  mutate(site2 = case_when(
+    reef == &quot;R2&quot; &amp; dir == &quot;N&quot; &amp; year == 2009 ~ &quot;RR&quot;,
+    reef == &quot;R2&quot; &amp; dir == &quot;S&quot; &amp; year == 2009 ~ &quot;RR&quot;,
+    reef == &quot;R3&quot; &amp; dir == &quot;N&quot; &amp; year == 2009 ~ &quot;LR&quot;,
+    reef == &quot;R3&quot; &amp; dir == &quot;S&quot; &amp; year == 2009 ~ &quot;LR&quot;,
+    site %in% c(&quot;R2N1&quot;, &quot;R2NC2&quot;, &quot;R2S1&quot;, &quot;R2SC1&quot;) &amp; perm == &quot;yes&quot; ~ &quot;RR&quot;,
+    site %in% c(&quot;R2N2&quot;, &quot;R2NC1&quot;, &quot;R2NC3&quot;, &quot;R2S2&quot;, &quot;R2SC2&quot;, 
+                &quot;R3S2&quot;, &quot;R3N1&quot;, &quot;R3SC2&quot;, &quot;R3NC1&quot;) &amp; perm == &quot;yes&quot; ~ &quot;LR&quot;,
+    site %in% c(&quot;R3S1&quot;, &quot;R3SC1&quot;) &amp; perm == &quot;yes&quot; ~ &quot;CP&quot;,
+    site %in% c(&quot;R3S3&quot;, &quot;R3SC3&quot;) &amp; perm == &quot;yes&quot; ~ &quot;SG&quot;,
+    TRUE ~ site2))
 
 
 # For transects with only single digit listed for transect number, change to site-site2-transect

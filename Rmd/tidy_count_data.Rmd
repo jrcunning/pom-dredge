@@ -243,10 +243,12 @@ cs2016scler <- cs2016scler %>%
   select(date, site, site2, dist, transect, transect_area_m2, category, subcategory, diameter, count)
 
 
+
 # Combine octocoral and scleractinian data
 cs2016 <- bind_rows(cs2016octo, cs2016scler) %>%
   mutate(dist = as.numeric(dist),
          date = as.Date(date))
+
 ```
 
 # Combine all count data and add site metadata
@@ -279,6 +281,8 @@ all_counts <- all_counts %>%
              "Coral" = "scleractinian",
              "CORAL" = "scleractinian"))) %>%
   filter(category == "scleractinian" | category == "octocoral")
+
+
 
 # Tidy taxonomy
 all_counts <- all_counts %>%
@@ -379,10 +383,29 @@ all_counts <- all_counts %>%
     site %in% c("R2NC1", "R2NC3", "R2N1", "R2SC2", "R2S2", 
                 "R3NC1", "R3N1", "R3SC2", "R2S2",
                 "R2N2", "R3S2") ~ "LR",
-    site %in% c("R3S1", "R3SC1", "HBNC1", "HBS1", "HBS2", "HBS3", "HBN3") ~ "CP",
+    site %in% c("R3S1", "R3SC1", "HBNC1", "HBS1", "HBS2", "HBS3", "HBN3", "HBSC1") ~ "CP",
     site %in% c("HBN1", "HBN2", "HBS4") ~ "CR",
     site %in% c("R3S3", "R3SC3") ~ "SG"),
     site2))
+
+# Add missing site metadata
+### Look at map on page 2 of october 2017 cross_impact report
+##### Reef 2 N:: 2009 transects below 100 m are all same general area as R2N1(-RR)
+##### Reef 2 S:: 2009 transects below 100 m are all same general area as R2S1(-RR)
+##### Reef 3 N:: 2009 transects below 100 m are all same general area as R3N1(-LR)
+##### Reef 3 S:: 2009 transects LR are all same general area as R3S2
+all_counts <- all_counts %>%
+  mutate(site2 = case_when(
+    reef == "R2" & dir == "N" & year == 2009 ~ "RR",
+    reef == "R2" & dir == "S" & year == 2009 ~ "RR",
+    reef == "R3" & dir == "N" & year == 2009 ~ "LR",
+    reef == "R3" & dir == "S" & year == 2009 ~ "LR",
+    site %in% c("R2N1", "R2NC2", "R2S1", "R2SC1") & perm == "yes" ~ "RR",
+    site %in% c("R2N2", "R2NC1", "R2NC3", "R2S2", "R2SC2", 
+                "R3S2", "R3N1", "R3SC2", "R3NC1") & perm == "yes" ~ "LR",
+    site %in% c("R3S1", "R3SC1") & perm == "yes" ~ "CP",
+    site %in% c("R3S3", "R3SC3") & perm == "yes" ~ "SG",
+    TRUE ~ site2))
 
 
 # For transects with only single digit listed for transect number, change to site-site2-transect
