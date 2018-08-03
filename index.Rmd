@@ -19,6 +19,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### [Sediment trap data](Rmd/tidy_sedtrap_data.html)
 
+##### [Sediment depth and type data](Rmd/tidy_sed_depth_type.html)
+
 -----
 
 ## Data analysis
@@ -44,3 +46,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ##### [Sediment cover](Rmd/sed_cover.html)
 
 ##### [Sediment depth and type](Rmd/sed_depth_type.html)
+
+-----
+
+### [Figures](Rmd/Figures.html)
