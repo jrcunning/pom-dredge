@@ -1,0 +1,77 @@
+---
+title: "tidy_sed_depth_type"
+author: "Ross Cunning"
+date: "8/3/2018"
+output: html_document
+---
+
+# Setup
+```{r setup, include = FALSE}
+# Set knitr options
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r}
+# Load packages
+library(tidyverse)
+library(lme4)
+library(lsmeans)
+library(janitor)
+```
+
+# Import and tidy cross site sediment depth data
+```{r}
+# find all file names ending in .xlsx 
+files <- list.files(path = "data/Density_Data/2016 cross-transect data/Entered Data/",
+                    pattern = "^[^~].*.xlsx", recursive = TRUE, full.names = TRUE)
+# remove files manually if multiple files for a given transect
+files <- files[-c(24,25,28,30,32,33,36)]
+
+
+# Read in SUBSTRATE sheet from each xlsx file
+substrate <- files %>%
+  map(readxl::read_xlsx, sheet = "SUBSTRATE", col_types = "text") %>%    # read in all files individually
+  reduce(bind_rows)
+
+# Tidy data
+substrate <- substrate %>%
+  clean_names() %>%
+  filter(grepl("^R2|^R3", station)) %>%                           # Filter R2 and R3
+  rename(site0 = station,                                         # Rename columns
+         transect = transect_ns_or_ew,
+         sdepth_cm = sediment_depth_cm_excavation_depth,
+         stype = type_of_sediments_sand_fines_mix) %>%
+  mutate(site0 = str_replace(site0, "R2N1-350", "R2N-350-RR")) %>%   # Fix error in site coding
+  mutate(meter_mark = if_else(is.na(actual_position_if_altered),  # Get meter mark, actual pos if altered
+                              true = position_meter_mark,
+                              false = actual_position_if_altered)) %>%
+  select(site0, transect, meter_mark, sdepth_cm, stype) %>%
+  mutate(site = str_extract(site0, "R[^-|_]*"),                   # Get base site name
+         perm = if_else(nchar(site) == 3, "no", "yes")) %>%       # Identify permanent sites vs. non
+  mutate(dist = case_when(perm == "no" ~ str_extract(site0, "[[:digit:]]{2,3}")),
+         dist = ifelse(is.na(dist), case_when(           
+           site=="R2N1" ~ "28", site=="R2NC2" ~ "9380", site=="R2N2" ~ "18",
+           site=="R2NC1" ~ "9380", site=="R2NC3" ~ "9380", site=="R2S1" ~ "23",
+           site=="R2SC1" ~ "1270", site=="R2S2" ~ "21", site=="R2SC2" ~ "1270",
+           site=="R3N1" ~ "23", site=="R3NC1" ~ "9380", site=="R3S2" ~ "21",
+           site=="R3SC2" ~ "1300", site=="R3S1" ~ "30", site=="R3S3" ~ "30",
+           site=="R3SC3" ~ "1300", site=="R3SC1" ~ "1300"), dist)) %>%
+  mutate(reef = str_sub(site, 1, 2), 
+        reef2 = str_extract(site0, "[^-|_]R$"),
+          dir = str_sub(site, 3, 3),
+      channel = case_when(perm == "yes" ~ if_else(grepl("C", site), "control", "channelside")))
+
+# Recode columns
+substrate <- substrate %>%
+  mutate(sdepth_cm = gsub(">", "", sdepth_cm)) %>%          # remove greater-than sign          
+  mutate(sdepth_cm = as.numeric(sdepth_cm),
+              dist = as.numeric(dist),
+        meter_mark = as.numeric(meter_mark)) %>%
+  mutate_if(is.character, as.factor)
+
+```
+
+```{r}
+save(substrate, file = "data/substrate.RData")
+```
+
