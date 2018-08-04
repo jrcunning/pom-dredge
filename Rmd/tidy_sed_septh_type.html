@@ -185,6 +185,14 @@ substrate &lt;- substrate %&gt;%
               dist = as.numeric(dist),
         meter_mark = as.numeric(meter_mark)) %&gt;%
   mutate_if(is.character, as.factor)</code></pre>
+</div>
+<div id="compute-actual-distance-from-channel-of-each-sediment-measurement" class="section level1">
+<h1>Compute actual distance from channel of each sediment measurement</h1>
+<pre class="r"><code># Site layouts are described in cross-site survey report, page 22.
+substrate &lt;- substrate %&gt;%
+  mutate(dist_actual = case_when(
+    transect == &quot;EW&quot; ~ dist,
+    transect == &quot;NS&quot; ~ dist + meter_mark - 25))</code></pre>
 <pre class="r"><code>save(substrate, file = &quot;data/substrate.RData&quot;)</code></pre>
 </div>
 

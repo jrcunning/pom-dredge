@@ -71,6 +71,16 @@ substrate <- substrate %>%
 
 ```
 
+# Compute actual distance from channel of each sediment measurement
+```{r}
+# Site layouts are described in cross-site survey report, page 22.
+substrate <- substrate %>%
+  mutate(dist_actual = case_when(
+    transect == "EW" ~ dist,
+    transect == "NS" ~ dist + meter_mark - 25))
+```
+
+
 ```{r}
 save(substrate, file = "data/substrate.RData")
 ```
