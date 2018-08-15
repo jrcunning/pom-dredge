@@ -485,6 +485,27 @@ dd &lt;- tagged_c %&gt;%
 
 write.table(dd, file=&quot;data/tagged_c.txt&quot;, row.names = FALSE, quote = FALSE, sep = &quot;\t&quot;)</code></pre>
 </div>
+<div id="dataset-metrics" class="section level1">
+<h1>Dataset metrics</h1>
+<pre class="r"><code>load(&quot;data/tagged.RData&quot;)
+
+# Number of observations
+nrow(tagged_bool)</code></pre>
+<pre><code>## [1] 23537</code></pre>
+<pre class="r"><code># Number of corals observed
+tagged_bool %&gt;%
+  distinct(coral) %&gt;%
+  nrow(.)</code></pre>
+<pre><code>## [1] 650</code></pre>
+<pre class="r"><code># Number of sites
+tagged_bool %&gt;%
+  distinct(site) %&gt;%
+  nrow(.)</code></pre>
+<pre><code>## [1] 26</code></pre>
+<pre class="r"><code># Date range of entire dataset
+range(tagged_bool$date)</code></pre>
+<pre><code>## [1] &quot;2013-10-14&quot; &quot;2016-08-20&quot;</code></pre>
+</div>
 
 
 

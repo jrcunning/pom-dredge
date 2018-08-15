@@ -7,7 +7,6 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-knitr::opts_knit$set(root.dir = normalizePath(".."))
 ```
 
 ```{r setup2}
@@ -385,6 +384,27 @@ dd <- tagged_c %>%
 write.table(dd, file="data/tagged_c.txt", row.names = FALSE, quote = FALSE, sep = "\t")
 ```
 
+# Dataset metrics
+```{r}
+load("data/tagged.RData")
+
+# Number of observations
+nrow(tagged_bool)
+
+# Number of corals observed
+tagged_bool %>%
+  distinct(coral) %>%
+  nrow(.)
+
+# Number of sites
+tagged_bool %>%
+  distinct(site) %>%
+  nrow(.)
+
+# Date range of entire dataset
+range(tagged_bool$date)
+
+```
 
 
 
