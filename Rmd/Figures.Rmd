@@ -32,9 +32,8 @@ theme_custom <- theme(
   panel.grid.minor = element_blank(), 
   panel.background = element_blank(),
   panel.border = element_rect(color = "black", fill = NA),
-  legend.background = element_rect(fill = NA, colour = NA),
-  legend.title = element_blank(),
-  legend.key.size = unit(0.3, "cm"))
+  legend.background = element_rect(fill = NA, colour = NA))#,
+  #legend.key.size = unit(0.3, "cm"))
 
 
 ```
@@ -123,8 +122,21 @@ ggplot(data = sed, mapping = aes(x = date, y = fit, color = channel, linetype = 
 ```
 
 ```{r sediment_4, fig.width = 8, fig.height = 4}
+sed <- sed %>%
+  mutate(dist_cat = factor(case_when(
+    channel == "channelside" ~ "< 50 m",
+    reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+sand.summ <- sand.summ %>%
+  mutate(dist_cat = factor(case_when(
+    channel == "channelside" ~ "< 50 m",
+    reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+
 ### Plot only sand cover (CPCE)
-ggplot(filter(sed, var == "cov"), aes(x = date, y = fit, color = channel)) +
+ggplot(filter(sed, var == "cov"), aes(x = date, y = fit, color = dist_cat)) +
   facet_grid(dir ~ reef) +
   geom_point(data = sand.summ, aes(y = meanpropsand), alpha = 0.4) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
@@ -133,6 +145,7 @@ ggplot(filter(sed, var == "cov"), aes(x = date, y = fit, color = channel)) +
   labs(x = NULL, y = "Percent sand cover") +
   scale_x_date(limits = c(as.Date("2013-10-29"), as.Date("2015-07-06"))) +
   scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  scale_color_manual(values = c("red", "orange", "green3")) +
   theme(strip.placement = "outside", panel.grid.major = element_blank(), 
         panel.grid.minor = element_blank(), panel.background = element_blank(),
         panel.border = element_rect(color = "black", fill = NA),
@@ -143,6 +156,7 @@ ggplot(filter(sed, var == "cov"), aes(x = date, y = fit, color = channel)) +
         axis.text.x = element_text(angle=45, hjust=1))
 ```
 
+### Finding: Channelside areas with naturally low sand cover (0-10%) became up to 50-90% covered in sand for most of the duration of the dredging project. Sites located within 2.5 km of the channel (putative "controls") also became 50-75% covered in sand during dredging, while true controls located 9.4 km from the channel were typically <25% sand, and never exceeded 50%.
 
 # 2. Sediments buried tagged corals
 
@@ -151,14 +165,29 @@ This figure uses the tagged coral data to show the probability that corals were 
 ```{r burial, fig.width = 8, fig.height = 4}
 load("data/sedstress_gamms.RData")
 
+gamms2.fitted <- gamms2.fitted %>%
+  mutate(dist_cat = factor(case_when(
+    channel == "channelside" ~ "< 50 m",
+    reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+
+sedstress.summ2 <- sedstress.summ2 %>%
+  mutate(dist_cat = factor(case_when(
+    channel == "channelside" ~ "< 50 m",
+    reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+
 # Plot
-fig2 <- ggplot(gamms2.fitted, aes(x = date, y = fit, color = channel)) +
+fig2 <- ggplot(gamms2.fitted, aes(x = date, y = fit, color = dist_cat)) +
   facet_grid(dir ~ reef) +
   geom_point(data = sedstress.summ2, aes(y = prop, size = n), alpha = 0.3) +
   scale_size(range = c(0.1, 2.5)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
+  scale_color_manual(values = c("red", "orange", "green3")) +
   labs(x = NULL, y = "Probability of burial") +
   xlim(as.Date("2013-10-20"), as.Date("2015-07-01")) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -183,6 +212,8 @@ knitr::kable(maxuci2014 %>% arrange(-max_burial),
              caption = "Maximum predicted prevalence of coral burial")
 ```
 
+### Finding: Dredging caused partial or complete burial of most of the corals in channelside areas, especially north of the channel where up to 80-87% of the corals were buried in sediment in late 2015.
+
 # 3. Sedimentation killed tagged corals
 
 ### 3.1 Partial mortality
@@ -192,20 +223,31 @@ This figure uses the tagged coral data to calculate the probability that corals 
 ```{r, fig.width = 8, fig.height = 4}
 load("data/pm.lsm.RData")
 
+pm.lsm1 <- summary(pm.lsm1) %>%
+  mutate(dist_cat = factor(case_when(
+    channel == "channelside" ~ "< 50 m",
+    reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+    reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+
+
 # Plot partial mortality prevalence
-fig3 <- ggplot(summary(pm.lsm1), aes(x = channel, y = prob, fill = channel)) + 
+fig3 <- ggplot(pm.lsm1, aes(x = channel, y = prob, fill = dist_cat)) + 
   facet_grid(dir ~ reef) +
   geom_bar(stat = "identity") +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
   geom_text(data = data.frame(summary(pm.lsm1.sig)), inherit.aes = FALSE,
             aes(x = 1.5, y = 0.8, label = ifelse(p.value < 0.05, "*", NA)), cex = 10) +
   scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  scale_fill_manual(values = c("red", "orange", "green3")) +
   theme_custom +
   theme(legend.position = "none") +
   labs(x = NULL, y = "Probability of partial mortality due to sediment")
 
 fig3
 ```
+
+### Finding: With the exception of R3S, 50-75% of all corals in channelside areas suffered partial mortality due to sedimentation. 
 
 Here we can also show the figure with partial mortality as a function of sediment deposition:
 
@@ -214,7 +256,7 @@ Here we can also show the figure with partial mortality as a function of sedimen
 load("data/sed_deposited.RData")
 
 # Join partial mortality results with fine sediment deposition data
-finesed.pm <- full_join(fine.depo, summary(pm.lsm1))
+finesed.pm <- full_join(fine.depo, pm.lsm1)
 finesed.pm <- ungroup(finesed.pm)
 
 # Fit linear model with weights inverse to standard error of y-axis
@@ -234,13 +276,14 @@ nls1pred$prob <-  predict(nls1, newdata = nls1pred)
 fine <- ggplot(finesed.pm, aes(x = int_fit, y = prob)) + 
   geom_errorbar(aes(ymin = prob - SE, ymax = prob + SE), lwd = 0.2) +
   geom_errorbarh(aes(xmin = int_min, xmax = int_max), lwd = 0.2) +
-  geom_point(aes(color = channel)) +
+  geom_point(aes(color = dist_cat)) +
   geom_line(data = nls1pred, linetype = 2) +
   #geom_line(data = lpred, linetype = 2) +
   #geom_smooth(method='lm') +
   labs(x = "Total fine sediment deposited (g)",
        y = "Probability of partial mortality") +
   geom_text_repel(aes(label = paste(reef, dir, channel)), size = 2.5) +
+  scale_color_manual(values = c("red", "orange", "green3")) +
   #annotate("text", x = 350, y = 0.1, label = as.character(expression(R^{2}*" = 0.74")), parse = TRUE) +
   #annotate("text", x = 350, y = 0.05, label = "p = 0.0003") +
   theme_few() +
@@ -271,6 +314,8 @@ fig4 <- ggplot(summary(dead.lsm4), aes(x = channel, y = prob, fill = channel)) +
 fig4
 ```
 
+### Finding: The probability of complete mortality on the northern middle reef was estimated at over 50%.
+
 # 4. Long-lasting impacts to ecosystem
 
 ## 4.1 Reduced coral density
@@ -284,7 +329,7 @@ load("data/dens.mod.RData"); large.dens <- newdata2; large.anno <- anno; rm(anno
 
 # Plot results
 ggplot(data = large.dens, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef, scales = "free_x") +
+  facet_grid(dir ~ reef, scales = "free") +
   geom_line() +
   scale_y_continuous(expand = c(0,0)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
@@ -294,11 +339,13 @@ ggplot(data = large.dens, aes(x = dist, y = fit, color = timepoint)) +
   geom_text(data = large.anno, inherit.aes = FALSE, hjust = "left",
             aes(x = dist, y = `post-2014` - 0.1, label = paste0(round(-rel, 1), "%", sig))) +
   labs(x = "Distance from channel (m)", y = "Corals (>3cm) per m2") +
-  coord_cartesian(ylim = c(0, 1.75), xlim =c(0,500)) +
+  coord_cartesian(ylim = c(0, 2), xlim =c(0,500)) +
   theme_custom +
   theme(legend.position = c(0.2, 0.9)) +
   scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
 ```
+
+### Finding: The number of large corals (>3cm) near the channel declined by 30-50% (except R3S; data unavailable for HB sites). These declines only extend a couple hundred meters from the channel. Can we multiply these numbers by total reef area to estimate total coral loss?
 
 ### Corals smaller than 3 cm
 
@@ -326,6 +373,8 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
   theme(legend.position = c(0.2, 0.9)) +
   scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
 ```
+
+### Finding: The number of small corals (<3cm) near the channel declined by 80%, except R3S. (data unavailable for HB sites). These declines extended at least several hundred meters from the channel.
 
 ### Combine larger and smaller corals
 ```{r, fig.width = 8, fig.height = 6}
@@ -404,16 +453,26 @@ ggplot(df, aes(x = diameter, fill = year <= 2009)) +
 ### Sediment depth
 
 ```{r}
-load("data/substrate.RData")
+load("data/sdepthmod.RData")
 
-ggplot(data = filter(substrate, dist < 1000, reef2 == "LR"), 
-       aes(x = dist, y = sdepth_cm)) +
+ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
   facet_grid(dir ~ reef) + 
-  geom_boxplot(aes(group = dist), width = 50, range = 0)
+  geom_jitter(width = 20, size = 0.5, alpha = 0.5) +
+  coord_cartesian(xlim = c(0, 500)) +
+  geom_line(data = resdf, aes(x = dist, y = fit, linetype = pct_reef_covered)) +
+  labs(x = "Distance from channel (m)", y = "Sediment depth (cm)") +
+  theme_custom +
+  scale_linetype_manual(name = "% of area",
+                        labels = c(1, 10, 25, 50), values = c(3,4,2,1)) +
+  theme(legend.position = c (0.75, 0.3),
+        legend.key.size = unit(0.25, "cm"),
+        legend.key.width = unit(1,"cm"))
 ```
 
+### Finding: Significant area north of the channel under deep sediments 2 years later. One quarter of the northern outer reef near the channel is under 10+ cm of sediments, and there are pockets (~1%) up to 30cm deep. One quarter of the northern middle reef is under 3+ cm, with pockets of 10+ cm.
+
 ### Sediment type
-```{r, fig.width = 10, fig.height = 5}
+```{r, eval = FALSE, fig.width = 10, fig.height = 5}
 df <- substrate %>%
   filter(!is.na(stype)) %>%
   group_by(reef, dir, reef2, dist, site0) %>%
