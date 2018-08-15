@@ -85,3 +85,29 @@ substrate <- substrate %>%
 save(substrate, file = "data/substrate.RData")
 ```
 
+# Dataset metrics
+```{r}
+
+# Total number of sediment depth measurements
+nmeas <- substrate %>%
+  filter(dist <= 1000) %>%
+  group_by(reef, dir) %>%
+  count()
+
+# Number of transects performed in each area within 1000m from channel
+ntrans <- substrate %>%
+  filter(dist <= 1000) %>%
+  group_by(reef, dir) %>%
+  distinct(site0, transect) %>%
+  summarise(ntransect = n())
+
+# Max dist from channel
+maxdist <- substrate %>%
+  filter(dist <= 1000) %>%
+  group_by(reef, dir) %>%
+  summarise(maxdist = max(dist))
+
+# Print results
+full_join(full_join(nmeas, ntrans), maxdist)
+```
+

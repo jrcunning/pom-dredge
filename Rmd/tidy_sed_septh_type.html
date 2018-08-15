@@ -195,6 +195,38 @@ substrate &lt;- substrate %&gt;%
     transect == &quot;NS&quot; ~ dist + meter_mark - 25))</code></pre>
 <pre class="r"><code>save(substrate, file = &quot;data/substrate.RData&quot;)</code></pre>
 </div>
+<div id="dataset-metrics" class="section level1">
+<h1>Dataset metrics</h1>
+<pre class="r"><code># Total number of sediment depth measurements
+nmeas &lt;- substrate %&gt;%
+  filter(dist &lt;= 1000) %&gt;%
+  group_by(reef, dir) %&gt;%
+  count()
+
+# Number of transects performed in each area within 1000m from channel
+ntrans &lt;- substrate %&gt;%
+  filter(dist &lt;= 1000) %&gt;%
+  group_by(reef, dir) %&gt;%
+  distinct(site0, transect) %&gt;%
+  summarise(ntransect = n())
+
+# Max dist from channel
+maxdist &lt;- substrate %&gt;%
+  filter(dist &lt;= 1000) %&gt;%
+  group_by(reef, dir) %&gt;%
+  summarise(maxdist = max(dist))
+
+# Print results
+full_join(full_join(nmeas, ntrans), maxdist)</code></pre>
+<pre><code>## # A tibble: 4 x 5
+## # Groups:   reef, dir [?]
+##   reef  dir       n ntransect maxdist
+##   &lt;fct&gt; &lt;fct&gt; &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;
+## 1 R2    N      2040        40     875
+## 2 R2    S      1020        20     400
+## 3 R3    N       714        14     500
+## 4 R3    S       306         6     350</code></pre>
+</div>
 
 
 
