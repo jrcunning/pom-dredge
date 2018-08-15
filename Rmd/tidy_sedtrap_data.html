@@ -91,6 +91,9 @@ img {
 .tabbed-pane {
   padding-top: 12px;
 }
+.html-widget {
+  margin-bottom: 20px;
+}
 button.code-folding-btn:focus {
   outline: none;
 }
@@ -252,6 +255,26 @@ sedtrap &lt;- drop_na(sedtrap)
 
 # Save as .RData
 save(sedtrap, file = &quot;data/sedtrap.RData&quot;)</code></pre>
+<div id="dataset-metrics" class="section level2">
+<h2>Dataset metrics</h2>
+<pre class="r"><code># Sites for which there are sediment trap data
+levels(factor(sedtrap$site))</code></pre>
+<pre><code>##  [1] &quot;HBN1&quot;  &quot;HBN2&quot;  &quot;HBN3&quot;  &quot;HBNC1&quot; &quot;HBS1&quot;  &quot;HBS2&quot;  &quot;HBS3&quot;  &quot;HBS4&quot; 
+##  [9] &quot;HBSC1&quot; &quot;R2N1&quot;  &quot;R2N2&quot;  &quot;R2NC1&quot; &quot;R2NC2&quot; &quot;R2NC3&quot; &quot;R2S1&quot;  &quot;R2S2&quot; 
+## [17] &quot;R2SC1&quot; &quot;R2SC2&quot; &quot;R3N1&quot;  &quot;R3NC1&quot; &quot;R3S1&quot;  &quot;R3S2&quot;  &quot;R3S3&quot;  &quot;R3SC1&quot;
+## [25] &quot;R3SC2&quot; &quot;R3SC3&quot;</code></pre>
+<pre class="r"><code># Earliest and latest dates that sediment traps were deployed (overall)
+min(sedtrap$start)</code></pre>
+<pre><code>## [1] &quot;2013-10-15&quot;</code></pre>
+<pre class="r"><code>max(sedtrap$end)</code></pre>
+<pre><code>## [1] &quot;2015-07-20&quot;</code></pre>
+<pre class="r"><code># Range of duration of deployments
+range(sedtrap$duration)</code></pre>
+<pre><code>## [1] 10 89</code></pre>
+<pre class="r"><code># Total number of sediment samples
+nrow(sedtrap)</code></pre>
+<pre><code>## [1] 1287</code></pre>
+</div>
 </div>
 
 

@@ -151,3 +151,19 @@ sedtrap <- drop_na(sedtrap)
 save(sedtrap, file = "data/sedtrap.RData")
 ```
 
+## Dataset metrics
+```{r}
+# Sites for which there are sediment trap data
+levels(factor(sedtrap$site))
+
+# Earliest and latest dates that sediment traps were deployed (overall)
+min(sedtrap$start)
+max(sedtrap$end)
+
+# Range of duration of deployments
+range(sedtrap$duration)
+
+# Total number of sediment samples
+nrow(sedtrap)
+```
+
