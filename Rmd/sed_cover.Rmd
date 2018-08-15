@@ -158,3 +158,25 @@ ggplot(gamms.reef.dir.fits, aes(x = date, y = fit, color = channel)) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
   labs(title = "Sand cover", x = "Date", y = "Percent sand")
 ```
+
+# Assess 'permanent' effects
+```{r, fig.width = 6, fig.height = 6}
+# Show percent sand at each site for TRUE baseline (must be before Nov. 20, 2013) and late 2016
+ba <- cpce %>%
+  filter(date < as.Date("2013-11-20") | date > as.Date("2016-01-01")) %>%
+  group_by(reef, dir, channel, site, date, transect) %>%
+  summarize(propsand = mean(sand_sa / sumpts)) %>%
+  group_by(reef, dir, channel, site, year = factor(year(date))) %>%
+  summarize(meanpropsand = mean(propsand),
+            sd = sd(propsand))
+
+ggplot(ba, aes(x = year, y = meanpropsand, fill = year)) +
+  facet_wrap(~ site) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = meanpropsand - sd, ymax = meanpropsand + sd), 
+                width = 0.5, lwd = 0.3) +
+  scale_fill_manual(values = c("cornflowerblue", "coral")) +
+  theme(legend.position = c(0.75, 0.075))
+```
+
+There are only three sites for which CPCE data exist both before dredging began, and then in 2016: R2N1, R2S1, and R2SC1.
