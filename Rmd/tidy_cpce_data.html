@@ -91,6 +91,9 @@ img {
 .tabbed-pane {
   padding-top: 12px;
 }
+.html-widget {
+  margin-bottom: 20px;
+}
 button.code-folding-btn:focus {
   outline: none;
 }
@@ -181,7 +184,7 @@ cpce &lt;- cpce %&gt;%
 # Add date information
 # Use information from &quot;POM PERM SITE INVENTORY (5 29 18).xlsx&quot; to add date information
 # These are estimates of dates... actual dates may be in &quot;Appendix H&quot;
-# Add estimated dates first...
+# Use baseline report table 1 and &quot;MonitoringMatrix_NEW&quot; to get dates
 cpce &lt;- cpce %&gt;%
   mutate(date = case_when(
     str_detect(week, &quot;B&quot;) ~ case_when(site == &quot;HBN1&quot; ~ as_date(&quot;2013-11-07&quot;),
@@ -223,7 +226,7 @@ cpce &lt;- cpce %&gt;%
     week == &quot;IA&quot; ~ as.Date(&quot;2016-08-20&quot;)     ### THESE DATES NEED CONFIRMATION
   ))
 
-# Then add date if one can be found in DCA filepath
+# Check to see if dates of cpce surveys can be found in DCA filepath
 bb &lt;- unlist(str_extract_all(cpce$DCAfile, &quot;[0-9]+-[0-9]+-[0-9]+&quot;))
 bb</code></pre>
 <pre><code>## [1] &quot;11-19-13&quot; &quot;11-19-13&quot; &quot;11-19-13&quot; &quot;12-15-13&quot; &quot;12-15-13&quot; &quot;12-15-13&quot;</code></pre>
@@ -252,6 +255,45 @@ cpce_omit_nosand &lt;- cpce %&gt;%
 <h1>Save both versions of CPCe data as .RData objects</h1>
 <pre class="r"><code>save(cpce_spr_as_sand, file = &quot;data/cpce_spr_as_sand.RData&quot;)
 save(cpce_omit_nosand, file = &quot;data/cpce_omit_nosand.RData&quot;)</code></pre>
+</div>
+<div id="dataset-metrics" class="section level1">
+<h1>Dataset metrics</h1>
+<pre class="r"><code>cpce &lt;- cpce_spr_as_sand
+
+# Date range for CPCe data
+range(cpce$date)</code></pre>
+<pre><code>## [1] &quot;2013-11-07&quot; &quot;2016-08-20&quot;</code></pre>
+<pre class="r"><code># Group by transect and count number of frames in each transect
+transects &lt;- cpce %&gt;%
+  group_by(site, week, transect, date) %&gt;%
+  count()
+
+# Number of transects
+nrow(transects)</code></pre>
+<pre><code>## [1] 1772</code></pre>
+<pre class="r"><code># Number of still frames analyzed in each transect
+## Range
+range(transects$n)</code></pre>
+<pre><code>## [1] 27 80</code></pre>
+<pre class="r"><code>## Median
+median(transects$n)</code></pre>
+<pre><code>## [1] 40</code></pre>
+<pre class="r"><code># Number of points analyzed in each still frame
+points &lt;- cpce %&gt;%
+  mutate(sumpts = rowSums(select_if(., is.integer))) %&gt;%
+  select(site, transect, date, sumpts)
+## Range
+range(points$sumpts)</code></pre>
+<pre><code>## [1]  1 10</code></pre>
+<pre class="r"><code>## Median
+median(points$sumpts)</code></pre>
+<pre><code>## [1] 8</code></pre>
+<pre class="r"><code># How many transects used SPR (sand, pavement, rubble) as category instead of sand?
+transects_omit_spr &lt;- cpce_omit_nosand %&gt;%
+  group_by(site, week, transect, date) %&gt;%
+  count()
+nrow(transects) - nrow(transects_omit_spr)</code></pre>
+<pre><code>## [1] 108</code></pre>
 </div>
 
 

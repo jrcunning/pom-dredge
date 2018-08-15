@@ -7,7 +7,6 @@ output: html_document
 
 ```{r, setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-knitr::opts_knit$set(root.dir = normalizePath(".."))
 
 # Load packages
 library(tidyverse)
@@ -156,4 +155,40 @@ save(cpce_spr_as_sand, file = "data/cpce_spr_as_sand.RData")
 save(cpce_omit_nosand, file = "data/cpce_omit_nosand.RData")
 ```
 
+# Dataset metrics
+```{r}
+cpce <- cpce_spr_as_sand
+
+# Date range for CPCe data
+range(cpce$date)
+
+# Group by transect and count number of frames in each transect
+transects <- cpce %>%
+  group_by(site, week, transect, date) %>%
+  count()
+
+# Number of transects
+nrow(transects)
+
+# Number of still frames analyzed in each transect
+## Range
+range(transects$n)
+## Median
+median(transects$n)
+
+# Number of points analyzed in each still frame
+points <- cpce %>%
+  mutate(sumpts = rowSums(select_if(., is.integer))) %>%
+  select(site, transect, date, sumpts)
+## Range
+range(points$sumpts)
+## Median
+median(points$sumpts)
+
+# How many transects used SPR (sand, pavement, rubble) as category instead of sand?
+transects_omit_spr <- cpce_omit_nosand %>%
+  group_by(site, week, transect, date) %>%
+  count()
+nrow(transects) - nrow(transects_omit_spr)
+```
 
