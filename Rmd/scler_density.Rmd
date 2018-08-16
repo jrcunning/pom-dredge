@@ -61,10 +61,39 @@ df2 <- scler_3 %>%                # Select dataset that omits small corals
          timepoint = cut(year, breaks = c(-Inf, 2014, Inf), 
                          labels = c("pre-2014", "post-2014"))) %>%
   ungroup()
+
+ggplot(df2, aes(x = dist, y = dens, color = timepoint)) +
+  facet_grid(dir ~ reef) +
+  geom_point()
+```
+
+Reef 2 south post-dredging timepoint has an apparent outlier at 400m from channel. The transect was performed on 2017-03-29
+```{r}
+r2s0 <- filter(df2, reef == "R2", dir == "S", timepoint == "post-2014")
+r2s1 <- filter(r2s0, date != "2017-03-29")
+
+# Fit a linear model with all points and calculate Cook's distance (cannot calculate Cook's for poisson glm)
+mod2 <- lm(n/transect_area_m2 ~ dist, data = r2s0) 
+nd2 <- crossing(dist = r2s0$dist, transect_area_m2 = 1)
+nd2$fit <- predict(mod2, newdata = nd2, re.form = NA, type = "response")
+# Plot fitted lm
+ggplot(r2s0, aes(x = dist, y = dens, color = timepoint)) +
+  geom_point() +
+  geom_line(data = nd2, aes(x = dist, y = fit), inherit.aes = FALSE)
+# Plot cook's distance ~ distance
+plot(cooks.distance(mod2) ~ r2s0$dist)
+
+## Get cook's distance for this point
+max(cooks.distance(mod2))
+## Get second highest cook's distance
+rev(sort(cooks.distance(mod2)))[2]
 ```
 
 ### Fit poisson regression on count data
 ```{r}
+# Remove outlier point from R2S
+df2 <- filter(df2, date != "2017-03-29")
+
 # Fit model
 mod2 <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
              offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
@@ -79,7 +108,7 @@ newdata2$fit <- predict(mod2, newdata2, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
 bootfit2 <- bootMer(mod2, FUN = function(x) predict(x, newdata2, type = "response", re.form = NA), 
-                    nsim = 20, parallel = "multicore", ncpus = 4)
+                    nsim = 4, parallel = "multicore", ncpus = 4)
 newdata2$lci <- apply(bootfit2$t, 2, quantile, 0.08)
 newdata2$uci <- apply(bootfit2$t, 2, quantile, 0.92)
 ```
@@ -127,9 +156,10 @@ sig300 <- summary(diff300) %>%
 sigs <- as_tibble(bind_rows(sig20, sig300))
 
 #anno <- full_join(fits, sigs)
-anno <- full_join(fit20, sig20) %>%
+anno <- full_join(fits, sigs) %>%
   mutate(rel = abs(estimate) / `pre-2014` * 100,
-         sig = gtools::stars.pval(p.value))
+         sig = gtools::stars.pval(p.value),
+         sig2 = gsub(" ", "n.d.", sig))
 
 # Save as RData
 save(newdata2, anno, file = "data/dens.mod.RData")
