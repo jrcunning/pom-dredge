@@ -9,7 +9,6 @@ Import and tidy density data for scleractinians and octocorals
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
-knitr::opts_knit$set(root.dir = normalizePath(".."))
 
 # Load packages
 library(tidyverse)
@@ -419,5 +418,19 @@ all_counts <- all_counts %>%
 # Save count data as .RData object
 ```{r}
 save(all_counts, file = "data/all_counts.RData")
+```
+
+# Dataset metrics
+```{r}
+# Subset scleractinians
+scler <- filter(all_counts, category == "scleractinian")
+
+# Total number of corals counted
+sum(scler$count)
+
+# Total number of transects performed
+transects <- scler %>%
+  distinct(site, site2, transect, date)
+nrow(transects)
 ```
 

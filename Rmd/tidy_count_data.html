@@ -519,6 +519,20 @@ all_counts &lt;- all_counts %&gt;%
 <h1>Save count data as .RData object</h1>
 <pre class="r"><code>save(all_counts, file = &quot;data/all_counts.RData&quot;)</code></pre>
 </div>
+<div id="dataset-metrics" class="section level1">
+<h1>Dataset metrics</h1>
+<pre class="r"><code># Subset scleractinians
+scler &lt;- filter(all_counts, category == &quot;scleractinian&quot;)
+
+# Total number of corals counted
+sum(scler$count)</code></pre>
+<pre><code>## [1] 18474</code></pre>
+<pre class="r"><code># Total number of transects performed
+transects &lt;- scler %&gt;%
+  distinct(site, site2, transect, date)
+nrow(transects)</code></pre>
+<pre><code>## [1] 788</code></pre>
+</div>
 
 
 
