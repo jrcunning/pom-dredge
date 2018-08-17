@@ -108,7 +108,7 @@ newdata2$fit <- predict(mod2, newdata2, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
 bootfit2 <- bootMer(mod2, FUN = function(x) predict(x, newdata2, type = "response", re.form = NA), 
-                    nsim = 4, parallel = "multicore", ncpus = 4)
+                    nsim = 20, parallel = "multicore", ncpus = 4)
 newdata2$lci <- apply(bootfit2$t, 2, quantile, 0.08)
 newdata2$uci <- apply(bootfit2$t, 2, quantile, 0.92)
 ```
@@ -157,7 +157,8 @@ sigs <- as_tibble(bind_rows(sig20, sig300))
 
 #anno <- full_join(fits, sigs)
 anno <- full_join(fits, sigs) %>%
-  mutate(rel = abs(estimate) / `pre-2014` * 100,
+  mutate(rel = -(estimate) / `pre-2014` * 100,
+         rel2 = ifelse(p.value > 0.1, "", paste0(round(rel, 1), "%")),
          sig = gtools::stars.pval(p.value),
          sig2 = gsub(" ", "n.d.", sig))
 
@@ -175,7 +176,7 @@ ggplot(data = newdata2, aes(x = dist, y = fit, color = timepoint)) +
                aes(x = dist, y = `pre-2014`, xend = dist, yend = `post-2014`), 
                arrow = arrow(length = unit(0.03, "npc"))) +
   geom_text(data = anno, inherit.aes = FALSE, hjust = "left",
-            aes(x = dist, y = `post-2014` - 0.1, label = paste0(round(-rel, 1), "%", sig))) +
+            aes(x = dist, y = `post-2014` - 0.1, label = paste0(rel2, sig2))) +
   labs(x = "Distance from channel", y = "# corals > 3cm per m2")
   
 ```
@@ -231,24 +232,40 @@ ggplot(newdata3, aes(x = dist, y = fit, color = timepoint)) +
 lsm20 <- lsmeans(mod3, specs = c("reef", "dir", "timepoint"),
                  at = list(dist = 20, transect_area_m2 = 1), transform = "response")
 
+# Get fitted value of coral density away from channel (i.e., dist = 300 m)
+lsm300 <- lsmeans(mod3, specs = c("reef", "dir", "timepoint"), 
+                  at = list(dist = 300, transect_area_m2 = 1), transform = "response")
+
 # Gather fitted values for annotating plot
 fit20 <- summary(lsm20) %>%
   mutate(dist = 20) %>%
   select(reef, dir, timepoint, rate, dist) %>%
   spread(timepoint, rate)
+fit300 <- summary(lsm300) %>%
+  mutate(dist = 300) %>%
+  select(reef, dir, timepoint, rate, dist) %>%
+  spread(timepoint, rate)
+fits <- as_tibble(bind_rows(fit20, fit300))
 
 # Test for significant differences by timepoint for fitted values
 diff20 <- rbind(pairs(lsm20, by = c("reef", "dir")), adjust = "none")
+diff300 <- rbind(pairs(lsm300, by = c("reef", "dir")), adjust = "none")
 
 # Gather fitted values for annotating plot
 sig20 <- summary(diff20) %>%
   mutate(dist = 20) %>%
   select(reef, dir, estimate, p.value, dist)
+sig300 <- summary(diff300) %>%
+  mutate(dist = 300) %>%
+  select(reef, dir, estimate, p.value, dist)
+sigs <- as_tibble(bind_rows(sig20, sig300))
 
 #anno <- full_join(fits, sigs)
-anno <- full_join(fit20, sig20) %>%
-  mutate(rel = abs(estimate) / `2009 baseline` * 100,
-         sig = gtools::stars.pval(p.value))
+anno <- full_join(fits, sigs) %>%
+  mutate(rel = -(estimate) / `2009 baseline` * 100,
+         rel2 = ifelse(p.value > 0.1, "", paste0(round(rel, 1), "%")),
+         sig = gtools::stars.pval(p.value),
+         sig2 = gsub(" ", "n.d.", sig))
 
 save(newdata3, anno, file = "data/small.dens.mod.RData")
 
@@ -257,15 +274,15 @@ ggplot(data = newdata3, aes(x = dist, y = fit, color = timepoint)) +
   facet_grid(dir ~ reef, scales = "free_x") +
   geom_line() +
   scale_x_continuous(limits = c(0, 500)) +
-  scale_y_continuous(limits = c(0, 3.8)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
   geom_segment(data = anno, inherit.aes = FALSE,
                aes(x = dist, y = `2009 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
                arrow = arrow(length = unit(0.03, "npc"))) +
   geom_text(data = anno, inherit.aes = FALSE, hjust = "left",
-            aes(x = dist, y = `2016/2017 cross-site surveys` - 0.1, 
-                label = paste0(round(-rel, 1), "%", sig))) +
-  labs(x = "Distance from channel", y = "# corals per m2")
+            aes(x = dist, y = `2016/2017 cross-site surveys` - 0.01, 
+                label = paste0(rel2, sig2))) +
+  labs(x = "Distance from channel", y = "# corals per m2") +
+  coord_cartesian(ylim = c(0, 1.5))
   
 ```
 
