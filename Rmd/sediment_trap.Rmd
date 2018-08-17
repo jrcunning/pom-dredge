@@ -316,3 +316,25 @@ ggplot(coarse.depo, aes(x = channel, y = int_fit, fill = channel)) +
 save(total.depo, fine.depo, file = "data/sed_deposited.RData")
 ```
 
+## Reported results
+```{r}
+# Highest measurement at northern middle reef channelside
+sedtrap %>% filter(finerate_mgcm2d > 600) %>% select(site, start, end, middate, duration, finerate_mgcm2d)
+# Measurement at northern middle reef control at the same time 
+fine.gamms.reef.dir.fits %>% filter(reef == "R2", dir == "N", channel == "control",
+                                    middate == "2014-11-13")
+
+# Final measurements
+fine.gamms.reef.dir.fits %>%
+  group_by(reef, dir, channel) %>%
+  summarise(lastdate = last(middate),
+            lastrate = fit[middate == lastdate])
+
+# Mean throughout dredging
+fine.gamms.reef.dir.fits %>%
+  filter(middate > "2013-11-20", middate < "2015-03-16") %>%
+  group_by(reef, dir, channel) %>%
+  summarise(meanrate = mean(fit),
+            medrate  = median(fit))
+```
+
