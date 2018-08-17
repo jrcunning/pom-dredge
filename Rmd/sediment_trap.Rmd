@@ -212,7 +212,7 @@ fine.gamms.reef.dir.fits <- fine.gamms.reef.dir %>%
   # Convert to mg per cm2 per day (from g per day)
   mutate_at(vars(fit, lci, uci), function(x) x * 1000 / 5.067)
 
-save(fine.gamms.reef.dir.fits, file = "data/sedtrap.fine.gamms.RData")
+save(fine.gamms.reef.dir.fits, sedtrap, file = "data/sedtrap.fine.gamms.RData")
 
 ### Plot fitted models
 ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = channel)) +
