@@ -127,7 +127,7 @@ total.gamms.reef.dir <- sedtrap %>%
                    verbosePQL = FALSE)),
     # Get newdata frame for predict() using the appropriate range of days
     newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)),
-                                      channel = c("channelside", "control"),
+                                      #channel = c("channelside", "control"),
                                       duration = 1)),
     # Get fitted values from GAMM using newdata frame
     fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
@@ -194,7 +194,7 @@ fine.gamms.reef.dir <- sedtrap %>%
                    verbosePQL = FALSE)),
     # Get newdata frame for predict() using the appropriate range of days
     newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)),
-                                      channel = c("channelside", "control"),
+                                      #channel = c("channelside", "control"),
                                       duration = 1)),
     # Get fitted values from GAMM using newdata frame
     fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
