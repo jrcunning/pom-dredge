@@ -4,7 +4,7 @@ author: "Ross Cunning"
 date: "5/23/2018"
 output: html_document
 editor_options: 
-  chunk_output_type: inline
+  chunk_output_type: console
 ---
 
 # Setup
