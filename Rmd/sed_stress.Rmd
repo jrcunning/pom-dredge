@@ -227,4 +227,25 @@ fig2 + xlim(as.Date("2013-10-20"), as.Date("2015-07-01")) +
 
 Analysis of PBUR or BUR only shows much lower prevalence of these condition codes at control sites, yet their prevalence at channelside sites remains very high.
 
+# Reported results
+```{r}
+load("data/sedstress_gamms.RData")
+
+# Number of corals PBUR or BUR before dredging began
+sedstress.summ2 %>% ungroup() %>%
+  filter(date < "2013-11-20") %>%
+  summarise(nobs = sum(n),
+            nsedstress = sum(SEDSTRESS))
+
+# Peak of sed stress
+# What was the maximum coral burial observed in each area? Look at upper confidence limit on prediction, and when it occurred.
+maxfit2014 <- gamms2.fitted %>%
+  group_by(reef, dir, channel) %>%
+  summarise(max_burial = round(max(fit) * 100, 1),
+            when = date[fit == max(fit)])
+
+knitr::kable(maxfit2014 %>% arrange(-max_burial),
+             caption = "Maximum predicted prevalence of coral burial")
+
+```
 
