@@ -63,6 +63,10 @@ Data issues that we have identified in this study are described in detail below.
 #####*These data were obtained via records requests. Data was compiled and reformatted by us and is presented here:*
 9. [allFDEPdatatable.xls](allFDEPdatatable.xls)
 
+### *Scientific Reports* competing interest policy
+#####*Highlights indicate where conflicts occur that were not disclosed.*
+10. [Appendix I - Competing Interests Policy annotated.pdf](Appendix I - Competing Interests Policy annotated.pdf)
+
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
