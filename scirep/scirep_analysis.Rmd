@@ -288,7 +288,7 @@ wp_scirep %>%
 
 In the Precht et al. dataset, we find that the first time >5% white plague prevalence (defined as occurrence of the “WP” condition code) was documented was on October 17, 2014 at R2SC2, when the proportion was 8% (N=2 out of 25 colonies). 
 
-We then queried the FDEP dataset including all middle and outer reef permanent monitoring locations (submitted by the authors working for Dial Cordy as part of compliance monitoring), and we find that the first prevalence >5% WP at a single site was actually on June 27th, 2014 at R3NC1 (the northern control site from the outer reef, see Figure 1), which was omitted from Precht et al. analyses. **This puts the ‘start of the outbreak’ (defined by by the authors’ >5% disease prevalence threshold) months earlier, north of the channel, and before bleaching had yet occurred.**
+We then queried the FDEP dataset including all middle and outer reef permanent monitoring locations (submitted by the authors working for Dial Cordy as part of compliance monitoring), and we find that the first prevalence >5% WP at a single site was actually on June 27th, 2014 at R3NC1 (the northern control site from the outer reef, see Figure 1), which was omitted from Precht et al. analyses. **This puts the ‘start of the outbreak’ (defined by the authors’ >5% disease prevalence threshold) months earlier, north of the channel, and before bleaching had yet occurred.**
 
 ------
 
