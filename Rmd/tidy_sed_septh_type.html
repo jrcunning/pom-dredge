@@ -179,7 +179,8 @@ substrate &lt;- substrate %&gt;%
            site==&quot;R3SC2&quot; ~ &quot;1300&quot;, site==&quot;R3S1&quot; ~ &quot;30&quot;, site==&quot;R3S3&quot; ~ &quot;30&quot;,
            site==&quot;R3SC3&quot; ~ &quot;1300&quot;, site==&quot;R3SC1&quot; ~ &quot;1300&quot;), dist)) %&gt;%
   mutate(reef = str_sub(site, 1, 2), 
-        reef2 = str_extract(site0, &quot;[^-|_]R$&quot;),
+        reef2 = case_when(reef == &quot;HB&quot; ~ &quot;&quot;,
+                          TRUE ~ str_extract(site0, &quot;[^-|_]R$&quot;)),
           dir = str_sub(site, 3, 3),
       channel = case_when(perm == &quot;yes&quot; ~ if_else(grepl(&quot;C&quot;, site), &quot;control&quot;, &quot;channelside&quot;)))
 

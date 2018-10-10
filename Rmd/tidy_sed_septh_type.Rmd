@@ -62,7 +62,8 @@ substrate <- substrate %>%
            site=="R3SC2" ~ "1300", site=="R3S1" ~ "30", site=="R3S3" ~ "30",
            site=="R3SC3" ~ "1300", site=="R3SC1" ~ "1300"), dist)) %>%
   mutate(reef = str_sub(site, 1, 2), 
-        reef2 = str_extract(site0, "[^-|_]R$"),
+        reef2 = case_when(reef == "HB" ~ "",
+                          TRUE ~ str_extract(site0, "[^-|_]R$")),
           dir = str_sub(site, 3, 3),
       channel = case_when(perm == "yes" ~ if_else(grepl("C", site), "control", "channelside")))
 
