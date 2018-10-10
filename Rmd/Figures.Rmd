@@ -1,8 +1,14 @@
 ---
-title: "dredge figures"
-author: "Ross Cunning"
-date: "7/29/2018"
-output: html_document
+title: "Damage to coral and reef habitat caused by dredging at the Port of Miami"
+subtitle: "Manuscript Figures and Supplementary Figures"
+author: "Ross Cunning, Rachel N. Silverstein, Andrew C. Baker"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
 ---
 
 ```{r setup, include=FALSE}
@@ -77,18 +83,29 @@ add_dist_cat <- function(x) {
 
 ```
 
-# Figure 1: Map
+# Study area and design
 
+![**Figure 1A. Large scale map**](../figures/Map - Revised Coral - large-scale.jpg)
 
-# 1. Sediments were deposited on reef
+![**Figure 1B. Small scale map**](../figures/Map - Revised Coral - small-scale.jpg)
 
-We want to show that sediment was deposited in the habitat during the dredging project. This can include sediment depositions rates (from sediment trap data) and/or benthic sediment cover (from cpce data). Here are a few various figures that include one or both of these metrics.
-```{r sediment_loaddata, include = FALSE}
+\  
+
+# Sedimentation on the reef
+
+### *Fine sediment deposition rates*
+
+\  
+
+```{r FIG2, fig.height = 3.74016, fig.width = 7.4801}
 # Load sediment trap fitted models (fine sediment deposition rates)
 load("data/sedtrap.fine.gamms.RData")
 sedtrapmod <- fine.gamms.reef.dir.fits %>%
   rename(date = middate) %>%
   select(reef, dir, channel, date, fit, lci, uci)
+
+fine.gamms.reef.dir.fits <- fine.gamms.reef.dir.fits %>% add_dist_cat()
+sedtrap <- sedtrap %>% add_dist_cat()
 
 # Load sediment cover fitted models (from cpce data)
 load("data/sedcov.gamms.RData")
@@ -109,15 +126,8 @@ corrs <- sed %>%
 # Add date and fit to map lag and cor values onto ggplot
 corrs <- corrs %>%
   mutate(date = as.Date("2013-12-01"), fit = 400)
-```
 
-## Figure 2.
 
-Figure 2. Deposition of fine sediments in each monitoring area during dredging operations. Horizontal line segments indicate measured rates of fine sediment deposition by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
-
-```{r FIG2, echo = FALSE}
-fine.gamms.reef.dir.fits <- fine.gamms.reef.dir.fits %>% add_dist_cat()
-sedtrap <- sedtrap %>% add_dist_cat()
 ### Plot fitted models
 ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_cat)) +
   facet_grid(dir ~ reef, labeller = global_labeller) +
@@ -138,11 +148,15 @@ ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_cat)) +
 ggsave(filename = "figures/Fig2.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-## Figure 3
+**Figure 2. Deposition of fine sediments in each monitoring area during dredging operations.** Horizontal line segments indicate measured rates of fine sediment deposition by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-Figure 3. Percent sand cover at each monitoring area during dredging operations. Points indicate the mean percent sand cover for each transect measured by CPCe analysis, and smooth lines show GAMM fits for each monitoring area (±84% CI). Fitted lines are colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+\  
 
-```{r FIG3, fig.width = 8, fig.height = 4}
+### *Sand cover*
+
+\  
+
+```{r FIG3, fig.height = 3.74016, fig.width = 7.4801}
 sed <- sed %>% add_dist_cat()
 sand.summ <- sand.summ %>% add_dist_cat()
 ### Plot only sand cover (CPCE)
@@ -164,26 +178,27 @@ fig3 <- ggplot(filter(sed, var == "cov"), aes(x = date, y = fit, color = dist_ca
         legend.text = element_text(size = 6))
 
 ggsave(filename = "figures/Fig3.png", plot = fig3, device = "png", width = 190, height = 95, units = "mm")
+
+fig3
 ```
 
-### Finding: Channelside areas with naturally low sand cover (0-10%) became up to 50-90% covered in sand for most of the duration of the dredging project. Sites located within 2.5 km of the channel (putative "controls") also became 50-75% covered in sand during dredging, while true controls located 9.4 km from the channel were typically <25% sand, and never exceeded 50%.
+**Figure 3. Percent sand cover at each monitoring area during dredging operations.** Points indicate the mean percent sand cover for each transect measured by CPCe analysis, and smooth lines show GAMM fits for each monitoring area (±84% CI). Fitted lines are colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-## Figure S1
+\  
 
-This is the same as Figure 3 with the time axis extended to show 2016 data points.
-
-Figure S1. Percent sand cover at each monitoring area during dredging operations. Points indicate the mean percent sand cover for each transect measured by CPCe analysis, and smooth lines show GAMM fits for each monitoring area (±84% CI). Fitted lines are colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
-
-```{r}
+```{r FIGS1, fig.height = 3.74016, fig.width = 7.4801}
 figS1 <- fig3 + scale_x_date(limits = NULL)
 ggsave(filename = "figures/FigS1.png", plot = figS1, device = "png", width = 190, height = 95, units = "mm")
+figS1
 ```
 
-## Figure S2
+**Figure S1. Percent sand cover at each monitoring area during dredging operations.** Points indicate the mean percent sand cover for each transect measured by CPCe analysis, and smooth lines show GAMM fits for each monitoring area (±84% CI). Fitted lines are colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-Figure S2. Correlation between fine sediment deposition rates and benthic sediment cover during dredging operations at each monitoring area. The left y-axis and solid lines correspond to the fine sediment deposition rate (see Fig. S1), while the right y-axis and dotted lines correspond to percent sand cover (see Fig. 2), with separate panels for each monitoring area. The coefficient of correlation between the two time series is displayed in each panel, along with the lag time (of cover following deposition) for which the highest correlation is observed (up to 120 days). Colors correspond to distance from channel. Blank panels are combinations of reef, direction, and distance for which monitoring data do not exist. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+*Figure S1 is the same as Figure 3 with the time axis extended to show 2016 data points.*
 
-```{r FIGS2, eval = T, fig.width = 8, fig.height = 4}
+\  
+
+```{r FIGS2, fig.height = 3.74016, fig.width = 10}
 sedtrapmod <- sedtrapmod %>% add_dist_cat()
 sedcovmod <- sedcovmod %>% add_dist_cat()
 corrs <- corrs %>% add_dist_cat()
@@ -204,54 +219,21 @@ ggplot(data = droplevels(sedtrapmod), mapping = aes(x = date, y = fit, color = d
 
 ggsave(filename = "figures/FigS2.png", device = "png", width = 190, height = 95, units = "mm")
 
-median(corrs$cor)
-median(corrs$lag)
+#median(corrs$cor)
+#median(corrs$lag)
 ```
 
-```{r, include = FALSE, eval = FALSE}
-# Separate panels for sediment trap and cpce data
-ggplot(data = sed, mapping = aes(x = date, y = fit, color = channel, linetype = factor(var))) +
-  facet_grid(dir + var ~ reef + channel, scales = "free_y") +
-  geom_line() +
-  theme_few()
-```
+**Figure S2. Correlation between fine sediment deposition rates and benthic sediment cover during dredging operations at each monitoring area.** The left y-axis and solid lines correspond to the fine sediment deposition rate (see Fig. S1), while the right y-axis and dotted lines correspond to percent sand cover (see Fig. 2), with separate panels for each monitoring area. The coefficient of correlation between the two time series is displayed in each panel, along with the lag time (of cover following deposition) for which the highest correlation is observed (up to 120 days). Colors correspond to distance from channel. Blank panels are combinations of reef, direction, and distance for which monitoring data do not exist. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-```{r sediment_2, include = FALSE, eval = FALSE, fig.width = 8, fig.height = 6}
-ggplot(data = NULL, mapping = aes(x = date, y = fit, color = channel)) + 
-  facet_grid(dir ~ reef + channel) +
-  geom_hline(yintercept = 2.2, lwd = 0.25) +
-  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), lwd = 0.2, linetype = 3) +
-  geom_line(data = sedtrapmod) +
-  geom_line(data = sedcovmod, aes(y = fit * 2 + 2.2), linetype = 2) +
-  scale_y_continuous("Fine sedimentation rate (g/day)", expand = c(0,0), 
-                     limits = c(0, 4.2), breaks = 0:2,
-                     sec.axis = sec_axis(~ (.-2.2) / 2, name = "Percent sand cover",
-                                         breaks = c(0, 0.5, 1))) +
-  geom_text(data = corrs, aes(label = paste0("cor =", round(cor, 2)), hjust = "left"), size = 3) +
-  geom_text(data = corrs, aes(y = fit - 0.25, label = paste0("lag =", lag), hjust = "left"), size = 3) +
-  theme(strip.placement = "outside", panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(), panel.background = element_blank(),
-        panel.border = element_rect(color = "black", fill = NA),
-        legend.position = "none", # c(0,0) bottom left, c(1,1) top-right.
-        legend.background = element_rect(fill = NA, colour = NA),
-        legend.title = element_blank(),
-        legend.key.size = unit(0.3, "cm"),
-        axis.text.x = element_text(angle=45, hjust=1)) +
-  labs(x = "")
-```
+*Figure S2 presents the same data from Figures 2 and 3, analyzed and visualized together to show their correlation.*
 
-```{r sediment_3, include = FALSE, eval = FALSE}
-ggplot(data = sed, mapping = aes(x = date, y = fit, color = channel, linetype = interaction(reef, dir))) +
-  facet_grid(var ~ ., scales = "free") +
-  geom_line() +
-  theme_few()
-```
+\  
 
-# Figure 4
+### *Total fine sediment deposition*
 
-Figure 4. Total amount of fine sediments deposited in each monitoring area during dredging operations. Bars indicate the sum of fitted daily fine sediment deposition rates between 2013-11-20 and 2015-03-16 (see Fig. S1) for each monitoring area (± 95% CI). Bars are colored corresponding to distance from channel, and empty spaces indicate areas that were not monitored.
+\  
 
-```{r FIG4}
+```{r FIG4, fig.height = 3.74016, fig.width = 7.4801}
 load("data/sed_deposited.RData")
 fine.depo <- fine.depo %>% add_dist_cat()
 ## fitted values are in mg / cm2
@@ -277,16 +259,17 @@ ggplot(fine.depo, aes(x = dist_cat, y = int_fit/100, fill = dist_cat)) +
 ggsave(filename = "figures/Fig4.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
+**Figure 4. Total amount of fine sediments deposited in each monitoring area during dredging operations.** Bars indicate the sum of fitted daily fine sediment deposition rates between 2013-11-20 and 2015-03-16 (see Fig. S1) for each monitoring area (± 95% CI). Bars are colored corresponding to distance from channel, and empty spaces indicate areas that were not monitored.
 
-# 2. Sediments buried tagged corals
+\  
 
-This figure uses the tagged coral data to show the probability that corals were partially or completely buried (PBUR or BUR) throughout the dredging project. This shows that corals were likely to be buried for many months during the project.
+# Impacts on tagged corals
 
-## Figure 5
+### *Coral burial*
 
-Figure 5. Probability of partial or complete coral burial by sediments in each monitoring area during dredging operations. Points indicate the proportion of living tagged corals in each monitoring area observed on a given date with the condition codes PBUR (partial burial) or BUR (complete burial). Lines represent GAMM fits for each monitoring area (±84% CI) colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+\  
 
-```{r FIG5, fig.width = 8, fig.height = 4}
+```{r FIG5, fig.height = 3.74016, fig.width = 7.4801}
 load("data/sedstress_gamms.RData")
 
 gamms2.fitted <- gamms2.fitted %>% add_dist_cat()
@@ -312,29 +295,32 @@ fig5 <- ggplot(gamms2.fitted, aes(x = date, y = fit, color = dist_cat)) +
         legend.text = element_text(size = 6))
 
 ggsave(filename = "figures/Fig5.png", plot = fig5, device = "png", width = 190, height = 95, units = "mm")
+
+fig5
 ```
 
-### Finding: Dredging caused partial or complete burial of most of the corals in channelside areas, especially north of the channel where up to 80-87% of the corals were buried in sediment in late 2015.
+**Figure 5. Probability of partial or complete coral burial by sediments in each monitoring area during dredging operations.** Points indicate the proportion of living tagged corals in each monitoring area observed on a given date with the condition codes PBUR (partial burial) or BUR (complete burial). Lines represent GAMM fits for each monitoring area (±84% CI) colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-## Figure S3.
+\  
 
-This is the same as Figure 5 but with the time axis extended to show the 2016 data points.
-```{r FigS3}
+```{r FIGS3, fig.height = 3.74016, fig.width = 7.4801}
 figS3 <- fig5 + scale_x_date(limits = NULL)
 ggsave(filename = "figures/FigS3.png", plot = figS3, device = "png", width = 190, height = 95, units = "mm")
+
+figS3
 ```
 
-# 3. Sedimentation killed tagged corals
+**Figure S3. Probability of partial or complete coral burial by sediments in each monitoring area during dredging operations.** Points indicate the proportion of living tagged corals in each monitoring area observed on a given date with the condition codes PBUR (partial burial) or BUR (complete burial). Lines represent GAMM fits for each monitoring area (±84% CI) colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-### 3.1 Partial mortality
+*Figure S3 is the same as Figure 5, but with the time axis extended to show the 2016 data points.*
 
-This figure uses the tagged coral data to calculate the probability that corals were recorded with the "PM" condition code (=partial mortality due to sedimentation) during the dredging project.
+\  
 
-## Figure S4
+### *Partial mortality*
 
-Figure S4. Coral partial mortality due to sedimentation in each monitoring area throughout dredging operations. Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
+\  
 
-```{r FIGS4, fig.width = 8, fig.height = 4}
+```{r FIGS4, fig.height = 3.74016, fig.width = 7.4801}
 load("data/pm.lsm.RData")
 
 pm.lsm1 <- summary(pm.lsm1) %>% add_dist_cat()
@@ -360,18 +346,14 @@ ggplot(pm.lsm1, aes(x = dist_cat, y = prob, fill = dist_cat)) +
 
 ggsave(filename = "figures/FigS4.png", device = "png", width = 190, height = 95, units = "mm")
 
-pm.lsm1
+#pm.lsm1
 ```
 
-### Finding: With the exception of R3S, 50-75% of all corals in channelside areas suffered partial mortality due to sedimentation. 
+**Figure S4. Coral partial mortality due to sedimentation in each monitoring area throughout dredging operations.** Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
 
-Here we can also show the figure with partial mortality as a function of sediment deposition:
+\  
 
-# Figure 6
-
-Figure 6. Relationship between total fine sediment deposition and coral partial mortality during dredging operations. Points indicate, for each monitoring area, the total amount of fine sediments deposited during dredging (±95% CI; see Fig. 3) on the x-axis, and the probability of partial mortality (±95% CI; see Fig. S3) on the y-axis. Points are labeled corresponding to reef region (SIR = sourthern inner reef, NIR = northern inner reef, SMR = southern middle reef, NMR = northern middle reef, SOR = southern outer reef, NOR = northern outer reef) and colored corresponding to distance from channel. The fitted dose-response curve follows a four parameter type two Weibull function weighted inversely by the SE of partial mortality estimates.
-
-```{r FIG6, fig.width = 5, fig.height = 5}
+```{r FIG6, fig.height = 5, fig.width = 5}
 # Load sediment deposition data (see Rmd/sediment_trap.Rmd)
 load("data/sed_deposited.RData")
 
@@ -401,8 +383,8 @@ rSS <- sum(abs(fitted(nls1) - finesed.pm$prob)^2)
 # totSS
 tSS <- sum((finesed.pm$prob - mean(finesed.pm$prob))^2)
 # proportion explained by model
-(tSS - rSS) / tSS
-1 - rSS / tSS
+#(tSS - rSS) / tSS
+#1 - rSS / tSS
 
 # without R3N (rows 9 and 10)
 # residSS
@@ -410,7 +392,7 @@ rSS <- sum(abs(fitted(nls1)[-(9:10)] - finesed.pm$prob[-(9:10)])^2)
 # totSS
 tSS <- sum((finesed.pm$prob[-(9:10)] - mean(finesed.pm$prob)[-(9:10)])^2)
 # proportion explained by model
-(tSS - rSS) / tSS
+#(tSS - rSS) / tSS
 
 # Create new labels for each monitoring area for plot
 finesed.pm <- finesed.pm %>%
@@ -442,19 +424,19 @@ ggplot(finesed.pm, aes(x = int_fit/100, y = prob)) +
 ggsave(filename = "figures/Fig6.png", device = "png", width = 90, height = 85, units = "mm")
 ```
 
-### 3.2 Total mortality
+**Figure 6. Relationship between total fine sediment deposition and coral partial mortality during dredging operations.** Points indicate, for each monitoring area, the total amount of fine sediments deposited during dredging (±95% CI; see Fig. 3) on the x-axis, and the probability of partial mortality (±95% CI; see Fig. S3) on the y-axis. Points are labeled corresponding to reef region (SIR = sourthern inner reef, NIR = northern inner reef, SMR = southern middle reef, NMR = northern middle reef, SOR = southern outer reef, NOR = northern outer reef) and colored corresponding to distance from channel. The fitted dose-response curve follows a four parameter type two Weibull function weighted inversely by the SE of partial mortality estimates.
 
-To test whether sedimentation caused total mortality of corals, we can look at disease-resistant species because death cannot be attributed to disease. However, using only this subset of tagged corals limits the power of the analysis, and a significant difference between channelside and control sites is only seen at the northern middle reef. However, this is where impacts are the greatest based on other metrics. The estimated probability of total mortality at the northern middle reef channelside sites is greater than 50%
+\  
 
-## Figure S5
+### *Total mortality*
 
-Figure S5. Total mortality of non-disease-susceptible coral species in each monitoring area throughout dredging operations. Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
+\  
 
-```{r FIGS3, fig.width = 8, fig.height = 4}
+```{r FIGS5, fig.height = 3.74016, fig.width = 7.4801}
 load("data/tm.lsm.RData")
 
 dead.lsm4 <- summary(dead.lsm4) %>% add_dist_cat()
-dead.lsm4
+#dead.lsm4
 
 dd <- dead.lsm4 %>% ungroup %>% expand(reef, dir, dist_cat)
 dd <- anti_join(dd, dead.lsm4) %>%
@@ -478,21 +460,17 @@ ggplot(dead.lsm4, aes(x = dist_cat, y = prob, fill = dist_cat)) +
 ggsave(filename = "figures/FigS5.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-### Finding: The probability of complete mortality on the northern middle reef was estimated at over 50%.
+**Figure S5. Total mortality of non-disease-susceptible coral species in each monitoring area throughout dredging operations.** Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
 
-# 4. Long-lasting impacts to ecosystem
+\  
 
-## 4.1 Reduced coral density
+# Impacts on reef habitat
 
-### Corals larger than 3 cm
+### *Coral density*
 
-This figure is based on the coral count data before dredgine (2009 and 2013) and after dredging (2015 and 2016/2017). Coral density significantly declines after dredging nearer to the channel, but this effect diminishes further from the channel, suggesting it is directly related to dredging activity. Disease may have also led to declines in coral density regionally, but this effect would not be expected to show any relationship to the channel.
+\  
 
-## Figure 7
-
-Figure 7. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations. Data 'before' dredging were collected in 2009 and 2013, and data after dredging were collected in 2015-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
-
-```{r FIG7, fig.width = 8, fig.height = 4}
+```{r FIG7, fig.height = 3.74016, fig.width = 7.4801}
 load("data/large.dens.mod.RData"); large.dens <- newdata_1; large.anno <- anno; large.lsm <- lsm; rm(anno, newdata_1, lsm)
 
 # PLOT ALL RESULTS FOR LARGE CORALS
@@ -521,29 +499,23 @@ ggsave(filename = "figures/Fig7.png", device = "png", width = 190, height = 95, 
 
 
 # Calculate total number of corals lost per square meter within threshold of 
-large.dens %>%
-  select(reef, dir, dist, timepoint, fit) %>%
-  spread(timepoint, fit) %>%
-  mutate(diff = `post-2014` - `pre-2014`) %>%
-  filter(diff < 0) %>%
-  group_by(reef, dir) %>%
-  summarise(thresh_dist = max(dist),
-            total_diff = sum(diff))
+#large.dens %>%
+#  select(reef, dir, dist, timepoint, fit) %>%
+#  spread(timepoint, fit) %>%
+#  mutate(diff = `post-2014` - `pre-2014`) %>%
+#  filter(diff < 0) %>%
+#  group_by(reef, dir) %>%
+#  summarise(thresh_dist = max(dist),
+#            total_diff = sum(diff))
 
-(77.8 * 700) + (29.7 * 700) + (161 * 100)
+#(77.8 * 700) + (29.7 * 700) + (161 * 100)
 ```
 
-### Finding: The number of large corals (>3cm) near the channel declined by 30-50% (except R3S; data unavailable for HB sites). These declines only extend a couple hundred meters from the channel. Can we multiply these numbers by total reef area to estimate total coral loss?
+**Figure 7. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2009 and 2013, and data after dredging were collected in 2015-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
 
-### Corals smaller than 3 cm
+\  
 
-Here we use coral count data only from transects in 2009 and 2016/2017 when small corals were counted, in areas within 100m of the reef channel (this distance can be adjusted up to 500m threshold (data only collected within 500m in 2009) and the result does not change).
-
-## Figure S6
-
-Figures S6. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations. Data 'before' dredging were collected in 2009, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
-
-```{r FIGS6, fig.width = 8, fig.height = 4}
+```{r FIGS6, fig.height = 3.74016, fig.width = 7.4801}
 load("data/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
 
 # Plot results
@@ -569,17 +541,15 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
 ggsave(filename = "figures/FigS6.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-### Finding: The number of small corals (<3cm) near the channel declined by 80%, except R3S. (data unavailable for HB sites). These declines extended at least several hundred meters from the channel.
+**Figures S6. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2009, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
 
-### Size frequency distributions also show loss of small corals
+\  
 
-A Kruskal-Wallis non-parametric test for difference in mean diameter shows that average coral size was significantly larger after dredging than before at all sites except R3N, suggesting that smaller corals were disproportionaly removed from the population due to burial, and/or that dredging sedimentation prevented coral recruitment.
+### *Coral size-frequency*
 
-## Figure 8
+\  
 
-Figure 8. Size frequency distribution of corals before and after dredging. For the northern and southern middle and outer reefs, histograms show the relative proportion of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.
-
-```{r FIG8}
+```{r FIG8, fig.height = 3.74016, fig.width = 7.4801}
 load("data/sizefreq.RData")
 
 df <- df %>%
@@ -608,8 +578,11 @@ ggplot(df, aes(x = diameter, fill = year <= 2009)) +
 ggsave(filename = "figures/Fig8.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
+**Figure 8. Size frequency distribution of corals before and after dredging.** For the northern and southern middle and outer reefs, histograms show the relative proportion of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.
 
-```{r}
+\  
+
+```{r FIG8_alternative, fig.height = 3.74016, fig.width = 7.4801}
 # Plot histogram with absolute density instead of relative proportion
 # get total area per reef/dir/timepoint
 areas <- df %>%
@@ -640,17 +613,15 @@ ggplot(df2, aes(x = diameter, fill = timepoint)) +
   scale_fill_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
 ```
 
-## 4.2 Elevated sand cover
+**Figure 8 - alternative.** *Alternative version of Figure 8, with absolute density instead of relative proportion on y-axis.*
 
-### Percent sand cover
+\  
 
-### Sediment depth
+### *Sediment depth*
 
-## Figure 9
+\  
 
-Figure 9. Depth of sediments in relation to channel measured ~2 years after dredging operations. Dots represent individual sediment depth measurements along transects, jittered around the distance from the center of the transect to the channel in each monitoring region (no data available for the inner reef). Lines represent quantile regressions across transects as a function of log(distance from channel), e.g., the percent of reef area with sediments measuring at least a given depth.
-
-```{r FIG9}
+```{r FIG9, fig.height = 3.74016, fig.width = 7.4801}
 load("data/sdepthmod.RData")
 
 LR <- LR %>%
@@ -675,10 +646,12 @@ ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
 ggsave(filename = "figures/Fig9.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-### Finding: Significant area north of the channel under deep sediments 2 years later. One quarter of the northern outer reef near the channel is under 10+ cm of sediments, and there are pockets (~1%) up to 30cm deep. One quarter of the northern middle reef is under 3+ cm, with pockets of 10+ cm.
+**Figure 9. Depth of sediments in relation to channel measured ~2 years after dredging operations.** Dots represent individual sediment depth measurements along transects, jittered around the distance from the center of the transect to the channel in each monitoring region (no data available for the inner reef). Lines represent quantile regressions across transects as a function of log(distance from channel), e.g., the percent of reef area with sediments measuring at least a given depth.
 
-### Sediment type
-```{r, eval = FALSE, fig.width = 10, fig.height = 5}
+\  
+
+```{r, eval = FALSE, include = FALSE, fig.width = 10, fig.height = 5}
+#Sediment type - not useful enough?
 df <- substrate %>%
   filter(!is.na(stype)) %>%
   group_by(reef, dir, reef2, dist, site0) %>%
@@ -691,14 +664,11 @@ ggplot(df, aes(x = factor(dist), y = n, fill = stype)) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
+### *Sand cover before and after dredging at individual sites*
 
-# Before vs. after sand cover
+\  
 
-## Figure S7
-
-Figure S7. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected. Bars indicate the mean percent sand based on CPCe analysis, and error bars represent standard deviation.
-
-```{r FIGS7}
+```{r FIGS7, fig.height = 3.74016, fig.width = 7.4801}
 load("data/cpce_spr_as_sand.RData")
 cpce <- cpce_spr_as_sand
 # Count sand vs. not sand, and create numeric weeks column
@@ -735,5 +705,7 @@ ba %>%
 
 ggsave(filename = "figures/FigS7.png", device = "png", width = 90, height = 65, units = "mm")
 ```
+
+**Figure S7. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected.** Bars indicate the mean percent sand based on CPCe analysis, and error bars represent standard deviation.
 
 
