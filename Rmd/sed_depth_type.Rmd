@@ -57,7 +57,7 @@ RR showed lower sediment depth than LR, probably because it is a higher relief h
 ```{r}
 # Subset LR habitat
 LR <- substrate %>%
-  filter(reef2 == "LR", dist < 1000)
+  filter(reef == "HB" | reef2 == "LR", dist < 1000)
 
 # Build ggplot
 sdep2 <- ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
@@ -74,6 +74,7 @@ sdep2
 ```{r}
 # Get quantiles of sediment depth for each transect
 df <- LR %>%
+  filter(reef %in% c("R2", "R3")) %>% droplevels() %>%
   nest(-reef, -dir, -dist, -transect) %>%
   mutate(value = map(data, ~ quantile(.$sdepth_cm, c(0.99, 0.9, 0.9, 0.75, 0.5))),
          quantile = map(value, ~ factor(names(.)))) %>%
