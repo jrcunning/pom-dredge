@@ -639,7 +639,7 @@ ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
   theme_custom() +
   scale_linetype_manual(name = "% of area",
                         labels = c(1, 10, 25, 50), values = c(3,4,2,1)) +
-  theme(legend.position = c (0.1, 0.85),
+  theme(legend.position = c (0.25, 0.85),
         legend.key.size = unit(3, "mm"),
         legend.key.width = unit(10, "mm"),
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1))
