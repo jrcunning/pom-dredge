@@ -92,9 +92,10 @@ save(LR, resdf, file = "data/sdepthmod.RData")
 # Plot all sed depth measurements with fitted quantiles
 ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
   facet_grid(dir ~ reef) + 
-  geom_jitter(width = 20, size = 0.5, alpha = 0.5) +
+  geom_jitter(width = 10, size = 0.5, alpha = 0.5) +
   coord_cartesian(xlim = c(0, 500)) +
-  geom_line(data = resdf, aes(x = dist, y = fit, linetype = pct_reef_covered)) +
+  geom_line(data = filter(resdf, !(reef == "R3" & dir == "S")),
+                          aes(x = dist, y = fit, linetype = pct_reef_covered)) +
   labs(x = "Distance from channel (m)", y = "Sediment depth (cm)") +
   scale_linetype_manual(name = "% of area",
                         labels = c(1, 10, 25, 50), values = c(3,4,2,1)) +
