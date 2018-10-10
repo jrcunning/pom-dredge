@@ -153,20 +153,25 @@ substrate &lt;- files %&gt;%
 # Tidy data
 substrate &lt;- substrate %&gt;%
   clean_names() %&gt;%
-  filter(grepl(&quot;^R2|^R3&quot;, station)) %&gt;%                           # Filter R2 and R3
   rename(site0 = station,                                         # Rename columns
          transect = transect_ns_or_ew,
          sdepth_cm = sediment_depth_cm_excavation_depth,
          stype = type_of_sediments_sand_fines_mix) %&gt;%
+  filter(!is.na(site0)) %&gt;%                   # Filter out blank rows without site name
   mutate(site0 = str_replace(site0, &quot;R2N1-350&quot;, &quot;R2N-350-RR&quot;)) %&gt;%   # Fix error in site coding
   mutate(meter_mark = if_else(is.na(actual_position_if_altered),  # Get meter mark, actual pos if altered
                               true = position_meter_mark,
                               false = actual_position_if_altered)) %&gt;%
   select(site0, transect, meter_mark, sdepth_cm, stype) %&gt;%
-  mutate(site = str_extract(site0, &quot;R[^-|_]*&quot;),                   # Get base site name
+  mutate(site = case_when(grepl(&quot;15b|15B&quot;, site0) ~ &quot;HBS&quot;, 
+                          grepl(&quot;7a&quot;, site0) ~ &quot;HBN&quot;,
+                          TRUE ~ str_extract(site0, &quot;^.[^-|_]*&quot;)),                   # Get base site name
          perm = if_else(nchar(site) == 3, &quot;no&quot;, &quot;yes&quot;)) %&gt;%       # Identify permanent sites vs. non
-  mutate(dist = case_when(perm == &quot;no&quot; ~ str_extract(site0, &quot;[[:digit:]]{2,3}&quot;)),
-         dist = ifelse(is.na(dist), case_when(           
+  mutate(dist = case_when(site0 == &quot;HBS-15b-150&quot; ~ &quot;150&quot;,
+                          site0 == &quot;15B-250&quot; ~ &quot;250&quot;,
+                          perm == &quot;no&quot; ~ str_extract(site0, &quot;[[:digit:]]{2,3}&quot;)),
+         dist = ifelse(is.na(dist), case_when(  
+           site==&quot;HBN3&quot; ~ &quot;48&quot;, site==&quot;HBNC1&quot; ~ &quot;2350&quot;, site==&quot;HBS4&quot; ~ &quot;32&quot;, site==&quot;HBSC1&quot; ~ &quot;1650&quot;,
            site==&quot;R2N1&quot; ~ &quot;28&quot;, site==&quot;R2NC2&quot; ~ &quot;9380&quot;, site==&quot;R2N2&quot; ~ &quot;18&quot;,
            site==&quot;R2NC1&quot; ~ &quot;9380&quot;, site==&quot;R2NC3&quot; ~ &quot;9380&quot;, site==&quot;R2S1&quot; ~ &quot;23&quot;,
            site==&quot;R2SC1&quot; ~ &quot;1270&quot;, site==&quot;R2S2&quot; ~ &quot;21&quot;, site==&quot;R2SC2&quot; ~ &quot;1270&quot;,
@@ -218,14 +223,16 @@ maxdist &lt;- substrate %&gt;%
 
 # Print results
 full_join(full_join(nmeas, ntrans), maxdist)</code></pre>
-<pre><code>## # A tibble: 4 x 5
+<pre><code>## # A tibble: 6 x 5
 ## # Groups:   reef, dir [?]
 ##   reef  dir       n ntransect maxdist
 ##   &lt;fct&gt; &lt;fct&gt; &lt;int&gt;     &lt;int&gt;   &lt;dbl&gt;
-## 1 R2    N      2040        40     875
-## 2 R2    S      1020        20     400
-## 3 R3    N       714        14     500
-## 4 R3    S       306         6     350</code></pre>
+## 1 HB    N       204         4     150
+## 2 HB    S       306         6     250
+## 3 R2    N      2040        40     875
+## 4 R2    S      1020        20     400
+## 5 R3    N       714        14     500
+## 6 R3    S       306         6     350</code></pre>
 </div>
 
 

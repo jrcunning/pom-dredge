@@ -36,20 +36,25 @@ substrate <- files %>%
 # Tidy data
 substrate <- substrate %>%
   clean_names() %>%
-  filter(grepl("^R2|^R3", station)) %>%                           # Filter R2 and R3
   rename(site0 = station,                                         # Rename columns
          transect = transect_ns_or_ew,
          sdepth_cm = sediment_depth_cm_excavation_depth,
          stype = type_of_sediments_sand_fines_mix) %>%
+  filter(!is.na(site0)) %>%                   # Filter out blank rows without site name
   mutate(site0 = str_replace(site0, "R2N1-350", "R2N-350-RR")) %>%   # Fix error in site coding
   mutate(meter_mark = if_else(is.na(actual_position_if_altered),  # Get meter mark, actual pos if altered
                               true = position_meter_mark,
                               false = actual_position_if_altered)) %>%
   select(site0, transect, meter_mark, sdepth_cm, stype) %>%
-  mutate(site = str_extract(site0, "R[^-|_]*"),                   # Get base site name
+  mutate(site = case_when(grepl("15b|15B", site0) ~ "HBS", 
+                          grepl("7a", site0) ~ "HBN",
+                          TRUE ~ str_extract(site0, "^.[^-|_]*")),                   # Get base site name
          perm = if_else(nchar(site) == 3, "no", "yes")) %>%       # Identify permanent sites vs. non
-  mutate(dist = case_when(perm == "no" ~ str_extract(site0, "[[:digit:]]{2,3}")),
-         dist = ifelse(is.na(dist), case_when(           
+  mutate(dist = case_when(site0 == "HBS-15b-150" ~ "150",
+                          site0 == "15B-250" ~ "250",
+                          perm == "no" ~ str_extract(site0, "[[:digit:]]{2,3}")),
+         dist = ifelse(is.na(dist), case_when(  
+           site=="HBN3" ~ "48", site=="HBNC1" ~ "2350", site=="HBS4" ~ "32", site=="HBSC1" ~ "1650",
            site=="R2N1" ~ "28", site=="R2NC2" ~ "9380", site=="R2N2" ~ "18",
            site=="R2NC1" ~ "9380", site=="R2NC3" ~ "9380", site=="R2S1" ~ "23",
            site=="R2SC1" ~ "1270", site=="R2S2" ~ "21", site=="R2SC2" ~ "1270",
