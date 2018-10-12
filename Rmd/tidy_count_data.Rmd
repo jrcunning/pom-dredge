@@ -19,11 +19,17 @@ library(janitor)
 ```
 
 
-# Import baseline data from 2009
+# Import baseline data from 2010
 ```{r}
-# Where is Hardbottom 2009 data??
+# Hardbottom 2010 data -- does not include coral diameter, so cannot use this with the rest of the data (because we separately analyze corals >3cm and corals <3cm in diameter)
+dens2009hb <- readxl::read_xlsx(
+  path = "data/Density_Data/Miami Quantitative Survey HB Areas Raw Data for Appendix.xlsx",
+  sheet = "HB raw data") %>%
+  clean_names() %>%
+  rename(site = area_e_g_hbn, block = block_e_g_a, transect = transect_e_g_hbna_1) 
+#dens2009hb %>%
 
-# Import and tidy baseline density data from 2009 (10m transects)
+# Import and tidy baseline density data from 2010 (10m transects) on reef 2 and reef 3 (see report dated 2012)
 dens2009 <- readxl::read_xlsx(
   path = "data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
   clean_names() %>%
@@ -41,7 +47,7 @@ dens2009 <- readxl::read_xlsx(
          dist = as.numeric(substr(transect, ifelse(nchar(transect) == 6, 4, 5), # Get dist from channel
                                   ifelse(nchar(transect) == 6, 6, 7))),
          count = 1,                  # single observation per row
-         date = ymd("2009-11-15"),   # add date (collected btw Oct 28 and Nov 24 2009, but not in data)
+         date = ymd("2010-08-15"),   # add date (data collected August 2010 (2012 report p. viii))
          transect_area_m2 = 10)      # each transect was 10 square meters
 
 unique(dens2009$site)
