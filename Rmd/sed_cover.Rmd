@@ -28,6 +28,10 @@ logit2prob <- function(logit){
   prob <- odds / (1 + odds)
   return(prob)
 }
+
+# Define start and end of dredging (for plotting)
+dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
+dredge.end.date <- as.Date("2015-03-16")                    # DCA report August 2015, page 3
 ```
 
 # Load data
@@ -41,7 +45,7 @@ cpce <- cpce_spr_as_sand
 #cpce <- cpce_omit_nosand
 ```
 
-# Quantify sand cover
+# Quantify sand cover from cpce data 2013-2016
 ```{r, quantify_sand}
 # Count sand vs. not sand, and create numeric weeks column
 cpce <- cpce %>%
@@ -50,10 +54,39 @@ cpce <- cpce %>%
   mutate_if(is.character, as.factor) %>%
   mutate(weekn = (date - min(date)) / dweeks(1),  # create numeric weeks column
          dayn  = as.numeric(date - min(date)))
+```
 
-# Define start and end of dredging (for plotting)
-dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
-dredge.end.date <- as.Date("2015-03-16")                    # DCA report August 2015, page 3
+
+```{r, include = FALSE, eval = FALSE}
+# Import percent sand data from 2009 pilot study (manually transcribed from PDF report dated 2010)
+cpce09 <- readxl::read_xlsx(path = "data/transcribed_cpce_2009.xlsx")
+
+cpce09 <- cpce09 %>%
+  mutate(sumpts = n_points_minus_tws,
+         sand_sa = round(sumpts * pct_s/100, 0),
+         notsand = sumpts - sand_sa,
+         date = as.Date("2009-11-01"),
+         reef = substr(site, 1, 2),
+         dir = substr(site, 3, 3),
+         channel = ifelse(grepl("C", site), "control", "channelside"))
+
+# The sites in the 2009 cpce data are named differently -- do these correspond to the permanent monitoring sites?
+cpce09 %>% distinct(site)
+# Based on the map in the 2009 report:
+# "HBNC" corresponds to permanent site HBNC1
+# "HBN" doesn't correspond to a permanent monitoring site (slightly NE of HBN3)
+# "HBS" corresponds to HBS3
+# "HBSC" corresponds to HBSC1
+# "R3N" corresponds to R3N1
+# "R3NC" corresponds to R3NC1
+cpce09 <- cpce09 %>%
+  mutate(site = recode(site, HBNC = "HBNC1", HBS = "HBS3", HBSC = "HBSC1", R3N = "R3N1", R3NC = "R3NC1"))
+
+# Join 2009 data with the rest of the cpce data
+cpce_with09 <- full_join(cpce09, cpce)
+
+
+# We decided not to use the 2009 CPCE data because the transects where data were collected were not the same permanent transects that were repeatedly surveyed at all the other time points. Therefore, it is not directly comparable.
 ```
 
 # Visualize mean sand cover over time at each site
@@ -118,7 +151,9 @@ cpce.f <- cpce.f %>%
             notsand = sum(notsand)) %>%
   ungroup()
 
+
 # Fit GAMM models for each reef and direction
+set.seed(456)
 gamms.reef.dir <- cpce.f %>%
   #filter(reef == "R2", dir == "S") %>%     # UNCOMMENT TO LOOK ONLY AT R2S (TESTING...)
   nest(-reef, -dir) %>%   # Nest by reef and direction
