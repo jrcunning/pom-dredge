@@ -22,15 +22,15 @@ library(janitor)
 # Import baseline data from 2010
 ```{r}
 # Hardbottom 2010 data -- does not include coral diameter, so cannot use this with the rest of the data (because we separately analyze corals >3cm and corals <3cm in diameter)
-dens2009hb <- readxl::read_xlsx(
+dens2010hb <- readxl::read_xlsx(
   path = "data/Density_Data/Miami Quantitative Survey HB Areas Raw Data for Appendix.xlsx",
   sheet = "HB raw data") %>%
   clean_names() %>%
   rename(site = area_e_g_hbn, block = block_e_g_a, transect = transect_e_g_hbna_1) 
-#dens2009hb %>%
+#dens2010hb %>%
 
 # Import and tidy baseline density data from 2010 (10m transects) on reef 2 and reef 3 (see report dated 2012)
-dens2009 <- readxl::read_xlsx(
+dens2010 <- readxl::read_xlsx(
   path = "data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
   clean_names() %>%
   rename(site = area_e_g_r2n, transect = transect_e_g_r2n_10, diameter = diameter_cm) %>%
@@ -38,7 +38,7 @@ dens2009 <- readxl::read_xlsx(
   filter(!grepl("D", transect)) %>%  # Remove transects that contain a "D". These were 'direct impact'
                                      # areas where reef was removed, so no later data for comparison
   mutate(site = substr(transect, 1, ifelse(nchar(transect) == 6, 3, 4)),   # Get site name
-         site2 = case_when(site == "R2N" ~ "RR",  # 2009 R2N transects match up with 2016 R2N-RR
+         site2 = case_when(site == "R2N" ~ "RR",  # 2010 R2N transects match up with 2016 R2N-RR
                            site == "R2S" ~ "",     # GET THIS INFO
                            site == "R3N" ~ "",     # GET THIS INFO
                            site == "R3S1" ~ "CP",
@@ -50,7 +50,7 @@ dens2009 <- readxl::read_xlsx(
          date = ymd("2010-08-15"),   # add date (data collected August 2010 (2012 report p. viii))
          transect_area_m2 = 10)      # each transect was 10 square meters
 
-unique(dens2009$site)
+unique(dens2010$site)
 ```
 
 # Import "baseline" data from 2013
@@ -259,15 +259,15 @@ cs2016 <- bind_rows(cs2016octo, cs2016scler) %>%
 # Combine all count data and add site metadata
 ```{r}
 # Combine all count data and select octocorals and corals
-all_counts <- data_frame(data = list(dens2009, dens2013, dens2015, dens2016, cs2016)) %>% unnest(data)
+all_counts <- data_frame(data = list(dens2010, dens2013, dens2015, dens2016, cs2016)) %>% unnest(data)
 
 # Add site metadata
 all_counts <- all_counts %>%
   mutate(year = year(date),                                      # add year column
          reef = str_sub(site, 1, 2),                             # add reef column (R2 or R3)
           dir = str_sub(site, 3, 3),                             # add direction (N or S)
-         perm = case_when(nchar(site) == 3 | year == 2009 ~ "no",   # add permanent site (yes or no)
-                          nchar(site) >= 4 & year != 2009 ~ "yes"),
+         perm = case_when(nchar(site) == 3 | year == 2010 ~ "no",   # add permanent site (yes or no)
+                          nchar(site) >= 4 & year != 2010 ~ "yes"),
       channel = ifelse(perm == "yes",
                        case_when(grepl("C", site) ~ "control",          # add control vs. channelside
                                 !grepl("C", site) ~ "channelside"),
@@ -395,16 +395,16 @@ all_counts <- all_counts %>%
 
 # Add missing site metadata
 ### Look at map on page 2 of october 2017 cross_impact report
-##### Reef 2 N:: 2009 transects below 100 m are all same general area as R2N1(-RR)
-##### Reef 2 S:: 2009 transects below 100 m are all same general area as R2S1(-RR)
-##### Reef 3 N:: 2009 transects below 100 m are all same general area as R3N1(-LR)
-##### Reef 3 S:: 2009 transects LR are all same general area as R3S2
+##### Reef 2 N:: 2010 transects below 100 m are all same general area as R2N1(-RR)
+##### Reef 2 S:: 2010 transects below 100 m are all same general area as R2S1(-RR)
+##### Reef 3 N:: 2010 transects below 100 m are all same general area as R3N1(-LR)
+##### Reef 3 S:: 2010 transects LR are all same general area as R3S2
 all_counts <- all_counts %>%
   mutate(site2 = case_when(
-    reef == "R2" & dir == "N" & year == 2009 ~ "RR",
-    reef == "R2" & dir == "S" & year == 2009 ~ "RR",
-    reef == "R3" & dir == "N" & year == 2009 ~ "LR",
-    reef == "R3" & dir == "S" & year == 2009 ~ "LR",
+    reef == "R2" & dir == "N" & year == 2010 ~ "RR",
+    reef == "R2" & dir == "S" & year == 2010 ~ "RR",
+    reef == "R3" & dir == "N" & year == 2010 ~ "LR",
+    reef == "R3" & dir == "S" & year == 2010 ~ "LR",
     site %in% c("R2N1", "R2NC2", "R2S1", "R2SC1") & perm == "yes" ~ "RR",
     site %in% c("R2N2", "R2NC1", "R2NC3", "R2S2", "R2SC2", 
                 "R3S2", "R3N1", "R3SC2", "R3NC1") & perm == "yes" ~ "LR",
