@@ -511,7 +511,7 @@ ggsave(filename = "figures/Fig7.png", device = "png", width = 190, height = 95, 
 #(77.8 * 700) + (29.7 * 700) + (161 * 100)
 ```
 
-**Figure 7. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2009 and 2013, and data after dredging were collected in 2015-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
+**Figure 7. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2015-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
 
 \  
 
@@ -524,7 +524,7 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
   geom_line() +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) +
   geom_segment(data = small.anno, inherit.aes = FALSE, lwd = 0.2,
-               aes(x = dist, y = `2009 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
+               aes(x = dist, y = `2010 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
                arrow = arrow(length = unit(0.03, "npc"))) +
   geom_text(data = small.anno, inherit.aes = FALSE, hjust = "left", size = 2,
             aes(x = dist + 10, y = `2016/2017 cross-site surveys` + 0.2, 
@@ -541,7 +541,7 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
 ggsave(filename = "figures/FigS6.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-**Figures S6. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2009, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
+**Figures S6. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
 
 \  
 
@@ -560,7 +560,7 @@ kwtest <- kwtest %>%
   add_row(reef = "HB", dir = "S", data = NA, kw = NA, p = NA, x = 15, y = 0.1)
 
 # Plot size frequency distributions and annotate with KW test p values
-ggplot(df, aes(x = diameter, fill = year <= 2009)) + 
+ggplot(df, aes(x = diameter, fill = year <= 2010)) + 
   geom_histogram(aes(y = ..density..),    # Scales each histogram so the total area = 1
                  position = "identity", binwidth = 1, alpha = 0.3) +
   facet_grid(dir ~ reef, labeller = global_labeller, drop = FALSE) +
