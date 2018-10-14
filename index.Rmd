@@ -9,13 +9,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 -----
 
-## Data import
+## Data import and tidying
 
-##### [Tagged coral data](Rmd/tidy_tagged_corals.html)
+##### [Tagged coral condition data](Rmd/tidy_tagged_corals.html)
 
-##### [Organism count data](Rmd/tidy_count_data.html)
+##### [Coral count data](Rmd/tidy_count_data.html)
 
-##### [Benthic cover data](Rmd/tidy_cpce_data.html)
+##### [Benthic cover (CPCe) data](Rmd/tidy_cpce_data.html)
 
 ##### [Sediment trap data](Rmd/tidy_sedtrap_data.html)
 
@@ -25,21 +25,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Data analysis
 
-### Tagged corals
-
-##### [Total coral mortality](Rmd/total_mortality.html)
-
-##### [Partial coral mortality](Rmd/partial_mortality.html)
-
-##### [Sedimentation stress](Rmd/sed_stress.html)
-
-### Count data
-
-##### [Scleractinian density](Rmd/scler_density.html)
-
-##### [Octocoral density]
-
-### Habitat
+##### [Dredge plume presence](Rmd/dredge_plume.html)
 
 ##### [Sediment traps](Rmd/sediment_trap.html)
 
@@ -47,6 +33,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### [Sediment depth and type](Rmd/sed_depth_type.html)
 
+##### [Tagged corals: sedimentation stress](Rmd/sed_stress.html)
+
+##### [Tagged corals: partial mortality](Rmd/partial_mortality.html)
+
+##### [Tagged corals: total mortality](Rmd/total_mortality.html)
+
+##### [Scleractinian density](Rmd/scler_density.html)
+
 -----
 
-### [Figures](Rmd/Figures.html)
+### [All manuscript figures](Rmd/Figures.html)
