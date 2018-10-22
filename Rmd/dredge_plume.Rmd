@@ -13,11 +13,10 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FAL
 library(tidyverse)
 library(janitor)
 library(lubridate)
-library(lme4)
-library(lsmeans)
 library(furrr)
 library(gamm4)
 library(MASS)
+library(zoo)
 
 # Convert logit to probability
 logit2prob <- function(logit){
