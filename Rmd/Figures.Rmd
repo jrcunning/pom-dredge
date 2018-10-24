@@ -93,6 +93,31 @@ add_dist_cat <- function(x) {
 
 # Sedimentation on the reef
 
+### *Sediment plume presence based on satellite data*
+
+```{r}
+load("data/plume.RData")
+
+plume <- plume %>% add_dist_cat()
+gamm.fits <- gamm.fits %>% add_dist_cat()
+### Plot fitted models
+ggplot(gamm.fits, aes(x = date, y = fit, color = dist_cat)) +
+  facet_grid(dir ~ reef, labeller = global_labeller) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
+  geom_line(lwd = 1) +
+  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
+  labs(x = "Date", y = "Probability of dredge plume presence", color = "Distance from channel") +
+  #geom_point(data = filter(plume, reef %in% c("HB", "R2", "R3"), dir %in% c("N", "S")),
+  #           aes(y = as.numeric(plume)), pch = "|") +
+  scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
+  scale_y_continuous(limits = c(0, 1), expand = c(0, 0)) +
+  theme_custom() +
+  theme(legend.position = c(0.8, 0.36),
+        legend.key.size = unit(4, "mm"),
+        legend.title = element_text(size = 7),
+        legend.text = element_text(size = 6))
+```
+
 ### *Fine sediment deposition rates*
 
 \  
@@ -129,13 +154,14 @@ corrs <- corrs %>%
 
 
 ### Plot fitted models
-ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_cat)) +
+fig2 <- ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_cat)) +
   facet_grid(dir ~ reef, labeller = global_labeller) +
   geom_segment(data=sedtrap, 
                aes(x = start, xend = end, y = finerate_mgcm2d, yend = finerate_mgcm2d), lwd = 0.2) +
   geom_ribbon(aes(x = middate, ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) + 
   geom_line(lwd = 0.5) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
+  geom_hline(yintercept = 25, color = "red", lwd = 0.25, linetype = 2) +
   labs(x = NULL, y = "Fine sedimentation rate (mg/cm2/d)",
        color = "Distance from channel") +
   scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
@@ -146,6 +172,8 @@ ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_cat)) +
         legend.text = element_text(size = 6))
 
 ggsave(filename = "figures/Fig2.png", device = "png", width = 190, height = 95, units = "mm")
+
+fig2
 ```
 
 **Figure 2. Deposition of fine sediments in each monitoring area during dredging operations.** Horizontal line segments indicate measured rates of fine sediment deposition by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
@@ -709,4 +737,98 @@ ggsave(filename = "figures/FigS7.png", device = "png", width = 90, height = 65, 
 
 **Figure S7. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected.** Bars indicate the mean percent sand based on CPCe analysis, and error bars represent standard deviation.
 
+## Correlations among metrics
 
+```{r multivariate}
+# Plume presence
+load("data/plume.RData")
+plume <- plume.summ %>%
+  mutate(plumeprob = pct) %>%
+  select(reef, dir, channel, plumeprob)
+
+# Sediment deposition
+load("data/sed_deposited.RData")
+depo <- fine.depo
+depo <- depo %>%
+  rename(int_finedepo = int_fit) %>%
+  select(reef, dir, channel, int_finedepo) %>%
+  mutate(int_finedepo = int_finedepo / 100)
+
+# Sediment cover
+load("data/sedcov.gamms.RData")
+sandcov <- gamms.reef.dir.fits %>%
+  group_by(reef, dir, channel) %>%
+  filter(date > dredge.start.date, date < dredge.end.date) %>%
+  summarise(int_sandcov = sum(fit)) %>%
+  select(reef, dir, channel, int_sandcov)
+
+# Sediment stress
+load("data/sedstress_gamms.RData")
+stress <- gamms2.fitted %>%
+  group_by(reef, dir, channel) %>%
+  filter(date > dredge.start.date, date < dredge.end.date) %>%
+  summarise(int_sedstress = sum(fit)) %>%
+  select(reef, dir, channel, int_sedstress)
+
+# Partial mortality
+load("data/pm.lsm.RData")
+pmort <- as_tibble(summary(pm.lsm1)) %>%
+  rename(pmort = prob) %>%
+  select(reef, dir, channel, pmort)
+
+
+# Join all response variables together into df and add site names/labels
+df <- list(plume, depo, sandcov, stress, pmort) %>% 
+  reduce(left_join, by = c("reef", "dir", "channel")) %>% 
+  ungroup()
+
+df <- df %>% add_dist_cat() %>%
+  mutate(reef2 = case_when(reef == "HB" ~ "IR", reef == "R2" ~ "MR", reef == "R3" ~ "OR"),
+           lab = paste(dir, reef2, sep = ""))
+```
+
+```{r plot_corrs}
+# PLOT CORRELATIONS USING GGPLOT
+gatherpairs <- function(data, ..., 
+                        xkey = '.xkey', xvalue = '.xvalue',
+                        ykey = '.ykey', yvalue = '.yvalue',
+                        na.rm = FALSE, convert = FALSE, factor_key = FALSE) {
+  vars <- quos(...)
+  xkey <- enquo(xkey)
+  xvalue <- enquo(xvalue)
+  ykey <- enquo(ykey)
+  yvalue <- enquo(yvalue)
+
+  data %>% {
+    cbind(gather(., key = !!xkey, value = !!xvalue, !!!vars,
+                 na.rm = na.rm, convert = convert, factor_key = factor_key),
+          select(., !!!vars)) 
+  } %>% gather(., key = !!ykey, value = !!yvalue, !!!vars,
+               na.rm = na.rm, convert = convert, factor_key = factor_key)
+}
+
+keynames <- c(plumeprob = "Dredge plume",
+              int_sedstress = "Coral burial",
+              int_sandcov = "Benthic sed.",
+              int_finedepo = "Sed. deposition",
+              pmort = "Coral mort.")
+key_labeller <- labeller(
+  .xkey = keynames, .ykey = keynames, dist_cat = distcatnames,
+  .default = label_both
+)
+
+df %>% gatherpairs(plumeprob, int_finedepo, int_sandcov, int_sedstress, pmort) %>%
+  filter(.xkey != .ykey) %>%
+  mutate(.xkey = factor(.xkey, levels = c("plumeprob", "int_finedepo", "int_sandcov", "int_sedstress", "pmort")),
+         .ykey = factor(.ykey, levels = levels(.xkey))) %>%
+  ggplot(., aes(x = .xvalue, y = .yvalue)) +
+      facet_grid(.ykey ~ .xkey, scales = "free", switch = "both", labeller = key_labeller) +
+      geom_point(aes(color = dist_cat)) + 
+      geom_smooth(method = 'lm', se = FALSE, color = "black", lwd = 0.25) +
+  stat_cor(method = "pearson", size = 3) +
+  #geom_text_repel(aes(label = lab), size = 2) +
+  scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
+  theme_custom() + 
+  theme(legend.position="none") +
+  labs(x = NULL, y = NULL)
+```
