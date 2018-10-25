@@ -852,16 +852,17 @@ Fig11 <- df %>% gatherpairs(plumeprob, int_finedepo, mean_sandcov, mean_sedstres
       facet_grid(.ykey ~ .xkey, scales = "free", switch = "both", labeller = key_labeller) +
       geom_point(aes(color = dist_cat)) + 
       geom_smooth(method = 'lm', se = FALSE, color = "black", lwd = 0.25) +
-  stat_cor(method = "pearson", size = 3) +
-  #geom_text_repel(aes(label = lab), size = 2) +
-  scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
-  theme_custom() + 
-  theme(legend.position="none") +
-  labs(x = NULL, y = NULL)
+      stat_cor(method = "pearson", size = 3, label.y.npc = 1) +
+      #geom_text_repel(aes(label = lab), size = 2) +
+      scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
+      #scale_y_continuous(limits = c(NA, NA), expand = expand_scale(mult = c(0, 0.05))) +
+      theme_custom() + 
+      theme(legend.position="none") +
+      labs(x = NULL, y = NULL)
 
-ggsave(filename = "figures/Fig11.png", device = "png", width = 90, height = 90, units = "mm")
+ggsave(filename = "figures/Fig11.png", device = "png", width = 190, height = 190, units = "mm")
 
 Fig11
 ```
 
-**Figure 11. Correlations among multiple metrics measured across monitoring areas.** Points represent monitoring areas (n = 12) colored by distance from channel (green = <50 m; blue = 1.25 - 2.5 km; red = 9.38 km). Metrics are as follows: Dredge plume = proportion of days dredge plume present (see Fig. 2); Sed. deposition = total fine sediment deposition during project (kg / m2; see Fig. 5); Benthic sed. = mean proportion benthic sand cover during project (see Fig. 4); Coral burial = mean probability of coral burial during project (see Fig. 6); Coral mort. = probability of partial mortality among tagged corals (see Fig. 7). Metrics derived from time series (e.g., Benthic sed., Coral burial) only include dates for which data were available from all monitoring areas. Each panel displays the correlation coefficient (*R*) for the two metrics, a linear regression, and p-value for the null hypothesis that the slope is equal to zero.
+**Figure 11. Correlations among multiple metrics measured across monitoring areas.** Points represent monitoring areas (n = 12) colored by distance from channel (green = <50 m; blue = 1.25 - 2.5 km; red = 9.38 km). Metrics are as follows: Dredge plume = proportion of days dredge plume present (see Fig. 2); Sed. deposition = total fine sediment deposition during project (kg / m2; see Fig. 5); Benthic sed. = mean daily proportion benthic sand cover during project (see Fig. 4); Coral burial = mean daily probability of coral burial during project (see Fig. 6); Coral mort. = probability of partial mortality among tagged corals (see Fig. 7). Metrics derived from time series (e.g., Benthic sed., Coral burial) only include dates for which data were available from all monitoring areas. Each panel displays the correlation coefficient (*R*) for the two metrics, a linear regression, and p-value for the null hypothesis that the slope is equal to zero.
