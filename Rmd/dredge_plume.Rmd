@@ -3,6 +3,8 @@ title: "dredge plume"
 author: "Ross Cunning"
 date: "9/5/2018"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include = FALSE}
@@ -114,5 +116,23 @@ plume.summ <- plume %>%
   summarise(nobs = n(), nyes = sum(plume), nno = nobs - nyes, pct = nyes / nobs)
 
 save(plume, plume.summ, gamm.fits, file = "data/plume.RData")
+```
+
+# Reported metrics
+```{r}
+
+# Plume frequency in late 2013
+gamm.fits %>%
+  filter(date < "2014-01-01") %>%
+  group_by(reef, dir, channel) %>%
+  summarise(mean = mean(fit)) %>%
+  arrange(-mean)
+
+# Plume frequency in 2014 - 2015
+gamm.fits %>%
+  filter(date >= "2014-01-01") %>%
+  group_by(reef, dir, channel) %>%
+  summarise(mean = mean(fit)) %>%
+  arrange(-mean)
 ```
 
