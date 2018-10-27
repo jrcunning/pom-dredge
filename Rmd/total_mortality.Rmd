@@ -9,8 +9,76 @@ editor_options:
 
 # Setup
 ```{r setup, include=FALSE}
-# Set knitr options
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Load packages
+library(tidyverse)
+library(lubridate)
+library(ggthemes)
+library(ggrepel)
+library(ggpubr)
+
+# Define start and end of dredging (for plotting)
+dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
+dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 2015, page 3
+# Define dredge activity periods     # postcon report page 4
+#terrapin.start.date <- as.Date("2013-11-20")
+#terrapin.end.date <- as.Date("2013-12-27")
+#texas.spider.start.date <- as.Date("2013-12-17")
+#texas.spider.end.date
+#liberty.start.date <- as.Date("2014-05-14")
+#liberty.end.date <- as.Date("2014-07-03")
+#texas.spider.flare.start <- as.Date("2014-08-06")
+#channel.flare.end <- as.Date("2014-08-24")
+
+## ggplot theme
+theme_custom <- function() {
+  theme_bw(base_size = 10, base_family = "Arial") %+replace%
+    theme(
+      panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(), 
+      panel.background = element_blank(),
+      panel.border = element_rect(color = "black", fill = NA),
+      legend.background = element_rect(fill = NA, colour = NA),
+      axis.text.x = element_text(angle=45, hjust=1, vjust = 1)
+    )
+}
+
+## ggplot labeller
+reefnames <- c(
+  HB = "Inner reef",
+  R2 = "Middle reef",
+  R3 = "Outer reef"
+)
+
+dirnames <- c(
+  N = "North of channel",
+  S = "South of channel"
+)
+
+distcatnames <- c(
+  `1.25 - 2.5 km` = "1.25 - 2.5 km",
+  `< 50 m` = "< 50 m",
+  `9.38 km` = "9.38 km"
+)
+
+global_labeller <- labeller(
+  reef = reefnames,
+  dir = dirnames,
+  dist_cat = distcatnames,
+  .default = label_both
+)
+
+# Function to add distance category for each area
+add_dist_cat <- function(x) {
+  x %>% 
+    mutate(dist_cat = factor(case_when(
+      channel == "channelside" ~ "< 50 m",
+      reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+}
+
 ```
 
 ```{r setup2}
@@ -53,7 +121,7 @@ ggplot(dead.summ, aes(x = site, y = prop, fill = interaction(reef, dir, channel)
 ```
 
 # Was total mortality more common at channelside sites?
-```{r}
+```{r, fig.height = 3.74016, fig.width = 7.4801}
 # Get data frame for each coral and whether it died or not
 dead <- tagged_bool %>%
   group_by(reef, dir, channel, site, transect, species, coral) %>%
@@ -70,13 +138,23 @@ dead.lsm1 <- lsmeans(dead.mod1, specs = c("channel", "reef", "dir"), type = "res
 dead.lsm1.sig <- rbind(pairs(dead.lsm1, by = c("reef", "dir")), adjust = "none")
 knitr::kable(summary(dead.lsm1.sig))
 
+
 # Plot mortality rates
-ggplot(summary(dead.lsm1), aes(x = channel, y = prob, fill = channel)) + 
-  facet_grid(dir ~ reef) +
+df1 <- summary(dead.lsm1) %>% add_dist_cat()
+dd <- df1 %>% ungroup %>% tidyr::expand(reef, dir, dist_cat)
+dd <- anti_join(dd, df1) %>%
+  mutate(prob = 0)
+ggplot(df1, aes(x = dist_cat, y = prob, fill = dist_cat)) + 
+  facet_grid(dir ~ reef, labeller = global_labeller) +
   geom_bar(stat = "identity") +
+  scale_fill_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL), width = 0.2, lwd = 0.3) +
   geom_text(data = data.frame(summary(dead.lsm1.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 0.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
+            aes(x = 1.5, y = 0.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10) +
+  theme_custom() +
+  labs(x = NULL, y = "Probability of total mortality") +
+  theme(legend.position = 0, axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 1)) +
+  geom_text(data = dd, aes(label = "n.d."), vjust = "bottom")
 ```
 
 There are no differences in total colony mortality between channelside and control sites at any reef location. However, total mortality overall is high, and the majority of this mortality may be attributable to white plague disease. Therefore, to assess mortality that may be associated with sedimentation, it may be more informative to analyze only disease-resistant corals.
