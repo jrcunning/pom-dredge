@@ -39,7 +39,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##### [Tagged corals: total mortality](Rmd/total_mortality.html)
 
-##### [Scleractinian density](Rmd/scler_density.html)
+##### [Scleractinian density](Rmd/scler_density.html) ([non-disease-susceptible only](Rmd/nonsus_scler_density.html))
 
 -----
 
