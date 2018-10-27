@@ -174,7 +174,7 @@ Fig3 <- ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_
   geom_ribbon(aes(x = middate, ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) + 
   geom_line(lwd = 0.5) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
-  geom_hline(yintercept = 25, color = "red", lwd = 0.25, linetype = 2) +
+  geom_hline(yintercept = 25, color = "black", lwd = 0.125, linetype = 2) +
   labs(x = NULL, y = "Fine sedimentation rate (mg/cm2/d)",
        color = "Distance from channel") +
   scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
@@ -189,7 +189,7 @@ ggsave(filename = "figures/Fig3.png", device = "png", width = 190, height = 95, 
 Fig3
 ```
 
-**Figure 3. Deposition of fine sediments in each monitoring area during dredging operations.** Horizontal line segments indicate measured rates of fine sediment deposition by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure 3. Deposition of fine sediments in each monitoring area during dredging operations.** Horizontal line segments indicate measured rates of fine sediment deposition by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations. The horizontal dashed line indicates a threshold of 25 mg cm^-2^ d^-1^; sediment deposition rates exceeding this threshold over any 30 day window may cause corals severe stress leading to mortality (Nelson et al. 2016). 
 
 \  
 
