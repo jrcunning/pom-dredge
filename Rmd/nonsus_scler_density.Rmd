@@ -192,6 +192,7 @@ newdata_1 <- large_counts_1 %>%
 newdata_1$fit <- predict(mod_1, newdata_1, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
+set.seed(9870)
 bootfit_1 <- bootMer(mod_1, FUN = function(x) predict(x, newdata_1, type = "response", re.form = NA), 
                      nsim = 200, parallel = "multicore", ncpus = 8)
 newdata_1$lci <- apply(bootfit_1$t, 2, quantile, 0.08)
@@ -333,6 +334,7 @@ newdata_2 <- small_counts.f %>%
 newdata_2$fit <- predict(mod_3, newdata_2, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
+set.seed(4314)
 bootfit_2 <- bootMer(mod_3, FUN = function(x) predict(x, newdata_2, type = "response", re.form = NA), 
                      nsim = 200, parallel = "multicore", ncpus = 8)
 newdata_2$lci <- apply(bootfit_2$t, 2, quantile, 0.08)
@@ -388,7 +390,7 @@ anno <- full_join(fits, sigs) %>%
   mutate(rel = -(estimate) / `2010 baseline` * 100,
          rel2 = ifelse(p.value > 0.1, "", paste0(round(rel, 1), "%")),
          sig = gtools::stars.pval(p.value),
-         sig2 = gsub(" ", "n.d.", sig))
+         sig2 = gsub(" ", "ns", sig))
 
 anno <- anno %>%
   mutate(`2010 baseline` = ifelse((reef == "HB" | (reef == "R3" & dir == "S")), NA, `2010 baseline`),
@@ -508,6 +510,7 @@ newdata <- df %>%
 newdata$fit <- predict(mod, newdata, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
+set.seed(4324)
 bootfit <- bootMer(mod, FUN = function(x) predict(x, newdata, type = "response", re.form = NA), 
                    nsim = 200, parallel = "multicore", ncpus = 8)
 newdata$lci <- apply(bootfit$t, 2, quantile, 0.08)
