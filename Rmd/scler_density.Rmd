@@ -3,17 +3,20 @@ title: "Coral count data analysis"
 author: "Ross Cunning"
 date: "`r Sys.Date()`"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include = FALSE}
 # Set knitr options
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FALSE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
 
 # Load packages
 library(tidyverse)
 library(lubridate)
 library(lme4)
 library(lsmeans)
+library(janitor)
 ```
 
 # Import coral count data
@@ -106,13 +109,13 @@ mod_1 <- glmer(n ~ dist * reef:dir * timepoint +      # count as response
 
 # Get fitted responses
 newdata_1 <- large_counts_1 %>%
-  tidyr::expand(nesting(reef, dir, timepoint, dist), 
+  tidyr::expand(nesting(reef, dir, timepoint), dist = 1:500, 
                 transect_area_m2 = 1)        # transect area of 1 m2 will predict count per m2
 newdata_1$fit <- predict(mod_1, newdata_1, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
 bootfit_1 <- bootMer(mod_1, FUN = function(x) predict(x, newdata_1, type = "response", re.form = NA), 
-                     nsim = 200, parallel = "multicore", ncpus = 4)
+                     nsim = 200, parallel = "multicore", ncpus = 8)
 newdata_1$lci <- apply(bootfit_1$t, 2, quantile, 0.08)
 newdata_1$uci <- apply(bootfit_1$t, 2, quantile, 0.92)
 
@@ -205,6 +208,16 @@ ggplot(data = newdata_1, aes(x = dist, y = fit, color = timepoint)) +
   labs(x = "Distance from channel", y = "# corals > 3cm per m2") +
   geom_point(data = lsm, aes(x = dist, y = rate), alpha = 0.5) +
   geom_errorbar(data = lsm, aes(x = dist, y = rate, ymin = asymp.LCL, ymax = asymp.UCL))
+
+
+# Find distance at which difference is not significant
+testlist <- map(1:500, function(x) data.frame(summary(rbind(pairs(lsmeans(mod_1, specs = c("reef", "dir", "timepoint"), 
+                  at = list(dist = x, transect_area_m2 = 1), transform = "response"), by = c("reef", "dir")), adjust = "none"))))
+alltests <- bind_rows(testlist, .id = "dist")
+
+alltests %>% 
+  group_by(reef, dir) %>%
+  summarise(sig_dist = min(dist[!p.value < 0.05]))
 ```
 
 
@@ -241,13 +254,13 @@ mod_3 <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
 
 # Get fitted responses
 newdata_2 <- small_counts.f %>%
-  tidyr::expand(nesting(reef, dir, timepoint, dist), 
+  tidyr::expand(nesting(reef, dir, timepoint), dist = 1:500, 
                 transect_area_m2 = 1)        # transect area of 1 m2 will predict count per m2
 newdata_2$fit <- predict(mod_3, newdata_2, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
 bootfit_2 <- bootMer(mod_3, FUN = function(x) predict(x, newdata_2, type = "response", re.form = NA), 
-                     nsim = 200, parallel = "multicore", ncpus = 4)
+                     nsim = 200, parallel = "multicore", ncpus = 8)
 newdata_2$lci <- apply(bootfit_2$t, 2, quantile, 0.08)
 newdata_2$uci <- apply(bootfit_2$t, 2, quantile, 0.92)
 ```
@@ -325,6 +338,17 @@ ggplot(data = newdata_2, aes(x = dist, y = fit, color = timepoint)) +
   labs(x = "Distance from channel (m)", y = "# corals per m2") +
   coord_cartesian(ylim = c(0, 1.5))
   
+
+
+
+# Find distance at which difference is not significant
+testlist <- map(1:500, function(x) data.frame(summary(rbind(pairs(lsmeans(mod_3, specs = c("reef", "dir", "timepoint"), 
+                  at = list(dist = x, transect_area_m2 = 1), transform = "response"), by = c("reef", "dir")), adjust = "none"))))
+alltests <- bind_rows(testlist, .id = "dist")
+
+alltests %>% 
+  group_by(reef, dir) %>%
+  summarise(sig_dist = min(dist[!p.value < 0.05]))
 ```
 
 
@@ -379,302 +403,77 @@ df %>%
 
 ```
 
+# Estimate number of corals lost based on reef area data
 
+```{r}
+# Import reef area data (from Maria's GIS analysis)
+HBN <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Inner North")
+HBS <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Inner South")
+R2N <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Middle North")
+R2S <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Middle South")
+R3N <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Outer North")
+R3S <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Outer South")
 
-
-*****
-
-```{r oldstuff1, eval = FALSE, include = FALSE}
-## Baseline (2010) vs. cross-site surveys (2016/2017)
-Transects at increasing distances from channel were recorded in 2010 baseline surveys and 2016/2017 cross-site surveys. Since small corals were recorded at all these times, can use all data.
-
-#```{r}
-# Subset 2010 baseline and 2016/2017 cross-site survey data <1000 m from channel
-df <- scler %>%                # Select dataset that includes all corals, including small
-  filter(perm == "no" | transect %in% c("NS", "EW"), dist < 1000) %>%
-  group_by(reef, dir, channel, site, site2, dist, date, year, transect, transect_area_m2, perm) %>%
-  summarise(n = sum(count)) %>%
-  mutate(dens = n / transect_area_m2,
-         timepoint = cut(year, breaks = c(-Inf, 2011, Inf), 
-                         labels = c("2010 baseline", "2016/2017 cross-site surveys"))) %>%
-  ungroup()
-#```
-
-### Fit poisson regression on count data
-#```{r}
-# Fit model
-mod <- glmer(n ~ dist * reef * dir * timepoint +      # count as response
-             offset(log(transect_area_m2)) +          # offset accounts for diff transect sizes
-             (1|site/transect) + (1|date),            # random effects
-             data = df, family = "poisson")           # poisson model
-
-# Get fitted responses
-newdata <- df %>%
-  tidyr::expand(nesting(reef, dir, timepoint, dist), 
-                transect_area_m2 = 1)        # transect area of 1 m2 will predict count per m2
-newdata$fit <- predict(mod, newdata, type = "response", re.form = NA)
-
-# Get confidence intervals by simulation
-bootfit <- bootMer(mod, FUN = function(x) predict(x, newdata, type = "response", re.form = NA), 
-                   nsim = 200, parallel = "multicore", ncpus = 4)
-newdata$lci <- apply(bootfit$t, 2, quantile, 0.08)
-newdata$uci <- apply(bootfit$t, 2, quantile, 0.92)
-#```
-
-### Plot fits and test for change in density near channel
-#```{r}
-# Plot raw data and fitted results
-ggplot(newdata, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
-  geom_line() +
-  geom_point(data = df, aes(y = dens)) +
-  labs(x = "Distance from channel", y = "# corals per m2")
-
-# Get fitted value of coral density adjacent to channel (i.e., dist = 20 m)
-lsm20 <- lsmeans(mod, specs = c("reef", "dir", "timepoint"),
-                 at = list(dist = 20, transect_area_m2 = 1), transform = "response")
-
-# Gather fitted values for annotating plot
-fit20 <- summary(lsm20) %>%
-  mutate(dist = 20) %>%
-  select(reef, dir, timepoint, rate, dist) %>%
-  spread(timepoint, rate)
-
-# Test for significant differences by timepoint for fitted values
-diff20 <- rbind(pairs(lsm20, by = c("reef", "dir")), adjust = "none")
-
-# Gather fitted values for annotating plot
-sig20 <- summary(diff20) %>%
-  mutate(dist = 20) %>%
-  select(reef, dir, estimate, p.value, dist)
-
-#anno <- full_join(fits, sigs)
-anno <- full_join(fit20, sig20) %>%
-  mutate(rel = abs(estimate) / `2010 baseline` * 100,
-         sig = gtools::stars.pval(p.value))
-
-
-# Plot fitted results
-ggplot(data = newdata, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef, scales = "free_x") +
-  geom_line() +
-  scale_x_continuous(limits = c(0, 500)) +
-  scale_y_continuous(limits = c(0, 3.8), expand = c(0,0)) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
-  geom_segment(data = anno, inherit.aes = FALSE,
-               aes(x = dist, y = `2010 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
-               arrow = arrow(length = unit(0.03, "npc"))) +
-  geom_text(data = anno, inherit.aes = FALSE, hjust = "left",
-            aes(x = dist, y = `2016/2017 cross-site surveys` - 0.1, 
-                label = paste0(round(-rel, 1), "%", sig))) +
-  labs(x = "Distance from channel", y = "# corals per m2")
+# Tidy reef area data
+reef_areas <- bind_rows(HBN = HBN, HBS = HBS, R2N = R2N, R2S = R2S, R3N = R3N, R3S = R3S, .id = "reefdir") %>%
+  clean_names() %>%
+  rename(dist = distance_from_channel) %>%
+  group_by(reefdir) %>%
+  mutate(area = area_in_sq_m - lag(area_in_sq_m, default = 0),
+         reef = str_sub(reefdir, 1, 2),
+         dir  = str_sub(reefdir, 3, 3)) %>%
+  ungroup() %>%
+  select(reef, dir, dist, area)
   
-#```
+# Load change in large coral density data
+load("data/large.dens.mod.RData")    # newdata_1 object contains fitted values for density before and after dredging
 
+total_loss_large <- newdata_1 %>%
+  select(reef, dir, timepoint, dist, fit) %>%
+  spread(timepoint, fit) %>%
+  mutate(dens_change = `post-2014` - `pre-2014`) %>%
+  filter(dens_change < 0) %>%
+  left_join(reef_areas) %>%
+  mutate(abs_loss_per_m = dens_change * area) %>%
+  group_by(reef, dir) %>%
+  summarise(total_loss = sum(abs_loss_per_m),
+            out_to     = max(dist))
+
+total_loss_large
+
+# Load change in small coral density data
+load("data/small.dens.mod.RData")    # newdata_1 object contains fitted values for density before and after dredging
+
+total_loss_small <- newdata_2 %>%
+  select(reef, dir, timepoint, dist, fit) %>%
+  spread(timepoint, fit) %>%
+  mutate(dens_change = `2016/2017 cross-site surveys` - `2010 baseline`) %>%
+  filter(dens_change < 0) %>%
+  left_join(reef_areas) %>%
+  mutate(abs_loss_per_m = dens_change * area) %>%
+  group_by(reef, dir) %>%
+  summarise(total_loss = sum(abs_loss_per_m),
+            out_to     = max(dist))
+
+total_loss_small
+
+
+total_loss <- bind_rows(small = total_loss_small, large = total_loss_large, .id = "sizeclass")
+
+total_loss
+
+total_loss_f <- total_loss %>%
+  ungroup() %>%
+  mutate(reef = recode(reef, R2 = "Middle", R3 = "Outer"),
+         dir  = recode(dir, N = "Northern", S = "Southern"),
+         sizeclass = recode(sizeclass, small = "1-2 cm", large = "≥ 3 cm"),
+         total_loss = round(total_loss, 0)) %>%
+  select(reef, dir, sizeclass, total_loss, out_to) %>%
+  arrange(reef, dir)
+
+write_tsv(total_loss_f, path = "figures/Table1.txt")
+sum(total_loss_f$total_loss)
 ```
 
-```{r oldstuff, eval = FALSE, include = FALSE}
-# Permanent sites
- #```{r, eval = FALSE}
-# Reproduce november 2015 report figure 26
-r2summ <- scler_dens_transect %>%
-  filter(year == 2013 | year == 2015,        # subset "baseline" and post-construction
-         reef == "R2",        # subset reef 2
-         perm == "yes") %>%   # subset permanent sites
-  group_by(site, site2, year) %>%
-  summarise(n.transect = n(),
-            meandens = mean(dens),
-            sd = sd(dens),
-            se = sd / sqrt(n.transect))
 
 
-ggplot(r2summ, aes(x = site, y = meandens, fill = factor(year), group = factor(year))) + 
-  geom_bar(stat = "identity", position = "dodge") +
-  geom_errorbar(aes(ymin = meandens - se, ymax = meandens + se), position = "dodge")
-
-# this looks same as figure 26!
-#```
-
-# Hardbottom 2013 vs. 2015
-### Need to fix some error here
-#```{r, eval = FALSE}
-hb1315 <- scler_dens_transect %>%
-  filter(reef == "HB", perm == "yes", year %in% c(2013, 2015)) %>%
-  group_by(site, year = factor(year)) %>%
-  summarise(mean = mean(dens), sd = sd(dens), se = sd/sqrt(n()))
-
-mod <- lmer(dens ~ factor(year) * site + (1|site/transect) + (1|date),
-            data = filter(scler_dens_transect, reef == "HB", perm == "yes", 
-                          year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("site", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("site")), adjust = "none")
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_wrap(~ site) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-# Reef 2 2013 vs. 2015
-#```{r, eval = FALSE}
-r21315 <- scler_dens_transect %>%
-  filter(reef == "R2", perm == "yes", year %in% c(2013, 2015)) %>%
-  group_by(site, year = factor(year)) %>%
-  summarise(mean = mean(dens), sd = sd(dens), se = sd/sqrt(n()))
-
-mod <- lmer(dens ~ factor(year) * site + (1|site/transect) + (1|date),
-            data = filter(scler_dens_transect, reef == "R2", perm == "yes", 
-                          year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("site", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("site")), adjust = "none")
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_wrap(~ site) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-
-
-# Reef 3 2013 vs. 2015
-#```{r, eval = FALSE}
-r31315 <- scler_dens_transect %>%
-  filter(reef == "R3", perm == "yes", year %in% c(2013, 2015)) %>%
-  group_by(site, year = factor(year)) %>%
-  summarise(mean = mean(dens), sd = sd(dens), se = sd/sqrt(n()))
-
-mod <- lmer(dens ~ factor(year) * site + (1|site/transect) + (1|date),
-            data = filter(scler_dens_transect, reef == "R3", perm == "yes", 
-                          year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("site", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("site")), adjust = "none")
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_wrap(~ site) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 3.25, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-# Combine sites together for each reef area
-#```{r, eval = FALSE}
-
-mod <- lmer(dens ~ factor(year) * reef * dir * channel + (1|site/transect) + (1|date),
-            data = filter(scler_dens_transect, perm == "yes", year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("reef", "dir", "channel", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("reef", "dir", "channel")), adjust = "none")
-lsm.sig
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_grid(dir ~ reef + channel) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-# all pre vs post dredge
-#```{r, eval = FALSE}
-scler_dens_transect <- scler_dens_transect %>% 
-  mutate(prepost = factor(ifelse(year < 2014, "pre", "post"), levels = c("pre", "post")))
-mod <- lmer(dens ~ site * prepost + (1|site/transect) + (1|date), 
-            data = filter(scler_dens_transect, perm == "yes"))
-lsm <- lsmeans(mod, specs = c("site", "prepost"))
-
-# Test pre vs. post-dredging density for each site
-lsm.sig <- rbind(pairs(lsm, by = "site"), adjust = "none")
-
-# Plot pre vs. post for each site
-ggplot(summary(lsm), aes(x = prepost, y = lsmean, fill = prepost)) + 
-  facet_wrap(~ site) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.2, lwd = 0.3) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-### Look at changes in density of non-susceptible species from 2013-2015
-#```{r, eval = FALSE}
-# List species present in dataset
-#scler %>% distinct(species) %>% arrange(species) %>% print(n = nrow(.))
-
-# Identify non-susceptible species based on Precht et al. 2016
-nonsus.spp <- c("intersepta", "intercepta", "siderea", "astreoides", "porites",
-                "agaricites", "lamarcki", "lamarkiana", "decactis", "cervicornis")
-
-# Subset non-susceptible species
-scler.ns <- scler %>% filter(species %in% nonsus.spp)
-
-# Calculate density of all non-susceptible corals per transect
-scler_ns_dens_transect <- scler.ns %>%
-  group_by(reef, dir, channel, site, site2, dist, date, year, 
-           transect, transect_area_m2, perm) %>%
-  summarise(n = sum(count)) %>%
-  mutate(dens = n / transect_area_m2) %>%
-  ungroup()
-#```
-
-# Reef 2 non-susceptible coral density 2013 vs. 2015
-#```{r, eval = FALSE}
-r21315ns <- scler_ns_dens_transect %>%
-  filter(reef == "R2", perm == "yes", year %in% c(2013, 2015)) %>%
-  group_by(site, year = factor(year)) %>%
-  summarise(mean = mean(dens), sd = sd(dens), se = sd/sqrt(n()))
-
-mod <- lmer(dens ~ factor(year) * site + (1|site/transect) + (1|date),
-            data = filter(scler_ns_dens_transect, reef == "R2", perm == "yes", 
-                          year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("site", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("site")), adjust = "none")
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_wrap(~ site) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-# Reef 3 non-susceptible coral density 2013 vs. 2015
-#```{r, eval = FALSE}
-r31315ns <- scler_ns_dens_transect %>%
-  filter(reef == "R3", perm == "yes", year %in% c(2013, 2015)) %>%
-  group_by(site, year = factor(year)) %>%
-  summarise(mean = mean(dens), sd = sd(dens), se = sd/sqrt(n()))
-
-mod <- lmer(dens ~ factor(year) * site + (1|site/transect) + (1|date),
-            data = filter(scler_ns_dens_transect, reef == "R3", perm == "yes", 
-                          year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("site", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("site")), adjust = "none")
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_wrap(~ site) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2.5, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-#```
-
-# Combine sites together for each reef area
-#```{r, eval = FALSE}
-
-mod <- lmer(dens ~ factor(year) * reef * dir * channel + (1|site/transect) + (1|date),
-            data = filter(scler_ns_dens_transect, perm == "yes", year %in% c(2013, 2015)))
-lsm <- lsmeans(mod, specs = c("reef", "dir", "channel", "year"))
-lsm.sig <- rbind(pairs(lsm, by = c("reef", "dir", "channel")), adjust = "none")
-lsm.sig
-
-ggplot(summary(lsm), aes(x = factor(year), y = lsmean, fill = factor(year))) + 
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = lsmean - SE, ymax = lsmean + SE), width = 0.25) +
-  facet_grid(channel ~ dir + reef) +
-  geom_text(data = data.frame(summary(lsm.sig)), inherit.aes = FALSE,
-            aes(x = 1.5, y = 2, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
-```
