@@ -104,6 +104,30 @@ ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
         legend.key.width = unit(1,"cm"))
 ```
 
+# Percent of measurements > 0.5 cm
+```{r}
+over_0.5 <- LR %>%
+  group_by(reef, dir, dist) %>%
+  summarise(N = n(),
+            n_over_0.5 = sum(sdepth_cm > 0.5),
+            pct_over_0.5 = n_over_0.5 / N)
+
+over_0.5
+```
+
+```{r}
+over_5 <- LR %>%
+  group_by(reef, dir, dist) %>%
+  summarise(N = n(),
+            n_over_5 = sum(sdepth_cm > 5),
+            pct_over_5 = n_over_5 / N)
+
+over_5
+```
+
+
+  
+
 
 # Sediment type
 
