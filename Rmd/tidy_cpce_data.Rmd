@@ -3,6 +3,8 @@ title: "Import and tidy CPCe data"
 author: "Ross Cunning"
 date: "6/3/2018"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, setup, include = FALSE}
@@ -128,36 +130,77 @@ bb
 
 # Additional QC
 
-Categories were not all the same for all CPCe analyses. In some of the analyses, "Sand, Pavement, Rubble (SPR)" was used instead of using separate categories for "Sand" and "Rubble". In these cases, we could assume all SPR is sand, or we could exclude these timepoints altogether.
+Categories were not all the same for all CPCe analyses. In some of the analyses, "Sand, Pavement, Rubble (SPR)" was used instead of using separate categories for "Sand" and "Rubble". In these cases, we have to dig deeper into the excel sheets and get the "Sand" subcategory data.
 
 One frame (R3SC2 IA T2 frame 9) contained no data -- drop from dataset.
 
 ```{r}
-# Count all records of spr as sand
-cpce_spr_as_sand <- cpce %>%
+# What files used SPR instead of sand?
+spr_files <- cpce %>%
   unnest(data) %>%
-  mutate( sand_sa = as.integer(rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE)),
-         rubble_r = as.integer(pmax(rubble_r, 0, na.rm = TRUE))) %>%
-  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %>%
-  drop_na()   # single row (frame) contained no data -- drop
+  filter(is.na(sand_sa)) %>%
+  distinct(file)
 
-# Omit all frames for which sand was not an explicit category
-cpce_omit_nosand <- cpce %>%
+# Import and tidy SPR subcategory data from each file in which SPR was used as a category
+spr_subcat <- data_frame(file = spr_files$file) %>%
+  # Read in data from all rows
+  mutate(data = map(file, readxl::read_xlsx,  sheet = "Data Summary", col_types = "text", col_names = FALSE)) %>%
+  # Get only lines for SPR subcategories
+  mutate(data = map(data, ~ filter(., X__1 == "Number of frames" | 
+                                      X__1 == "Sand (S)" | X__1 == "Pavement (P)" | X__1 == "Rubble (R)"))) %>%
+  # Transpose data so each category is a column, each frame a row
+  mutate(data = map(data, ~ as_tibble(t(.)))) %>%
+  # Remove duplicate rows (excel sheet contained rows with n points and rows with percent of points)
+  mutate(data = map(data, ~ select(., 1, 5, 6, 7))) %>%
+  # Set first row of transposed data to column names
+  mutate(data = map(data, function(x) rename_at(x, vars(names(x)), funs(slice(x, 1))))) %>%
+  # Remove first row (old column names)
+  mutate(data = map(data, ~ slice(., -1))) %>%
+  # Clean column names
+  mutate(data = map(data, ~ janitor::clean_names(.))) %>%
+  # Convert all columns to integer
+  mutate(data = map(data, ~ mutate_all(., funs(as.integer)))) %>%
+  # Remove rows with NA number of frames (these were summary statistics in excel sheet) 
+  mutate(data = map(data, ~ filter(., !is.na(number_of_frames)))) #%>%
+  #unnest(data_t)
+
+# Find files in which not all SPR is sand -- 
+pr <- spr_subcat %>%
   unnest(data) %>%
-  filter(!is.na(sand_sa)) %>%
+  group_by(file) %>%
+  summarise_all(sum) %>%
+  filter(pavement_p + rubble_r > 0)
+pr
+# -- for these, must use this sand subcategory instead of spr major category...sub in... 
+
+# Merge all imported CPCe data with the sand subcategory data for those datafiles containing pavement or rubble points
+bb <- right_join(cpce, spr_subcat, by = "file")
+
+# Replace the sand_sa column (major category sand) with the sand_s subcategory for those files where necessary
+bb <- bb %>%
+  mutate(data_sub = case_when(
+    # when the file did have pavement and rubble, make sand and rubble the subcategory amounts
+    file %in% pr$file ~ map2(data.x, data.y, ~ mutate(.x, sand_sa = .y$sand_s, rubble_r = .y$rubble_r)),
+    # when the file did not have pavement and rubble, all spr is sand, and rubble is zero
+                 TRUE ~ map(data.x, ~ mutate(.x, sand_sa = sand_pavement_rubble_spr, rubble_r = 0))))
+
+# Replace original dataset with modified dataset containing sand subcategory data substituted in
+cpce_sub <- left_join(cpce, bb) %>%
+  mutate(data_final = case_when(file %in% bb$file ~ data_sub, TRUE ~ data)) %>%
+  unnest(data_final) %>%
   select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %>%
-  drop_na()   # single row (frame) contained no data -- drop
+  drop_na()   # one missing value.. drop
+
 ```
 
-# Save both versions of CPCe data as .RData objects
+# Save CPCe data as .RData object
 ```{r}
-save(cpce_spr_as_sand, file = "data/cpce_spr_as_sand.RData")
-save(cpce_omit_nosand, file = "data/cpce_omit_nosand.RData")
+save(cpce_sub, file = "data/cpce.RData")
 ```
 
 # Dataset metrics
 ```{r}
-cpce <- cpce_spr_as_sand
+cpce <- cpce_sub
 
 # Date range for CPCe data
 range(cpce$date)
@@ -184,11 +227,5 @@ points <- cpce %>%
 range(points$sumpts)
 ## Median
 median(points$sumpts)
-
-# How many transects used SPR (sand, pavement, rubble) as category instead of sand?
-transects_omit_spr <- cpce_omit_nosand %>%
-  group_by(site, week, transect, date) %>%
-  count()
-nrow(transects) - nrow(transects_omit_spr)
 ```
 

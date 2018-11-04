@@ -234,31 +234,87 @@ bb</code></pre>
 </div>
 <div id="additional-qc" class="section level1">
 <h1>Additional QC</h1>
-<p>Categories were not all the same for all CPCe analyses. In some of the analyses, “Sand, Pavement, Rubble (SPR)” was used instead of using separate categories for “Sand” and “Rubble”. In these cases, we could assume all SPR is sand, or we could exclude these timepoints altogether.</p>
+<p>Categories were not all the same for all CPCe analyses. In some of the analyses, “Sand, Pavement, Rubble (SPR)” was used instead of using separate categories for “Sand” and “Rubble”. In these cases, we have to dig deeper into the excel sheets and get the “Sand” subcategory data.</p>
 <p>One frame (R3SC2 IA T2 frame 9) contained no data – drop from dataset.</p>
-<pre class="r"><code># Count all records of spr as sand
-cpce_spr_as_sand &lt;- cpce %&gt;%
+<pre class="r"><code># What files used SPR instead of sand?
+spr_files &lt;- cpce %&gt;%
   unnest(data) %&gt;%
-  mutate( sand_sa = as.integer(rowSums(select(., sand_sa, sand_pavement_rubble_spr), na.rm = TRUE)),
-         rubble_r = as.integer(pmax(rubble_r, 0, na.rm = TRUE))) %&gt;%
-  select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %&gt;%
-  drop_na()   # single row (frame) contained no data -- drop
+  filter(is.na(sand_sa)) %&gt;%
+  distinct(file)
 
-# Omit all frames for which sand was not an explicit category
-cpce_omit_nosand &lt;- cpce %&gt;%
+# Import and tidy SPR subcategory data from each file in which SPR was used as a category
+spr_subcat &lt;- data_frame(file = spr_files$file) %&gt;%
+  # Read in data from all rows
+  mutate(data = map(file, readxl::read_xlsx,  sheet = &quot;Data Summary&quot;, col_types = &quot;text&quot;, col_names = FALSE)) %&gt;%
+  # Get only lines for SPR subcategories
+  mutate(data = map(data, ~ filter(., X__1 == &quot;Number of frames&quot; | 
+                                      X__1 == &quot;Sand (S)&quot; | X__1 == &quot;Pavement (P)&quot; | X__1 == &quot;Rubble (R)&quot;))) %&gt;%
+  # Transpose data so each category is a column, each frame a row
+  mutate(data = map(data, ~ as_tibble(t(.)))) %&gt;%
+  # Remove duplicate rows (excel sheet contained rows with n points and rows with percent of points)
+  mutate(data = map(data, ~ select(., 1, 5, 6, 7))) %&gt;%
+  # Set first row of transposed data to column names
+  mutate(data = map(data, function(x) rename_at(x, vars(names(x)), funs(slice(x, 1))))) %&gt;%
+  # Remove first row (old column names)
+  mutate(data = map(data, ~ slice(., -1))) %&gt;%
+  # Clean column names
+  mutate(data = map(data, ~ janitor::clean_names(.))) %&gt;%
+  # Convert all columns to integer
+  mutate(data = map(data, ~ mutate_all(., funs(as.integer)))) %&gt;%
+  # Remove rows with NA number of frames (these were summary statistics in excel sheet) 
+  mutate(data = map(data, ~ filter(., !is.na(number_of_frames)))) #%&gt;%
+  #unnest(data_t)
+
+# Find files in which not all SPR is sand -- 
+pr &lt;- spr_subcat %&gt;%
   unnest(data) %&gt;%
-  filter(!is.na(sand_sa)) %&gt;%
+  group_by(file) %&gt;%
+  summarise_all(sum) %&gt;%
+  filter(pavement_p + rubble_r &gt; 0)
+pr</code></pre>
+<pre><code>## # A tibble: 13 x 5
+##    file                        number_of_frames pavement_p rubble_r sand_s
+##    &lt;chr&gt;                                  &lt;int&gt;      &lt;int&gt;    &lt;int&gt;  &lt;int&gt;
+##  1 data/CPCe/compliance/R3N1 …               40          0        1    250
+##  2 data/CPCe/Hard Bottom/HBN1…               56          0        1    443
+##  3 data/CPCe/Hard Bottom/HBN1…               71          0        2    545
+##  4 data/CPCe/Hard Bottom/HBS1…               39         57        0    149
+##  5 data/CPCe/Hard Bottom/HBS2…               53          0       23    116
+##  6 data/CPCe/Hard Bottom/HBS2…               56          0       19    154
+##  7 data/CPCe/Hard Bottom/HBS2…               58          0       12    143
+##  8 data/CPCe/Hard Bottom/HBS2…               41          0        1    162
+##  9 data/CPCe/Hard Bottom/HBS3…               62          0        8     73
+## 10 data/CPCe/Hard Bottom/HBS3…               63          0        7     13
+## 11 data/CPCe/Hard Bottom/HBS3…               68          0        6     59
+## 12 data/CPCe/Hard Bottom/HBSC…               68          0        1     52
+## 13 data/CPCe/Hard Bottom/HBSC…               38          0        4     19</code></pre>
+<pre class="r"><code># -- for these, must use this sand subcategory instead of spr major category...sub in... 
+
+# Merge all imported CPCe data with the sand subcategory data for those datafiles containing pavement or rubble points
+bb &lt;- right_join(cpce, spr_subcat, by = &quot;file&quot;)
+
+# Replace the sand_sa column (major category sand) with the sand_s subcategory for those files where necessary
+bb &lt;- bb %&gt;%
+  mutate(data_sub = case_when(
+    # when the file did have pavement and rubble, make sand and rubble the subcategory amounts
+    file %in% pr$file ~ map2(data.x, data.y, ~ mutate(.x, sand_sa = .y$sand_s, rubble_r = .y$rubble_r)),
+    # when the file did not have pavement and rubble, all spr is sand, and rubble is zero
+                 TRUE ~ map(data.x, ~ mutate(.x, sand_sa = sand_pavement_rubble_spr, rubble_r = 0))))
+
+# Replace original dataset with modified dataset containing sand subcategory data substituted in
+cpce_sub &lt;- left_join(cpce, bb) %&gt;%
+  mutate(data_final = case_when(file %in% bb$file ~ data_sub, TRUE ~ data)) %&gt;%
+  unnest(data_final) %&gt;%
   select(-sand_pavement_rubble_spr, -tape_wand_shadow_tws) %&gt;%
-  drop_na()   # single row (frame) contained no data -- drop</code></pre>
+  drop_na()   # one missing value.. drop</code></pre>
 </div>
-<div id="save-both-versions-of-cpce-data-as-.rdata-objects" class="section level1">
-<h1>Save both versions of CPCe data as .RData objects</h1>
-<pre class="r"><code>save(cpce_spr_as_sand, file = &quot;data/cpce_spr_as_sand.RData&quot;)
-save(cpce_omit_nosand, file = &quot;data/cpce_omit_nosand.RData&quot;)</code></pre>
+<div id="save-cpce-data-as-.rdata-object" class="section level1">
+<h1>Save CPCe data as .RData object</h1>
+<pre class="r"><code>save(cpce_sub, file = &quot;data/cpce.RData&quot;)</code></pre>
 </div>
 <div id="dataset-metrics" class="section level1">
 <h1>Dataset metrics</h1>
-<pre class="r"><code>cpce &lt;- cpce_spr_as_sand
+<pre class="r"><code>cpce &lt;- cpce_sub
 
 # Date range for CPCe data
 range(cpce$date)</code></pre>
@@ -288,12 +344,6 @@ range(points$sumpts)</code></pre>
 <pre class="r"><code>## Median
 median(points$sumpts)</code></pre>
 <pre><code>## [1] 8</code></pre>
-<pre class="r"><code># How many transects used SPR (sand, pavement, rubble) as category instead of sand?
-transects_omit_spr &lt;- cpce_omit_nosand %&gt;%
-  group_by(site, week, transect, date) %&gt;%
-  count()
-nrow(transects) - nrow(transects_omit_spr)</code></pre>
-<pre><code>## [1] 108</code></pre>
 </div>
 
 
