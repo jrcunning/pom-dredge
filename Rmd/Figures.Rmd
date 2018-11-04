@@ -711,8 +711,8 @@ ggplot(df, aes(x = factor(dist), y = n, fill = stype)) +
 \  
 
 ```{r FIGS7, fig.height = 3.74016, fig.width = 7.4801}
-load("data/cpce_spr_as_sand.RData")
-cpce <- cpce_spr_as_sand
+load("data/cpce.RData")
+cpce <- cpce_sub
 # Count sand vs. not sand, and create numeric weeks column
 cpce <- cpce %>%
   mutate(sumpts = rowSums(select_if(., is.integer)),     # sum counts of all categories
