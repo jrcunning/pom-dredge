@@ -36,13 +36,10 @@ dredge.end.date <- as.Date("2015-03-16")                    # DCA report August 
 
 # Load data
 ```{r}
-# Load both versions of CPCe data (see tidy_cpce_data.Rmd)
-load("data/cpce_spr_as_sand.RData")
-load("data/cpce_omit_nosand.RData")
-
-# Choose which version of CPCe data to use
-cpce <- cpce_spr_as_sand
-#cpce <- cpce_omit_nosand
+# Load CPCe data (see tidy_cpce_data.Rmd)
+load("data/cpce.RData")
+# Rename dataset to 'cpce'
+cpce <- cpce_sub
 ```
 
 # Quantify sand cover from cpce data 2013-2016
