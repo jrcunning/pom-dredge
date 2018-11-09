@@ -7,7 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, cache = TRUE)
 
 # Load packages
 library(tidyverse)
@@ -97,6 +97,7 @@ load("data/all_counts.RData")
 
 # Subset Scleractinian count data
 scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleractinians only
+  filter(year %in% c(2010, 2013, 2016, 2017)) %>%                 # Get only before dredging (2010, 2013) and 2y postcon (2016, 2017)
   dplyr::select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
                 transect, transect_area_m2, genus, species, diameter, count, perm)
 
@@ -277,7 +278,7 @@ ggplot(data = newdata_1, aes(x = dist, y = fit, color = timepoint)) +
   facet_grid(dir ~ reef, labeller = global_labeller) +
   geom_line() +
   scale_x_continuous(limits = c(0, 500)) +
-  scale_y_continuous(limits = c(0.2, 1.6), expand = c(0,0)) +
+  #scale_y_continuous(limits = c(0.2, 1.6), expand = c(0,0)) +
   geom_ribbon(aes(ymin = lci, ymax = uci), linetype = 0, alpha = 0.2) +
   geom_segment(data = anno, inherit.aes = FALSE,
                aes(x = dist, y = `pre-2014`, xend = dist, yend = `post-2014`), 
@@ -556,7 +557,7 @@ ggplot(data = newdata, aes(x = dist, y = fit, color = timepoint)) +
   facet_grid(dir ~ reef, scales = "free_x") +
   geom_line() +
   scale_x_continuous(limits = c(0, 500)) +
-  scale_y_continuous(limits = c(0, 3.8), expand = c(0,0)) +
+  #scale_y_continuous(limits = c(0, 3.8), expand = c(0,0)) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) +
   geom_segment(data = anno, inherit.aes = FALSE,
                aes(x = dist, y = `2010 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
