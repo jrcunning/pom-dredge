@@ -512,7 +512,7 @@ ggsave(filename = "figures/FigS5.png", device = "png", width = 190, height = 95,
 \  
 
 ```{r Fig8, fig.height = 3.74016, fig.width = 7.4801}
-load("data/large.no2015.RData"); large.dens <- newdata_1; large.anno <- anno; large.lsm <- lsm; rm(anno, newdata_1, lsm)
+load("data/large.dens.mod.RData"); large.dens <- newdata_1; large.anno <- anno; large.lsm <- lsm; rm(anno, newdata_1, lsm)
 
 # PLOT ALL RESULTS FOR LARGE CORALS
 ggplot(data = large.dens, aes(x = dist, y = fit, color = timepoint)) +
@@ -557,7 +557,7 @@ ggsave(filename = "figures/Fig8.png", device = "png", width = 190, height = 95, 
 \  
 
 ```{r FIGS6, fig.height = 3.74016, fig.width = 7.4801}
-load("data/small.no2015.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
+load("data/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
 
 # Plot results
 ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
@@ -655,6 +655,21 @@ ggplot(df2, aes(x = diameter, fill = timepoint)) +
 ```
 
 **Figure 9 - alternative.** *Alternative version of Figure 8, with absolute density instead of relative proportion on y-axis.*
+
+\  
+
+### *Estimated coral loss*
+
+\  
+
+```{r}
+loss <- read_tsv("figures/Table1.txt") %>%
+  select(dir, reef, sizeclass, total_loss, out_to) %>%
+  rename(Direction = dir, Reef = reef, `Size class` = sizeclass, `Corals lost` = total_loss, `Out to (m)` = out_to) %>%
+  arrange(Direction, Reef)
+
+knitr::kable(loss)
+```
 
 \  
 

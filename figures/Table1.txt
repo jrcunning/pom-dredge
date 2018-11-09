@@ -1,0 +1,7 @@
+reef	dir	sizeclass	total_loss	out_to
+Middle	Northern	1-2 cm	-204913	500
+Middle	Northern	≥ 3 cm	-72982	349
+Middle	Southern	1-2 cm	-198843	500
+Middle	Southern	≥ 3 cm	-16912	192
+Outer	Northern	1-2 cm	-11173	500
+Outer	Northern	≥ 3 cm	-58636	500

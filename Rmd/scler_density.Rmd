@@ -26,6 +26,7 @@ load("data/all_counts.RData")
 
 # Subset Scleractinian count data
 scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleractinians only
+  filter(year %in% c(2010, 2013, 2016, 2017)) %>%                 # Get only before dredging (2010, 2013) and 2y postcon (2016, 2017)
   dplyr::select(reef, dir, channel, site, site2, dist, year, date,       # Reorder columns
                 transect, transect_area_m2, genus, species, diameter, count, perm)
 ```
@@ -114,8 +115,9 @@ newdata_1 <- large_counts_1 %>%
 newdata_1$fit <- predict(mod_1, newdata_1, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
+set.seed(5234)
 bootfit_1 <- bootMer(mod_1, FUN = function(x) predict(x, newdata_1, type = "response", re.form = NA), 
-                     nsim = 200, parallel = "multicore", ncpus = 8)
+                     nsim = 400, parallel = "multicore", ncpus = 8)
 newdata_1$lci <- apply(bootfit_1$t, 2, quantile, 0.08)
 newdata_1$uci <- apply(bootfit_1$t, 2, quantile, 0.92)
 
@@ -259,8 +261,9 @@ newdata_2 <- small_counts.f %>%
 newdata_2$fit <- predict(mod_3, newdata_2, type = "response", re.form = NA)
 
 # Get confidence intervals by simulation
+set.seed(9014)
 bootfit_2 <- bootMer(mod_3, FUN = function(x) predict(x, newdata_2, type = "response", re.form = NA), 
-                     nsim = 200, parallel = "multicore", ncpus = 8)
+                     nsim = 400, parallel = "multicore", ncpus = 8)
 newdata_2$lci <- apply(bootfit_2$t, 2, quantile, 0.08)
 newdata_2$uci <- apply(bootfit_2$t, 2, quantile, 0.92)
 ```
