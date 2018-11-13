@@ -579,7 +579,7 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
   scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
   
-ggsave(filename = "figures/FigS6.png", device = "png", width = 190, height = 95, units = "mm")
+ggsave(filename = "figures/Fig9.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
 **Figures 9. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
@@ -616,7 +616,7 @@ ggplot(df, aes(x = diameter, fill = year <= 2010)) +
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
   scale_fill_manual(labels = c("After dredging", "Before dredging"), values = c("#F8766D", "#00BFC4"))
 
-ggsave(filename = "figures/Fig9.png", device = "png", width = 190, height = 95, units = "mm")
+ggsave(filename = "figures/FigS6.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
 **Figure S6. Size frequency distribution of corals before and after dredging.** For the northern and southern middle and outer reefs, histograms show the relative proportion of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.

@@ -9,7 +9,7 @@ editor_options:
 
 ```{r setup, include = FALSE}
 # Set knitr options
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, cache = FALSE)
 
 # Load packages
 library(tidyverse)
@@ -317,7 +317,7 @@ anno <- full_join(fits, sigs) %>%
   mutate(rel = -(estimate) / `2010 baseline` * 100,
          rel2 = ifelse(p.value > 0.1, "", paste0(round(rel, 1), "%")),
          sig = gtools::stars.pval(p.value),
-         sig2 = gsub(" ", "n.d.", sig))
+         sig2 = gsub(" ", "ns", sig))
 
 anno <- anno %>%
   mutate(`2010 baseline` = ifelse((reef == "HB" | (reef == "R3" & dir == "S")), NA, `2010 baseline`),
