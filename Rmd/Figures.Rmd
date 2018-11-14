@@ -361,7 +361,7 @@ figS3
 
 \  
 
-```{r FIGS4, fig.height = 3.74016, fig.width = 7.4801}
+```{r FIG7, fig.height = 3.74016, fig.width = 7.4801}
 load("data/pm.lsm.RData")
 
 pm.lsm1 <- summary(pm.lsm1) %>% add_dist_cat()
@@ -385,16 +385,16 @@ ggplot(pm.lsm1, aes(x = dist_cat, y = prob, fill = dist_cat)) +
   labs(x = "Distance from channel", y = "Probability of partial mortality due to sediment") +
   geom_text(data = dd, aes(label = "n.d."), vjust = "bottom")
 
-ggsave(filename = "figures/FigS4.png", device = "png", width = 190, height = 95, units = "mm")
+ggsave(filename = "figures/Fig7.png", device = "png", width = 190, height = 95, units = "mm")
 
 #pm.lsm1
 ```
 
-**Figure S4. Coral partial mortality due to sedimentation in each monitoring area throughout dredging operations.** Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
+**Figure 7. Coral partial mortality due to sedimentation in each monitoring area throughout dredging operations.** Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
 
 \  
 
-```{r Fig7, fig.height = 5, fig.width = 5}
+```{r old_Fig7, include = FALSE, eval = FALSE, fig.height = 5, fig.width = 5}
 # Load sediment deposition data (see Rmd/sediment_trap.Rmd)
 load("data/sed_deposited.RData")
 
@@ -463,9 +463,11 @@ ggplot(finesed.pm, aes(x = int_fit/100, y = prob)) +
 
 
 ggsave(filename = "figures/Fig7.png", device = "png", width = 90, height = 85, units = "mm")
+
+#**Figure 7. Relationship between total fine sediment deposition and coral partial mortality during dredging operations.** Points indicate, for each #monitoring area, the total amount of fine sediments deposited during dredging (±95% CI; see Fig. 3) on the x-axis, and the probability of partial #mortality (±95% CI; see Fig. S3) on the y-axis. Points are labeled corresponding to reef region (SIR = sourthern inner reef, NIR = northern inner reef, #SMR = southern middle reef, NMR = northern middle reef, SOR = southern outer reef, NOR = northern outer reef) and colored corresponding to distance from #channel. The fitted dose-response curve follows a four parameter type two Weibull function weighted inversely by the SE of partial mortality estimates.
+
 ```
 
-**Figure 7. Relationship between total fine sediment deposition and coral partial mortality during dredging operations.** Points indicate, for each monitoring area, the total amount of fine sediments deposited during dredging (±95% CI; see Fig. 3) on the x-axis, and the probability of partial mortality (±95% CI; see Fig. S3) on the y-axis. Points are labeled corresponding to reef region (SIR = sourthern inner reef, NIR = northern inner reef, SMR = southern middle reef, NMR = northern middle reef, SOR = southern outer reef, NOR = northern outer reef) and colored corresponding to distance from channel. The fitted dose-response curve follows a four parameter type two Weibull function weighted inversely by the SE of partial mortality estimates.
 
 \  
 
@@ -473,7 +475,7 @@ ggsave(filename = "figures/Fig7.png", device = "png", width = 90, height = 85, u
 
 \  
 
-```{r FIGS5, fig.height = 3.74016, fig.width = 7.4801}
+```{r FIGS4, fig.height = 3.74016, fig.width = 7.4801}
 load("data/tm.lsm.RData")
 
 dead.lsm4 <- summary(dead.lsm4) %>% add_dist_cat()
@@ -498,271 +500,10 @@ ggplot(dead.lsm4, aes(x = dist_cat, y = prob, fill = dist_cat)) +
   labs(x = "Distance from channel", y = "Probability of total mortality (non-disease)") +
   geom_text(data = dd, aes(label = "n.d."), vjust = "bottom")
 
-ggsave(filename = "figures/FigS5.png", device = "png", width = 190, height = 95, units = "mm")
+ggsave(filename = "figures/FigS4.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-**Figure S5. Total mortality of non-disease-susceptible coral species in each monitoring area throughout dredging operations.** Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
-
-\  
-
-# Impacts on reef habitat
-
-### *Coral density*
-
-\  
-
-```{r Fig8, fig.height = 3.74016, fig.width = 7.4801}
-load("data/large.dens.mod.RData"); large.dens <- newdata_1; large.anno <- anno; large.lsm <- lsm; rm(anno, newdata_1, lsm)
-
-# PLOT ALL RESULTS FOR LARGE CORALS
-ggplot(data = large.dens, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef, scales = "free_x", labeller = global_labeller) +
-  geom_line() +
-  scale_x_continuous(limits = c(0, 500)) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) +
-  geom_errorbar(data = large.lsm, aes(x = dist, y = rate, ymin = asymp.LCL, ymax = asymp.UCL)) +
-  geom_point(data = large.lsm, aes(x = dist, y = rate), alpha = 0.5, size = 0.75) +
-  geom_segment(data = large.anno, inherit.aes = FALSE, lwd = 0.2,
-               aes(x = dist, y = `pre-2014`, xend = dist, yend = `post-2014`), 
-               arrow = arrow(length = unit(0.03, "npc"))) +
-  geom_text(data = large.anno, inherit.aes = FALSE, hjust = "left", size = 2,
-            aes(x = dist, y = `post-2014` - 0.1, label = paste0(rel2, sig2))) +
-  labs(x = "Distance from channel (m)", y = "Number of corals ≥ 3cm per m2", color = "") +
-  scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D")) +
-  coord_cartesian(ylim = c(0, 1.7)) +
-  theme_custom() +
-  theme(legend.position = c(0.1, 0.9),
-        legend.key.size = unit(5, "mm"),
-        legend.text = element_text(size = 7),
-        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1))
-
-ggsave(filename = "figures/Fig8.png", device = "png", width = 190, height = 95, units = "mm")
-
-
-# Calculate total number of corals lost per square meter within threshold of 
-#large.dens %>%
-#  select(reef, dir, dist, timepoint, fit) %>%
-#  spread(timepoint, fit) %>%
-#  mutate(diff = `post-2014` - `pre-2014`) %>%
-#  filter(diff < 0) %>%
-#  group_by(reef, dir) %>%
-#  summarise(thresh_dist = max(dist),
-#            total_diff = sum(diff))
-
-#(77.8 * 700) + (29.7 * 700) + (161 * 100)
-```
-
-**Figure 8. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2015-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
-
-\  
-
-```{r FIG9, fig.height = 3.74016, fig.width = 7.4801}
-load("data/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
-
-# Plot results
-ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
-  facet_grid(dir ~ reef, scales = "free_x", labeller = global_labeller) +
-  geom_line() +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) +
-  geom_segment(data = small.anno, inherit.aes = FALSE, lwd = 0.2,
-               aes(x = dist, y = `2010 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
-               arrow = arrow(length = unit(0.03, "npc"))) +
-  geom_text(data = small.anno, inherit.aes = FALSE, hjust = "left", size = 2,
-            aes(x = dist + 10, y = `2016/2017 cross-site surveys` + 0.2, 
-                label = paste0(rel2, sig2))) +
-  labs(x = "Distance from channel (m)", y = "Number of small corals (1-2 cm) per m2", color = "") +
-  coord_cartesian(ylim = c(0, 1.8), xlim = c(0, 500)) +
-  theme_custom() +
-  theme(legend.position = c(0.1, 0.9),
-        legend.key.size = unit(5, "mm"),
-        legend.text = element_text(size = 7),
-        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
-  scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
-  
-ggsave(filename = "figures/Fig9.png", device = "png", width = 190, height = 95, units = "mm")
-```
-
-**Figures 9. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
-
-\  
-
-### *Coral size-frequency*
-
-\  
-
-```{r FigS6, fig.height = 3.74016, fig.width = 7.4801}
-load("data/sizefreq.RData")
-
-df <- df %>%
-  mutate(reef = factor(reef, levels = c("HB", "R2", "R3")))
-
-kwtest <- kwtest %>%
-  add_row(reef = "HB", dir = "N", data = NA, kw = NA, p = NA, x = 15, y = 0.1) %>%
-  add_row(reef = "HB", dir = "S", data = NA, kw = NA, p = NA, x = 15, y = 0.1)
-
-# Plot size frequency distributions and annotate with KW test p values
-ggplot(df, aes(x = diameter, fill = year <= 2010)) + 
-  geom_histogram(aes(y = ..density..),    # Scales each histogram so the total area = 1
-                 position = "identity", binwidth = 1, alpha = 0.3) +
-  facet_grid(dir ~ reef, labeller = global_labeller, drop = FALSE) +
-  labs(x = "Coral diameter (cm)", y = "Proportion of individuals", fill = "") +
-  xlim(0, 20) +
-  geom_text(data = kwtest, aes(fill = NULL, x = x, y = y, 
-            label = paste("p =", formatC(p, format = "e", digits = 2))), size = 2) +
-  theme_custom() +
-  theme(legend.position = c(0.1, 0.9),
-        legend.key.size = unit(5, "mm"),
-        legend.text = element_text(size = 8),
-        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
-  scale_fill_manual(labels = c("After dredging", "Before dredging"), values = c("#F8766D", "#00BFC4"))
-
-ggsave(filename = "figures/FigS6.png", device = "png", width = 190, height = 95, units = "mm")
-```
-
-**Figure S6. Size frequency distribution of corals before and after dredging.** For the northern and southern middle and outer reefs, histograms show the relative proportion of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.
-
-\  
-
-```{r FigS6_alternative, fig.height = 3.74016, fig.width = 7.4801}
-# Plot histogram with absolute density instead of relative proportion
-# get total area per reef/dir/timepoint
-areas <- df %>%
-  distinct(reef, dir, timepoint, site, site2, dist, year, date, transect, transect_area_m2) %>%
-  group_by(reef, dir, timepoint) %>%
-  summarise(total_area_surveyed = sum(transect_area_m2))
-
-counts <- df %>%
-  group_by(reef, dir, timepoint, diameter = ceiling(diameter)) %>%
-  summarise(total_count = sum(count))
-
-
-df2 <- left_join(counts, areas) %>%
-  mutate(dens = total_count / total_area_surveyed)
-
-ggplot(df2, aes(x = diameter, fill = timepoint)) + 
-  geom_bar(aes(y = dens, group = timepoint), stat = "identity", alpha = 0.3, position = "identity", width = 1) +
-  facet_grid(dir ~ reef, labeller = global_labeller, drop = FALSE) +
-  labs(x = "Coral diameter (cm)", y = "Number of individuals / m2", fill = "") +
-  xlim(0, 40) +
-  geom_text(data = kwtest, aes(fill = NULL, x = x, y = y, 
-            label = paste("p =", formatC(p, format = "e", digits = 2))), size = 2) +
-  theme_custom() +
-  theme(legend.position = c(0.1, 0.9),
-        legend.key.size = unit(5, "mm"),
-        legend.text = element_text(size = 8),
-        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
-  scale_fill_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
-```
-
-**Figure S6 - alternative.** *Alternative version of Figure S6, with absolute density instead of relative proportion on y-axis.*
-
-\  
-
-### *Estimated coral loss*
-
-\  
-
-```{r}
-loss <- read_tsv("figures/Table1.txt") %>%
-  select(dir, reef, sizeclass, total_loss, out_to) %>%
-  rename(Direction = dir, Reef = reef, `Size class` = sizeclass, `Corals lost` = total_loss, `Out to (m)` = out_to) %>%
-  arrange(Direction, Reef)
-
-knitr::kable(loss)
-```
-
-\  
-
-### *Sediment depth*
-
-\  
-
-```{r Fig10, fig.height = 3.74016, fig.width = 7.4801}
-load("data/sdepthmod.RData")
-
-LR <- LR %>%
-  add_row(reef = "HB", dir = "S") %>%
-  add_row(reef = "HB", dir = "N") %>%
-  mutate(reef = factor(reef, levels = c("HB", "R2", "R3")))
-
-ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
-  facet_grid(dir ~ reef, labeller = global_labeller) + 
-  geom_jitter(width = 10, size = 0.5, alpha = 0.5) +
-  coord_cartesian(xlim = c(0, 500)) +
-  geom_line(data = filter(resdf, !(reef == "R3" & dir == "S")), 
-            aes(x = dist, y = fit, linetype = pct_reef_covered)) +
-  labs(x = "Distance from channel (m)", y = "Sediment depth (cm)") +
-  theme_custom() +
-  scale_linetype_manual(name = "% of area",
-                        labels = c(1, 10, 25, 50), values = c(3,4,2,1)) +
-  theme(legend.position = c (0.25, 0.85),
-        legend.key.size = unit(3, "mm"),
-        legend.key.width = unit(10, "mm"),
-        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1))
-
-ggsave(filename = "figures/Fig10.png", device = "png", width = 190, height = 95, units = "mm")
-```
-
-**Figure 10. Depth of sediments in relation to channel measured ~2 years after dredging operations.** Dots represent individual sediment depth measurements along transects, jittered around the distance from the center of the transect to the channel in each monitoring region (no data available for the inner reef). Lines represent quantile regressions across transects as a function of log(distance from channel), e.g., the percent of reef area with sediments measuring at least a given depth.
-
-\  
-
-```{r, eval = FALSE, include = FALSE, fig.width = 10, fig.height = 5}
-#Sediment type - not useful enough?
-df <- substrate %>%
-  filter(!is.na(stype)) %>%
-  group_by(reef, dir, reef2, dist, site0) %>%
-  count(stype)
-
-# sed type
-ggplot(df, aes(x = factor(dist), y = n, fill = stype)) +
-  facet_wrap(c("dir", "reef", "reef2"), scales = "free_x") +
-  geom_bar(position = "fill", stat = "identity") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-### *Sand cover before and after dredging*
-
-\  
-
-```{r FIGS7, fig.height = 3.74016, fig.width = 7.4801}
-load("data/cpce.RData")
-cpce <- cpce_sub
-# Count sand vs. not sand, and create numeric weeks column
-cpce <- cpce %>%
-  mutate(sumpts = rowSums(select_if(., is.integer)),     # sum counts of all categories
-         notsand = as.integer(sumpts - sand_sa)) %>%     # sum counts of not sand
-  mutate_if(is.character, as.factor) %>%
-  mutate(weekn = (date - min(date)) / dweeks(1),  # create numeric weeks column
-         dayn  = as.numeric(date - min(date)))
-
-# Show percent sand at each site for TRUE baseline (must be before Nov. 20, 2013) and late 2016
-ba <- cpce %>%
-  filter(date < as.Date("2013-11-20") | date > as.Date("2016-01-01")) %>%
-  group_by(reef, dir, channel, site, date, transect) %>%
-  summarize(propsand = mean(sand_sa / sumpts)) %>%
-  group_by(reef, dir, channel, site, year = factor(year(date))) %>%
-  summarize(meanpropsand = mean(propsand),
-            sd = sd(propsand))
-
-ba %>%
-  filter(site %in% c("R2N1", "R2S1", "R2SC1")) %>%
-  ggplot(aes(x = year, y = meanpropsand)) +
-  facet_wrap(~ site) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = meanpropsand - sd, ymax = meanpropsand + sd), 
-                width = 0.5, lwd = 0.3) +
-  theme(legend.position = c(0.75, 0.075)) +
-  theme_custom() +
-  labs(x = "", y = "Percent sand cover") +
-  scale_y_continuous(labels = scales::percent) +
-  theme(legend.position = 0,
-        legend.key.size = unit(4, "mm"))
-
-ggsave(filename = "figures/FigS7.png", device = "png", width = 90, height = 65, units = "mm")
-```
-
-**Figure S7. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected.** Bars indicate the mean percent sand based on CPCe analysis, and error bars represent standard deviation.
+**Figure S4. Total mortality of non-disease-susceptible coral species in each monitoring area throughout dredging operations.** Bars indicate the predicted probability (±95% CI) of tagged corals being observed with the condition code PM (partial mortality due to sedimentation) at any point through March 2015 (the final month of dredging operations). Bar colors correspond to distance from channel, and empty spaces indicate areas that were not monitored.
 
 \  
 
@@ -770,7 +511,7 @@ ggsave(filename = "figures/FigS7.png", device = "png", width = 90, height = 65, 
 
 \  
 
-```{r Fig11, fig.height = 7.4801, fig.height = 7.4801}
+```{r Fig8, fig.height = 7.4801, fig.height = 7.4801}
 # Plume presence
 load("data/plume.RData")
 plume <- plume.summ %>%
@@ -859,7 +600,7 @@ key_labeller <- labeller(
   .default = label_both
 )
 
-Fig11 <- df %>% gatherpairs(plumeprob, int_finedepo, mean_sandcov, mean_sedstress, pmort) %>%
+Fig8 <- df %>% gatherpairs(plumeprob, int_finedepo, mean_sandcov, mean_sedstress, pmort) %>%
   filter(.xkey != .ykey) %>%
   mutate(.xkey = factor(.xkey, levels = c("plumeprob", "int_finedepo", "mean_sandcov", "mean_sedstress", "pmort")),
          .ykey = factor(.ykey, levels = levels(.xkey))) %>%
@@ -875,9 +616,270 @@ Fig11 <- df %>% gatherpairs(plumeprob, int_finedepo, mean_sandcov, mean_sedstres
       theme(legend.position="none") +
       labs(x = NULL, y = NULL)
 
-ggsave(filename = "figures/Fig11.png", device = "png", width = 190, height = 190, units = "mm")
+ggsave(filename = "figures/Fig8.png", device = "png", width = 190, height = 190, units = "mm")
 
-Fig11
+Fig8
 ```
 
-**Figure 11. Correlations among multiple metrics measured across monitoring areas.** Points represent monitoring areas (n = 12) colored by distance from channel (green = <50 m; blue = 1.25 - 2.5 km; red = 9.38 km). Metrics are as follows: Dredge plume = proportion of days dredge plume present (see Fig. 2); Sed. deposition = total fine sediment deposition during project (kg / m2; see Fig. 5); Benthic sed. = mean daily proportion benthic sand cover during project (see Fig. 4); Coral burial = mean daily probability of coral burial during project (see Fig. 6); Coral mort. = probability of partial mortality among tagged corals (see Fig. 7). Metrics derived from time series (e.g., Benthic sed., Coral burial) only include dates for which data were available from all monitoring areas. Each panel displays the correlation coefficient (*R*) for the two metrics, a linear regression, and p-value for the null hypothesis that the slope is equal to zero.
+**Figure 8. Correlations among multiple metrics measured across monitoring areas.** Points represent monitoring areas (n = 12) colored by distance from channel (green = <50 m; blue = 1.25 - 2.5 km; red = 9.38 km). Metrics are as follows: Dredge plume = proportion of days dredge plume present (see Fig. 2); Sed. deposition = total fine sediment deposition during project (kg / m2; see Fig. 5); Benthic sed. = mean daily proportion benthic sand cover during project (see Fig. 4); Coral burial = mean daily probability of coral burial during project (see Fig. 6); Coral mort. = probability of partial mortality among tagged corals (see Fig. 7). Metrics derived from time series (e.g., Benthic sed., Coral burial) only include dates for which data were available from all monitoring areas. Each panel displays the correlation coefficient (*R*) for the two metrics, a linear regression, and p-value for the null hypothesis that the slope is equal to zero.
+
+\  
+
+# Impacts on reef habitat
+
+\  
+
+### *Sediment depth*
+
+\  
+
+```{r Fig9, fig.height = 3.74016, fig.width = 7.4801}
+load("data/sdepthmod.RData")
+
+LR <- LR %>%
+  add_row(reef = "HB", dir = "S") %>%
+  add_row(reef = "HB", dir = "N") %>%
+  mutate(reef = factor(reef, levels = c("HB", "R2", "R3")))
+
+ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
+  facet_grid(dir ~ reef, labeller = global_labeller) + 
+  geom_jitter(width = 10, size = 0.5, alpha = 0.5) +
+  coord_cartesian(xlim = c(0, 500)) +
+  geom_line(data = filter(resdf, !(reef == "R3" & dir == "S")), 
+            aes(x = dist, y = fit, linetype = pct_reef_covered)) +
+  labs(x = "Distance from channel (m)", y = "Sediment depth (cm)") +
+  theme_custom() +
+  scale_linetype_manual(name = "% of area",
+                        labels = c(1, 10, 25, 50), values = c(3,4,2,1)) +
+  theme(legend.position = c (0.25, 0.85),
+        legend.key.size = unit(3, "mm"),
+        legend.key.width = unit(10, "mm"),
+        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1))
+
+ggsave(filename = "figures/Fig9.png", device = "png", width = 190, height = 95, units = "mm")
+```
+
+**Figure 9. Depth of sediments in relation to channel measured ~2 years after dredging operations.** Dots represent individual sediment depth measurements along transects, jittered around the distance from the center of the transect to the channel in each monitoring region (no data available for the inner reef). Lines represent quantile regressions across transects as a function of log(distance from channel), e.g., the percent of reef area with sediments measuring at least a given depth.
+
+\  
+
+### *Sand cover before and after dredging*
+
+\  
+
+```{r FIGS5, fig.height = 3.74016, fig.width = 7.4801}
+load("data/cpce.RData")
+cpce <- cpce_sub
+# Count sand vs. not sand, and create numeric weeks column
+cpce <- cpce %>%
+  mutate(sumpts = rowSums(select_if(., is.integer)),     # sum counts of all categories
+         notsand = as.integer(sumpts - sand_sa)) %>%     # sum counts of not sand
+  mutate_if(is.character, as.factor) %>%
+  mutate(weekn = (date - min(date)) / dweeks(1),  # create numeric weeks column
+         dayn  = as.numeric(date - min(date)))
+
+# Show percent sand at each site for TRUE baseline (must be before Nov. 20, 2013) and late 2016
+ba <- cpce %>%
+  filter(date < as.Date("2013-11-20") | date > as.Date("2016-01-01")) %>%
+  group_by(reef, dir, channel, site, date, transect) %>%
+  summarize(propsand = mean(sand_sa / sumpts)) %>%
+  group_by(reef, dir, channel, site, year = factor(year(date))) %>%
+  summarize(meanpropsand = mean(propsand),
+            sd = sd(propsand))
+
+ba %>%
+  filter(site %in% c("R2N1", "R2S1", "R2SC1")) %>%
+  ggplot(aes(x = year, y = meanpropsand)) +
+  facet_wrap(~ site) +
+  geom_bar(stat = "identity") +
+  geom_errorbar(aes(ymin = meanpropsand - sd, ymax = meanpropsand + sd), 
+                width = 0.5, lwd = 0.3) +
+  theme(legend.position = c(0.75, 0.075)) +
+  theme_custom() +
+  labs(x = "", y = "Percent sand cover") +
+  scale_y_continuous(labels = scales::percent) +
+  theme(legend.position = 0,
+        legend.key.size = unit(4, "mm"))
+
+ggsave(filename = "figures/FigS5.png", device = "png", width = 90, height = 65, units = "mm")
+```
+
+**Figure S5. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected.** Bars indicate the mean percent sand based on CPCe analysis, and error bars represent standard deviation.
+
+\  
+
+### *Coral density*
+
+\  
+
+```{r Fig10, fig.height = 3.74016, fig.width = 7.4801}
+load("data/large.dens.mod.RData"); large.dens <- newdata_1; large.anno <- anno; large.lsm <- lsm; rm(anno, newdata_1, lsm)
+
+# PLOT ALL RESULTS FOR LARGE CORALS
+ggplot(data = large.dens, aes(x = dist, y = fit, color = timepoint)) +
+  facet_grid(dir ~ reef, scales = "free_x", labeller = global_labeller) +
+  geom_line() +
+  scale_x_continuous(limits = c(0, 500)) +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) +
+  geom_errorbar(data = large.lsm, aes(x = dist, y = rate, ymin = asymp.LCL, ymax = asymp.UCL)) +
+  geom_point(data = large.lsm, aes(x = dist, y = rate), alpha = 0.5, size = 0.75) +
+  geom_segment(data = large.anno, inherit.aes = FALSE, lwd = 0.2,
+               aes(x = dist, y = `pre-2014`, xend = dist, yend = `post-2014`), 
+               arrow = arrow(length = unit(0.03, "npc"))) +
+  geom_text(data = large.anno, inherit.aes = FALSE, hjust = "left", size = 2,
+            aes(x = dist, y = `post-2014` - 0.1, label = paste0(rel2, sig2))) +
+  labs(x = "Distance from channel (m)", y = "Number of corals ≥ 3cm per m2", color = "") +
+  scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D")) +
+  coord_cartesian(ylim = c(0, 1.7)) +
+  theme_custom() +
+  theme(legend.position = c(0.1, 0.9),
+        legend.key.size = unit(5, "mm"),
+        legend.text = element_text(size = 7),
+        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1))
+
+ggsave(filename = "figures/Fig10.png", device = "png", width = 190, height = 95, units = "mm")
+
+
+# Calculate total number of corals lost per square meter within threshold of 
+#large.dens %>%
+#  select(reef, dir, dist, timepoint, fit) %>%
+#  spread(timepoint, fit) %>%
+#  mutate(diff = `post-2014` - `pre-2014`) %>%
+#  filter(diff < 0) %>%
+#  group_by(reef, dir) %>%
+#  summarise(thresh_dist = max(dist),
+#            total_diff = sum(diff))
+
+#(77.8 * 700) + (29.7 * 700) + (161 * 100)
+```
+
+**Figure 10. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
+
+\  
+
+![**Figure S6. Density of non-disease-susceptible corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).](../figures/FigS6.png)
+
+\  
+
+```{r FIG11, fig.height = 3.74016, fig.width = 7.4801}
+load("data/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
+
+# Plot results
+ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
+  facet_grid(dir ~ reef, scales = "free_x", labeller = global_labeller) +
+  geom_line() +
+  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), linetype = 0, alpha = 0.2) +
+  geom_segment(data = small.anno, inherit.aes = FALSE, lwd = 0.2,
+               aes(x = dist, y = `2010 baseline`, xend = dist, yend = `2016/2017 cross-site surveys`), 
+               arrow = arrow(length = unit(0.03, "npc"))) +
+  geom_text(data = small.anno, inherit.aes = FALSE, hjust = "left", size = 2,
+            aes(x = dist + 10, y = `2016/2017 cross-site surveys` + 0.2, 
+                label = paste0(rel2, sig2))) +
+  labs(x = "Distance from channel (m)", y = "Number of small corals (1-2 cm) per m2", color = "") +
+  coord_cartesian(ylim = c(0, 1.8), xlim = c(0, 500)) +
+  theme_custom() +
+  theme(legend.position = c(0.1, 0.9),
+        legend.key.size = unit(5, "mm"),
+        legend.text = element_text(size = 7),
+        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
+  scale_color_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
+  
+ggsave(filename = "figures/Fig11.png", device = "png", width = 190, height = 95, units = "mm")
+```
+
+**Figure 11. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
+
+\  
+
+![**Figure S7. Density of non-disease-susceptible small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).](../figures/FigS7.png)
+
+\  
+
+### *Coral size-frequency*
+
+\  
+
+```{r FigS8, fig.height = 3.74016, fig.width = 7.4801}
+load("data/sizefreq.RData")
+
+df <- df %>%
+  mutate(reef = factor(reef, levels = c("HB", "R2", "R3")))
+
+kwtest <- kwtest %>%
+  add_row(reef = "HB", dir = "N", data = NA, kw = NA, p = NA, x = 15, y = 0.1) %>%
+  add_row(reef = "HB", dir = "S", data = NA, kw = NA, p = NA, x = 15, y = 0.1)
+
+# Plot size frequency distributions and annotate with KW test p values
+ggplot(df, aes(x = diameter, fill = year <= 2010)) + 
+  geom_histogram(aes(y = ..density..),    # Scales each histogram so the total area = 1
+                 position = "identity", binwidth = 1, alpha = 0.3) +
+  facet_grid(dir ~ reef, labeller = global_labeller, drop = FALSE) +
+  labs(x = "Coral diameter (cm)", y = "Proportion of individuals", fill = "") +
+  xlim(0, 20) +
+  geom_text(data = kwtest, aes(fill = NULL, x = x, y = y, 
+            label = paste("p =", formatC(p, format = "e", digits = 2))), size = 2) +
+  theme_custom() +
+  theme(legend.position = c(0.1, 0.9),
+        legend.key.size = unit(5, "mm"),
+        legend.text = element_text(size = 8),
+        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
+  scale_fill_manual(labels = c("After dredging", "Before dredging"), values = c("#F8766D", "#00BFC4"))
+
+ggsave(filename = "figures/FigS5.png", device = "png", width = 190, height = 95, units = "mm")
+```
+
+**Figure S8. Size frequency distribution of corals before and after dredging.** For the northern and southern middle and outer reefs, histograms show the relative proportion of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.
+
+\  
+
+```{r FigS8_alternative, fig.height = 3.74016, fig.width = 7.4801}
+# Plot histogram with absolute density instead of relative proportion
+# get total area per reef/dir/timepoint
+areas <- df %>%
+  distinct(reef, dir, timepoint, site, site2, dist, year, date, transect, transect_area_m2) %>%
+  group_by(reef, dir, timepoint) %>%
+  summarise(total_area_surveyed = sum(transect_area_m2))
+
+counts <- df %>%
+  group_by(reef, dir, timepoint, diameter = ceiling(diameter)) %>%
+  summarise(total_count = sum(count))
+
+
+df2 <- left_join(counts, areas) %>%
+  mutate(dens = total_count / total_area_surveyed)
+
+ggplot(df2, aes(x = diameter, fill = timepoint)) + 
+  geom_bar(aes(y = dens, group = timepoint), stat = "identity", alpha = 0.3, position = "identity", width = 1) +
+  facet_grid(dir ~ reef, labeller = global_labeller, drop = FALSE) +
+  labs(x = "Coral diameter (cm)", y = "Number of individuals / m2", fill = "") +
+  xlim(0, 40) +
+  geom_text(data = kwtest, aes(fill = NULL, x = x, y = y, 
+            label = paste("p =", formatC(p, format = "e", digits = 2))), size = 2) +
+  theme_custom() +
+  theme(legend.position = c(0.1, 0.9),
+        legend.key.size = unit(5, "mm"),
+        legend.text = element_text(size = 8),
+        axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
+  scale_fill_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
+```
+
+**Figure S8 - alternative.** *Alternative version of Figure S5, with absolute density instead of relative proportion on y-axis.*
+
+\  
+
+### *Estimated coral loss*
+
+\  
+
+```{r}
+loss <- read_tsv("figures/Table1.txt") %>%
+  select(dir, reef, sizeclass, total_loss, out_to) %>%
+  rename(Direction = dir, Reef = reef, `Size class` = sizeclass, `Corals lost` = total_loss, `Out to (m)` = out_to) %>%
+  arrange(Direction, Reef)
+
+knitr::kable(loss)
+```
+
+
+
+
