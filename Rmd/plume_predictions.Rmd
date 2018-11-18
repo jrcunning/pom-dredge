@@ -1,0 +1,338 @@
+---
+title: "predictions based on plume presence"
+output: html_document
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
+
+# Load packages
+
+library(janitor)
+library(lubridate)
+library(furrr)
+library(gamm4)
+library(MASS)
+library(zoo)
+library(cowplot)
+library(tidyverse)
+
+
+# Define start and end of dredging (for plotting)
+dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
+dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 2015, page 3
+# Define dredge activity periods     # postcon report page 4
+#terrapin.start.date <- as.Date("2013-11-20")
+#terrapin.end.date <- as.Date("2013-12-27")
+#texas.spider.start.date <- as.Date("2013-12-17")
+#texas.spider.end.date
+#liberty.start.date <- as.Date("2014-05-14")
+#liberty.end.date <- as.Date("2014-07-03")
+#texas.spider.flare.start <- as.Date("2014-08-06")
+#channel.flare.end <- as.Date("2014-08-24")
+
+## ggplot theme
+theme_custom <- function() {
+  theme_bw(base_size = 10, base_family = "Arial") %+replace%
+    theme(
+      panel.grid.major = element_blank(), 
+      panel.grid.minor = element_blank(), 
+      panel.background = element_blank(),
+      panel.border = element_rect(color = "black", fill = NA),
+      legend.background = element_rect(fill = NA, colour = NA),
+      axis.text.x = element_text(angle=45, hjust=1, vjust = 1)
+    )
+}
+
+## ggplot labeller
+reefnames <- c(
+  HB = "Inner reef",
+  R2 = "Middle reef",
+  R3 = "Outer reef"
+)
+
+dirnames <- c(
+  N = "North of channel",
+  S = "South of channel"
+)
+
+distcatnames <- c(
+  `1.25 - 2.5 km` = "1.25 - 2.5 km",
+  `< 50 m` = "< 50 m",
+  `9.38 km` = "9.38 km"
+)
+
+global_labeller <- labeller(
+  reef = reefnames,
+  dir = dirnames,
+  dist_cat = distcatnames,
+  .default = label_both
+)
+
+# Function to add distance category for each area
+add_dist_cat <- function(x) {
+  x %>% 
+    mutate(dist_cat = factor(case_when(
+      channel == "channelside" ~ "< 50 m",
+      reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+}
+
+# Plan for parallel processing
+plan(multiprocess)
+
+
+line2user <- function(line, side) {
+  lh <- par('cin')[2] * par('cex') * par('lheight')
+  x_off <- diff(grconvertX(0:1, 'inches', 'user'))
+  y_off <- diff(grconvertY(0:1, 'inches', 'user'))
+  switch(side,
+         `1` = par('usr')[3] - line * y_off * lh,
+         `2` = par('usr')[1] - line * x_off * lh,
+         `3` = par('usr')[4] + line * y_off * lh,
+         `4` = par('usr')[2] + line * x_off * lh,
+         stop("side must be 1, 2, 3, or 4", call.=FALSE))
+}
+```
+
+# Import datasets from 12 areas
+```{r}
+# Plume presence
+load("data/plume.RData")
+plume <- plume.summ %>%
+  mutate(plumeprob = pct) %>%
+  select(reef, dir, channel, plumeprob)
+
+# Sediment deposition
+load("data/sed_deposited.RData")
+depo <- fine.depo
+depo <- depo %>%
+  rename(int_finedepo = int_fit) %>%
+  select(reef, dir, channel, int_finedepo) %>%
+  mutate(int_finedepo = int_finedepo / 100)
+
+# Sediment cover
+load("data/sedcov.gamms.RData")
+# FILTER TO INCLUDE DATES FOR WHICH FITTED VALUES EXIST FOR ALL SITES (ONLY FULLY COMPARABLE TIME INTERVALS)....
+dates1 <- gamms.reef.dir.fits %>%
+  filter(date > dredge.start.date, date < dredge.end.date) %>%
+  group_by(reef, dir, channel) %>%
+  summarise(d = list(unique(as.Date(date))))
+dates_all <- zoo::as.Date.numeric(Reduce(intersect, dates1$d))
+sandcov <- gamms.reef.dir.fits %>%
+  filter(date %in% dates_all) %>%
+  group_by(reef, dir, channel) %>%
+  summarise(mean_sandcov = mean(fit)) %>%
+  select(reef, dir, channel, mean_sandcov)
+
+# Sediment stress / coral burial
+load("data/sedstress_gamms.RData")
+# FILTER TO INCLUDE DATES FOR WHICH FITTED VALUES EXIST FOR ALL SITES (ONLY FULLY COMPARABLE TIME INTERVALS)....
+dates2 <- gamms2.fitted %>%
+  filter(date > dredge.start.date, date < dredge.end.date) %>%
+  group_by(reef, dir, channel) %>%
+  summarise(d = list(unique(as.Date(date))))
+dates_all2 <- zoo::as.Date.numeric(Reduce(intersect, dates2$d))
+stress <- gamms2.fitted %>%
+  group_by(reef, dir, channel) %>%
+  filter(date %in% dates_all2) %>%
+  summarise(mean_sedstress = mean(fit)) %>%
+  select(reef, dir, channel, mean_sedstress)
+
+# Partial mortality
+load("data/pm.lsm.RData")
+pmort <- as_tibble(summary(pm.lsm1)) %>%
+  rename(pmort = prob) %>%
+  select(reef, dir, channel, pmort)
+
+
+# Join all response variables together into df and add site names/labels
+df <- list(plume, depo, sandcov, stress, pmort) %>% 
+  reduce(left_join, by = c("reef", "dir", "channel")) %>% 
+  ungroup()
+
+df <- df %>% add_dist_cat() %>%
+  mutate(reef2 = case_when(reef == "HB" ~ "IR", reef == "R2" ~ "MR", reef == "R3" ~ "OR"),
+           lab = paste(dir, reef2, sep = ""))
+
+
+```
+
+# Model responses as a function of plume from 12 areas
+```{r}
+mod.finedepo  <- lm(int_finedepo ~ plumeprob, data = df)
+mod.sandcov   <- lm(mean_sandcov ~ plumeprob, data = df)
+mod.sedstress <- lm(mean_sedstress ~ plumeprob, data = df)
+mod.pmort <- lm(pmort ~ plumeprob, data = df)
+```
+
+# Get plume data from new areas
+```{r}
+plume <- readxl::read_excel(path = "data/plume_presence_absence_transects.xlsx", sheet = "plume presence-absence") %>%
+  gather(site, plume, -date) %>%
+  mutate(site = as_factor(site),
+         date = as_date(date),
+         plume = as.logical(plume),
+         reef = str_sub(site, 1, 2),
+         siteno  = as.numeric(str_sub(site, 3, 5))) %>%
+  filter(date > dredge.start.date, date < dredge.end.date)
+
+# Fit GAMs for each station
+gamms1 <- plume %>%
+  # For each site (station)
+  nest(-site) %>%
+  mutate(
+    # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
+    mod = map(data, ~ gam(plume ~ s(as.numeric(date)), family = "binomial", data = .)),
+    # Get newdata frame for predict() using the appropriate range of weeks
+    newdata = map(data, ~ expand.grid(date = as.numeric(min(.$date):max(.$date)))),
+    # Get fitted values from GAMM using newdata frame
+    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
+  )
+
+
+gamm.fits <- gamms1 %>% 
+  unnest(newdata, fit) %>%
+  mutate(date = zoo::as.Date.numeric(date))
+
+
+# Summarize plume presence
+plume.summ <- plume %>%
+  group_by(site, reef, siteno) %>%
+  summarise(nobs = n(), nyes = sum(plume), nno = nobs - nyes, pct = nyes / nobs) %>%
+  ungroup()
+
+plume.summ <- plume.summ %>% 
+  rename(plumeprob = pct) %>%
+  select(site, reef, siteno, plumeprob)
+
+# Convert site ID to meters from channel
+plume.summ <- plume.summ %>%
+  mutate(dist = case_when(reef == "IR" ~ (siteno - 70.3) * 0.250,
+                          reef == "MR" ~ (siteno - 71.664) * 0.250,
+                          reef == "OR" ~ (siteno - 73.16) * 0.250))
+```
+
+# Predict partial mortality based on plume in new areas
+```{r}
+resdf <- plume.summ %>%
+  mutate(finedepo = predict(object = mod.finedepo, newdata = plume.summ),
+         sandcov =  predict(object = mod.sandcov, newdata = plume.summ),
+         sedstress = predict(object = mod.sedstress, newdata = plume.summ),
+         pmort    = predict(object = mod.pmort, newdata = plume.summ))
+
+
+
+fig.plumeprob <- ggplot(resdf, aes(x = dist, y = plumeprob)) +
+  facet_wrap(~ reef) +
+  geom_line() +
+  theme(axis.title = element_text(size = 10)) +
+  labs(x = "Distance from channel (km)",
+       y = "Frequency of\nplume presence")
+
+fig.finedepo <- ggplot(resdf, aes(x = dist, y = finedepo)) +
+  facet_wrap(~ reef) +
+  geom_line() +
+  geom_hline(yintercept = 100, linetype = 2) +
+  theme(axis.title = element_text(size = 10)) +
+  labs(x = "Distance from channel (km)",
+       y = "Predicted total fine\nsediment deposition (kg / m2)")
+
+fig.sandcov <- ggplot(resdf, aes(x = dist, y = sandcov)) +
+  facet_wrap(~ reef) +
+  geom_line() +
+  geom_hline(yintercept = 0.25, linetype = 2) +
+  theme(axis.title = element_text(size = 10)) +
+  labs(x = "Distance from channel (km)",
+       y = "Predicted mean\nsediment cover")
+
+fig.burial <- ggplot(resdf, aes(x = dist, y = sedstress)) +
+  facet_wrap(~ reef) +
+  geom_line() +
+  theme(axis.title = element_text(size = 10)) +
+  labs(x = "Distance from channel (km)",
+       y = "Predicted mean\ncoral burial")
+
+fig.pmort <- ggplot(resdf, aes(x = dist, y = pmort)) +
+  facet_wrap(~ reef) +
+  geom_line() +
+  geom_hline(yintercept = 0.25, linetype = 2) +
+  theme(axis.title = element_text(size = 10)) +
+  labs(x = "Distance from channel (km)",
+       y = "Predicted proportion\npartial mortality")
+
+
+plot_grid(fig.plumeprob, fig.finedepo, fig.sandcov, fig.pmort, ncol = 1)
+```
+
+# Plot metrics with multiple axes
+```{r}
+ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)), d)
+
+par(mar = c(4, 3.5, 4, 6), mgp = c(2.5, 0.5, 0.5))
+
+plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
+     axes = F, yaxt= 'n', bty = 'n', type = "l",
+     xlab = "< South      Distance from channel (km)     North >", 
+     ylab = "Dredge plume presence",
+     xlim = c(-15, 15))
+axis(1, at = axTicks(1), labels = abs(axTicks(1)))
+ymin <- par("usr")[3]
+ymax <- par("usr")[4]
+yticks <- seq(round(ymin, 1), round(ymax, 1), by = 0.1)
+axis(2, at = yticks)
+axis(4, line = 0, at = yticks, labels = ascale(yticks, mod.finedepo, 0))
+text(x = line2user(0.5, 4), y = 0.75, adj = 1, labels = "Sed. deposition", srt = 315, xpd = NA, cex = 0.7)
+axis(4, line = 2, at = yticks, labels = ascale(yticks, mod.sandcov, 2))
+text(x = line2user(2.5, 4), y = 0.75, adj = 1, labels = "Sed. cover", srt = 315, xpd = NA, cex = 0.7)
+axis(4, line = 4, at = yticks, labels = ascale(yticks, mod.pmort, 2))
+text(x = line2user(4.5, 4), y = 0.75, adj = 1, labels = "Partial mortality", srt = 315, xpd = NA, cex = 0.7)
+lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
+lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
+legend("topleft", legend = c("IR", "MR", "OR"), lty = 1, col = c("black", "red", "blue"), bty = "n")
+abline(v = 0, lty = 2)
+# abline(v = 1, lty = 3)
+# abline(v = 2, lty = 3)
+# abline(v = 5, lty = 3)
+# abline(v = 10, lty = 3)
+```
+
+
+```{r}
+ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)), d)
+
+
+png(filename = "figures/Fig9.png", width = 190, height = 95, units = "mm", res = 300)
+
+par(mar = c(2.5, 2.5, 1, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
+
+plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
+     axes = F, yaxt= 'n', bty = 'n', type = "l",
+     xlab = "< South      Distance from channel (km)     North >", 
+     ylab = "Dredge plume presence",
+     xlim = c(-15, 15))
+axis(1, at = axTicks(1), labels = abs(axTicks(1)))
+ymin <- par("usr")[3]
+ymax <- par("usr")[4]
+yticks <- seq(round(ymin, 1), round(ymax, 1), by = 0.1)
+axis(2, at = yticks)
+axis(4, line = 0, at = yticks, labels = ascale(yticks, mod.finedepo, 0))
+mtext(4, line = 1, text = "Sediment deposition")
+axis(4, line = 4, at = yticks, labels = ascale(yticks, mod.sandcov, 2))
+mtext(4, line = 5, text = "Sediment cover")
+axis(4, line = 8, at = yticks, labels = ascale(yticks, mod.pmort, 2))
+mtext(4, line = 9, text = "Coral partial mortality")
+lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
+lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
+legend("topleft", legend = c("Inner Reef", "Middle Reef", "Outer Reef"), 
+       lty = 1, col = c("black", "red", "blue"), bty = "n")
+abline(v = 0, lty = 2)
+# abline(v = 1, lty = 3)
+# abline(v = 2, lty = 3)
+# abline(v = 5, lty = 3)
+# abline(v = 10, lty = 3)
+dev.off()
+
+```

@@ -623,6 +623,18 @@ Fig8
 
 \  
 
+# *Impact predictions based on dredge plumes*
+
+\ 
+
+```{r Fig9, fig.height = 3.74016, fig.width = 7.4801}
+knitr::include_graphics("../figures/Fig9.png")
+```
+
+**Figure 9. Predicted magnitude and extend of dredging impacts based on dredge plume occurrence.** Lines indicate the mean frequency of dredge plume presence along linear transects from 15km north to 15km south of the channel on the inner, middle, and outer reefs based on satellite imagery and GAM analysis (e.g., Fig. 2). Axes on the right show predicted impacts based on linear transformations of dredge plume presence according to the models in Fig. 8.
+
+\  
+
 # Impacts on reef habitat
 
 \  
@@ -631,7 +643,7 @@ Fig8
 
 \  
 
-```{r Fig9, fig.height = 3.74016, fig.width = 7.4801}
+```{r Fig10, fig.height = 3.74016, fig.width = 7.4801}
 load("data/sdepthmod.RData")
 
 LR <- LR %>%
@@ -654,10 +666,10 @@ ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
         legend.key.width = unit(10, "mm"),
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1))
 
-ggsave(filename = "figures/Fig9.png", device = "png", width = 190, height = 95, units = "mm")
+ggsave(filename = "figures/Fig10.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-**Figure 9. Depth of sediments in relation to channel measured ~2 years after dredging operations.** Dots represent individual sediment depth measurements along transects, jittered around the distance from the center of the transect to the channel in each monitoring region (no data available for the inner reef). Lines represent quantile regressions across transects as a function of log(distance from channel), e.g., the percent of reef area with sediments measuring at least a given depth.
+**Figure 10. Depth of sediments in relation to channel measured ~2 years after dredging operations.** Dots represent individual sediment depth measurements along transects, jittered around the distance from the center of the transect to the channel in each monitoring region (no data available for the inner reef). Lines represent quantile regressions across transects as a function of log(distance from channel), e.g., the percent of reef area with sediments measuring at least a given depth.
 
 \  
 
@@ -710,7 +722,7 @@ ggsave(filename = "figures/FigS5.png", device = "png", width = 90, height = 65, 
 
 \  
 
-```{r Fig10, fig.height = 3.74016, fig.width = 7.4801}
+```{r Fig11, fig.height = 3.74016, fig.width = 7.4801}
 load("data/large.dens.mod.RData"); large.dens <- newdata_1; large.anno <- anno; large.lsm <- lsm; rm(anno, newdata_1, lsm)
 
 # PLOT ALL RESULTS FOR LARGE CORALS
@@ -751,7 +763,7 @@ ggsave(filename = "figures/Fig10.png", device = "png", width = 190, height = 95,
 #(77.8 * 700) + (29.7 * 700) + (161 * 100)
 ```
 
-**Figure 10. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
+**Figure 11. Density of corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
 
 \  
 
@@ -763,7 +775,7 @@ knitr::include_graphics("../figures/FigS6.png")
 
 \  
 
-```{r FIG11, fig.height = 3.74016, fig.width = 7.4801}
+```{r FIG12, fig.height = 3.74016, fig.width = 7.4801}
 load("data/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
 
 # Plot results
@@ -789,7 +801,7 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
 ggsave(filename = "figures/Fig11.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-**Figure 11. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
+**Figure 12. Density of small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
 
 \  
 
