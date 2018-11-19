@@ -568,6 +568,20 @@ df <- df %>% add_dist_cat() %>%
   mutate(reef2 = case_when(reef == "HB" ~ "IR", reef == "R2" ~ "MR", reef == "R3" ~ "OR"),
            lab = paste(dir, reef2, sep = ""))
 
+df <- df %>%
+  mutate(dist = case_when(reef == "HB" & dir == "N" & channel == "channelside" ~ 25,
+                          reef == "HB" & dir == "N" & channel == "control" ~ 2350,
+                          reef == "HB" & dir == "S" & channel == "channelside" ~ 20,
+                          reef == "HB" & dir == "S" & channel == "control" ~ 1650,
+                          reef == "R2" & dir == "N" & channel == "channelside" ~ 23,
+                          reef == "R2" & dir == "N" & channel == "control" ~ 9380,
+                          reef == "R2" & dir == "S" & channel == "channelside" ~ 22,
+                          reef == "R2" & dir == "S" & channel == "control" ~ 1270,
+                          reef == "R3" & dir == "N" & channel == "channelside" ~ 23,
+                          reef == "R3" & dir == "N" & channel == "control" ~ 9380,
+                          reef == "R3" & dir == "S" & channel == "channelside" ~ 30,
+                          reef == "R3" & dir == "S" & channel == "control" ~ 1300))
+
 
 # PLOT CORRELATIONS USING GGPLOT
 gatherpairs <- function(data, ..., 
@@ -605,8 +619,8 @@ Fig8 <- df %>% gatherpairs(plumeprob, int_finedepo, mean_sandcov, mean_sedstress
   ggplot(., aes(x = .xvalue, y = .yvalue)) +
       facet_grid(.ykey ~ .xkey, scales = "free", switch = "both", labeller = key_labeller) +
       geom_point(aes(color = dist_cat)) + 
-      geom_smooth(method = 'lm', se = FALSE, color = "black", lwd = 0.25) +
-      stat_cor(aes(label = ..rr.label..), size = 3, label.y.npc = 1) +
+      geom_smooth(method = 'lm', se = TRUE, color = "black", lwd = 0.25) +
+      stat_cor(aes(label = ..rr.label..), size = 3, label.y.npc = 1, label.x.npc = 0) +
       #geom_text_repel(aes(label = lab), size = 2) +
       scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
       #scale_y_continuous(limits = c(NA, NA), expand = expand_scale(mult = c(0, 0.05))) +
