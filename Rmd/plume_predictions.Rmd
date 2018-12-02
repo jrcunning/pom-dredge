@@ -17,6 +17,7 @@ library(MASS)
 library(zoo)
 library(cowplot)
 library(tidyverse)
+library(deming)
 
 
 # Define start and end of dredging (for plotting)
@@ -47,9 +48,9 @@ theme_custom <- function() {
 
 ## ggplot labeller
 reefnames <- c(
-  HB = "Inner reef",
-  R2 = "Middle reef",
-  R3 = "Outer reef"
+  HB = "Nearshore ridge (NR)",
+  R2 = "Inner reef (IR)",
+  R3 = "Outer reef (OR)"
 )
 
 dirnames <- c(
@@ -101,9 +102,14 @@ line2user <- function(line, side) {
 ```{r}
 # Plume presence
 load("data/plume.RData")
+fitplume <- gamm.fits %>%
+  group_by(reef, dir, channel) %>%
+  summarise(mean.plumefit = mean(fit))
+
 plume <- plume.summ %>%
   mutate(plumeprob = pct) %>%
-  select(reef, dir, channel, plumeprob)
+  select(reef, dir, channel, plumeprob) %>%
+  full_join(fitplume)
 
 # Sediment deposition
 load("data/sed_deposited.RData")
@@ -182,7 +188,7 @@ plume <- readxl::read_excel(path = "data/plume_presence_absence_transects.xlsx",
 # Fit GAMs for each station
 gamms1 <- plume %>%
   # For each site (station)
-  nest(-site) %>%
+  nest(-reef, -siteno, -site) %>%
   mutate(
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
     mod = map(data, ~ gam(plume ~ s(as.numeric(date)), family = "binomial", data = .)),
@@ -197,6 +203,10 @@ gamm.fits <- gamms1 %>%
   unnest(newdata, fit) %>%
   mutate(date = zoo::as.Date.numeric(date))
 
+fit.plumeprob <- gamm.fits %>%
+  group_by(reef, siteno, site) %>%
+  summarise(plumeprob = mean(fit))
+
 
 # Summarize plume presence
 plume.summ <- plume %>%
@@ -210,6 +220,11 @@ plume.summ <- plume.summ %>%
 
 # Convert site ID to meters from channel
 plume.summ <- plume.summ %>%
+  mutate(dist = case_when(reef == "IR" ~ (siteno - 70.3) * 0.250,
+                          reef == "MR" ~ (siteno - 71.664) * 0.250,
+                          reef == "OR" ~ (siteno - 73.16) * 0.250))
+
+fit.plumeprob <- fit.plumeprob %>%
   mutate(dist = case_when(reef == "IR" ~ (siteno - 70.3) * 0.250,
                           reef == "MR" ~ (siteno - 71.664) * 0.250,
                           reef == "OR" ~ (siteno - 73.16) * 0.250))
@@ -306,7 +321,7 @@ ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumep
 
 png(filename = "figures/Fig9.png", width = 190, height = 95, units = "mm", res = 300)
 
-par(mar = c(2.5, 2.5, 1, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
+par(mar = c(2.5, 2.6, 1, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
 
 plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
      axes = F, yaxt= 'n', bty = 'n', type = "l",
@@ -319,14 +334,14 @@ ymax <- par("usr")[4]
 yticks <- seq(round(ymin, 1), round(ymax, 1), by = 0.1)
 axis(2, at = yticks)
 axis(4, line = 0, at = yticks, labels = ascale(yticks, mod.finedepo, 0))
-mtext(4, line = 1, text = "Sediment deposition")
+mtext(4, line = 1, text = "Predicted sediment deposition (kg/m2)")
 axis(4, line = 4, at = yticks, labels = ascale(yticks, mod.sandcov, 2))
-mtext(4, line = 5, text = "Sediment cover")
+mtext(4, line = 5, text = "Predicted mean daily sediment cover")
 axis(4, line = 8, at = yticks, labels = ascale(yticks, mod.pmort, 2))
-mtext(4, line = 9, text = "Coral partial mortality")
+mtext(4, line = 9, text = "Predicted probability of coral partial mortality")
 lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
 lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
-legend("topleft", legend = c("Inner Reef", "Middle Reef", "Outer Reef"), 
+legend("topleft", legend = c("Nearshore Ridge (NR)", "Inner Reef (IR)", "Outer Reef (OR)"), 
        lty = 1, col = c("black", "red", "blue"), bty = "n")
 abline(v = 0, lty = 2)
 # abline(v = 1, lty = 3)
@@ -335,4 +350,21 @@ abline(v = 0, lty = 2)
 # abline(v = 10, lty = 3)
 dev.off()
 
+knitr::include_graphics("../figures/Fig9.png")
 ```
+
+```{r}
+resdf %>%
+  group_by(reef, dist > 0) %>%
+  summarise(max(abs(dist)[finedepo > 100]))
+
+resdf %>%
+  group_by(reef, dist > 0) %>%
+  summarise(max(abs(dist)[sandcov > 0.25]))
+
+resdf %>%
+  group_by(reef, dist > 0) %>%
+  summarise(max(abs(dist)[pmort > 0.25]))
+
+```
+

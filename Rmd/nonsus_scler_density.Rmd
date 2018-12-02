@@ -44,9 +44,9 @@ theme_custom <- function() {
 
 ## ggplot labeller
 reefnames <- c(
-  HB = "Inner reef",
-  R2 = "Middle reef",
-  R3 = "Outer reef"
+  HB = "Nearshore ridge (NR)",
+  R2 = "Inner reef (IR)",
+  R3 = "Outer reef (OR)"
 )
 
 dirnames <- c(
@@ -103,6 +103,9 @@ scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleract
 
 # Subset disease resistant species only
 resistant.genus <- c("Acropora", "Agaricia", "Madracis", "Mycetophyllia", "PDIV", "Porites", "Siderastrea", "Stephanocoenia")
+
+# Subset only Porited
+#resistant.genus <- c("Porites", "PDIV")
 
 # Subset only disease-resistant corals
 scler <- filter(scler, genus %in% resistant.genus)
