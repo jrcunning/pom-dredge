@@ -1,8 +1,7 @@
 ---
-title: "Damage to coral and reef habitat caused by dredging at the Port of Miami"
+title: "Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes"
 subtitle: "Manuscript Figures and Supplementary Figures"
 author: "Ross Cunning, Rachel N. Silverstein, Andrew C. Baker"
-date: "`r Sys.Date()`"
 output:
   html_document:
     toc: true

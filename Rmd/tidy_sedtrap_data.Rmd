@@ -1,7 +1,5 @@
 ---
-title: "tidy_sediment_trap"
-author: "Ross Cunning"
-date: "7/25/2018"
+title: "Import and tidy sediment trap data"
 output: html_document
 ---
 
@@ -108,9 +106,6 @@ trap <- trap %>%
   separate(sample, into = c("site", "site2", "wk")) %>%
   mutate(site = toupper(site),
          site = recode(site, HBNC = "HBNC1"))
-
-# Baseline data is in other spreadsheets (is it really needed?)
-#trapbl <- two_passes(path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx")
 ```
 
 # Merge baseline and compliance sediment trap data

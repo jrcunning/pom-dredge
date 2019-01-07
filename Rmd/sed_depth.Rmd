@@ -1,7 +1,5 @@
 ---
-title: "Sediment depths and types measured during PortMiami dredge"
-author: "Ross Cunning"
-date: "5/28/2018"
+title: "Analysis of sediment depth data"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -21,7 +19,7 @@ library(lsmeans)
 library(janitor)
 ```
 
-# Load tidy sediment depth and type data
+# Load tidy sediment depth data
 ```{r}
 load(file = "data/substrate.RData")
 ```
@@ -136,40 +134,4 @@ resdf %>%
   mutate(thresh = abs(fit - 1)) %>%
   filter(thresh == min(thresh))
 ```
-
-# Sediment depth at permanent control sites?
-```{r}
-substrate %>% filter(perm == "yes", channel == "control") %>%
-  group_by(reef, dir) %>%
-  summarise(median = median(sdepth_cm))
-
-substrate %>% filter(perm == "yes", channel == "control") %>%
-  ggplot(aes(x = reef:dir, y = sdepth_cm)) +
-  geom_boxplot()
-
-# Percent of measurements greater than 1 cm
-substrate %>% filter(perm == "yes", channel == "control") %>%
-  group_by(reef, dir) %>%
-  summarise(sum(sdepth_cm > 1) / n())
-```
-
-
-
-# Sediment type
-
-```{r, fig.width = 10, fig.height = 5}
-df <- substrate %>%
-  filter(!is.na(stype)) %>%
-  group_by(reef, dir, reef2, dist, site0) %>%
-  count(stype)
-
-# sed type
-ggplot(df, aes(x = factor(dist), y = n, fill = stype)) +
-  facet_wrap(c("dir", "reef", "reef2"), scales = "free_x") +
-  geom_bar(position = "fill", stat = "identity") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-
-
 

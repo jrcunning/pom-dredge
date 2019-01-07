@@ -1,7 +1,5 @@
 ---
-title: "Coral sedimentation stress during PortMiami dredge"
-author: "Ross Cunning"
-date: "5/27/2018"
+title: "Analysis of sedimentation stress to tagged corals"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -142,11 +140,11 @@ fig1 <- ggplot(gamms1.fitted, aes(x = date, y = fit, color = channel)) +
 fig1
 ```
 
-Why is there so much sediment stress at control sites? Either some of these condition codes (e.g., SA) don't really reflect dredging sediment, or the control sites were actually impacted by dredging sediment.
+Why is there so much sediment stress at control sites, even those >9km away? Either some of these condition codes (e.g., SA) don't really reflect dredging sediment, and/or the control sites were actually impacted by significant levels of dredging sediment.
 
 # Severe sedimentation stress (PBUR or BUR, excluding SA)
 
-If we assume that control sites are far enough from dredging activity that they are not impacted by dredging sediments, then the "SA" condition code, which was observed frequently at control sites, may not be indicative of actual dredging impact. Therefore, PBUR and BUR may be more appropriate indicators of sedimentation stress due to dredging.
+If we assume that control sites are far enough from dredging activity that they are not impacted by dredging sediments, then the "SA" condition code, which was observed frequently at control sites (even those >9km away), may not be indicative of dredging sediments. Therefore, PBUR and BUR may be more appropriate indicators of sedimentation stress due to dredging.
 
 
 ### Proportion of corals with severe sedimentation stress over time for each site
@@ -225,7 +223,7 @@ fig2 + xlim(as.Date("2013-10-20"), as.Date("2015-07-01")) +
   labs(title = "", y = "Probability of partial or complete burial")
 ```
 
-Analysis of PBUR or BUR only shows much lower prevalence of these condition codes at control sites, yet their prevalence at channelside sites remains very high.
+Analysis of PBUR or BUR only shows much lower prevalence of these condition codes at the farthest control sites, yet their prevalence at channelside sites (and some control sites, e.g., HBN) remains very high.
 
 # Reported results
 ```{r}

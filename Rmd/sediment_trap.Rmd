@@ -1,7 +1,5 @@
 ---
-title: "sediment traps"
-author: "Ross Cunning"
-date: "7/20/2018"
+title: "Analysis of sediment deposition data"
 output: html_document
 ---
 
@@ -19,13 +17,6 @@ library(lme4)
 
 # Plan for parallel processing
 plan(multiprocess)
-
-# Define function to convert logit to probability
-logit2prob <- function(logit){
-  odds <- exp(logit)
-  prob <- odds / (1 + odds)
-  return(prob)
-}
 
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
@@ -55,15 +46,6 @@ sedrate <- sedtrap %>%
             sdfine = sd(finerate_mgcm2d),
             sesed = sdsed / sqrt(n()),
             sefine = sdfine / sqrt(n()))
-
-# Plot average total sedimentation rates for each site
-ggplot(sedrate, aes(x = middate, y = meansed)) +
-  facet_wrap(~ site) +
-  #geom_point(size = 1) +
-  geom_errorbar(aes(ymin = meansed - sdsed, ymax = meansed + sdsed)) +
-  geom_line() + 
-  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
-  labs(title = "Total sediments", x = "Date", y = "mg / cm2 / day")
 
 # Plot average fine sedimentation rates for each site
 ggplot(sedrate, aes(x = middate, y = meanfine)) +
@@ -95,14 +77,6 @@ sedrate <- sedtrap %>%
             sefine = sdfine / sqrt(n())) %>%
   ungroup()
 
-# Plot total sediments
-ggplot(sedrate, aes(x = middate, y = meansed, color = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_point(size = 1) +
-  geom_errorbar(aes(ymin = meansed - sdsed, ymax = meansed + sdsed)) +
-  geom_line() +
-  labs(title = "Total sediments", x = "Date", y = "mg / cm2 / day")
-
 # Plot fine sediments
 ggplot(sedrate, aes(x = middate, y = meanfine, color = channel)) +
   facet_grid(dir ~ reef) +
@@ -113,72 +87,6 @@ ggplot(sedrate, aes(x = middate, y = meanfine, color = channel)) +
 ```
 
 # GAM models
-
-## Total sediments
-```{r}
-total.gamms.reef.dir <- sedtrap %>%
-  nest(-reef, -dir, -channel) %>%   # Nest by reef and direction
-  mutate(
-    # Fit gamm by channel (in parallel)
-    mod = future_map(data, 
-            ~ gam(total_dry ~ s(as.numeric(middate)) +
-                   offset(log(duration)),
-                   data = ., family = "poisson",
-                   verbosePQL = FALSE)),
-    # Get newdata frame for predict() using the appropriate range of days
-    newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)),
-                                      #channel = c("channelside", "control"),
-                                      duration = 1)),
-    # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
-    # Get confidence intervals by simulation
-    Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
-    Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
-    sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
-    lci = map2(mod, sim, ~ .x$family$linkinv(apply(.y, 1, quantile, 0.025))),
-    uci = map2(mod, sim, ~ .x$family$linkinv(apply(.y, 1, quantile, 0.975)))
-  )
-    
-total.gamms.reef.dir.fits <- total.gamms.reef.dir %>% 
-  unnest(newdata, fit, lci, uci) %>%
-  mutate(middate = zoo::as.Date.numeric(middate)) %>%
-  # Convert to mg per cm2 per day (from g per day)
-  mutate_at(vars(fit, lci, uci), function(x) x * 1000 / 5.067)
-
-### Plot fitted models
-ggplot(total.gamms.reef.dir.fits, aes(x = middate, y = fit, color = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_segment(data = sedtrap, aes(x = start, xend = end, 
-                                   y = sedrate_mgcm2d, yend = sedrate_mgcm2d), alpha=0.4) +
-  geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
-  geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
-  labs(title = "Total sediments", x = "Date", y = "Sedimentation rate (mg/cm2/d)")
-
-# Integrate to get total sediment deposited
-## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, let's assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
-total.gamms.reef.dir.fits.complete <- total.gamms.reef.dir.fits %>%
-  complete(nesting(reef, dir, channel), middate) %>%
-  group_by(reef, dir, channel) %>%
-  fill(fit, lci, uci, .direction = "up") %>%
-  ungroup()
-
-total.depo <- total.gamms.reef.dir.fits.complete %>%
-  filter(middate >= "2013-11-20",              # Filter from start of dredging
-         middate <= "2015-03-23") %>%          # Filter up to a week after date dredging ended
-  group_by(reef, dir, channel) %>%
-  summarise(int_min = sum(lci),
-            int_fit = sum(fit),
-            int_max = sum(uci))
-
-ggplot(total.depo, aes(x = channel, y = int_fit/1000, fill = channel)) +   # CONVERT TO GRAMS
-  facet_grid(dir ~ reef) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = int_min/1000, ymax = int_max/1000), width = 0.25, lwd = 0.25) +
-  labs(title = "Total sediment deposition 2013-11-20 to 2015-03-23",
-       y = "Grams / cm2", x = "")
-```
-
 
 ## Fine sediments
 ```{r}
@@ -225,7 +133,7 @@ ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = channel)) +
   labs(title = "Fine sediments", x = "Date", y = "Sedimentation rate (mg/cm2/d)")
 
 # Integrate to get total sediment deposited
-## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, let's assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
+## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, we assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
 fine.gamms.reef.dir.fits.complete <- fine.gamms.reef.dir.fits %>%
   complete(nesting(reef, dir, channel), middate) %>%
   group_by(reef, dir, channel) %>%
@@ -248,72 +156,9 @@ ggplot(fine.depo, aes(x = channel, y = int_fit/1000, fill = channel)) +
        y = "Grams / cm2", x = "")
 ```
 
-
-```{r, include = F, eval = F}
-## Coarse sediments
-coarse.gamms.reef.dir <- sedtrap %>%
-  nest(-reef, -dir, -channel) %>%   # Nest by reef and direction
-  mutate(
-    # Fit gamm by channel (in parallel)
-    mod = future_map(data, 
-            ~ gamm(pmax(0, sedrate - finerate) ~ s(as.numeric(middate)),#, k = 16),
-                   weights = duration, data = ., family = "poisson",
-                   verbosePQL = FALSE)$gam),
-    # Get newdata frame for predict() using the appropriate range of days
-    newdata = map(data, ~ expand.grid(middate = as.numeric(min(.$middate):max(.$middate)))),
-                                      #channel = c("channelside", "control"))),
-    # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, 
-                                       type = "link", se.fit = TRUE)$fit),
-    se.fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, 
-                                       type = "link", se.fit = TRUE)$se.fit),
-    lci = map2(fit, se.fit, ~ .x - (1.96 * .y)),
-    lcir = map2(mod, lci, ~ .x$family$linkinv(.y)),
-    uci = map2(fit, se.fit, ~ .x + (1.96 * .y)),
-    ucir = map2(mod, uci, ~ .x$family$linkinv(.y)),
-    fitr = map2(mod, fit, ~ .x$family$linkinv(.y))
-  )
-
-coarse.gamms.reef.dir.fits <- coarse.gamms.reef.dir %>% 
-  unnest(newdata, fitr, lcir, ucir) %>%
-  mutate(middate = zoo::as.Date.numeric(middate))
-
-### Plot fitted models
-ggplot(coarse.gamms.reef.dir.fits, aes(x = middate, y = fitr, color = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_segment(data=sedtrap, aes(x = start, xend = end, y = sedrate - finerate, yend = sedrate - finerate), alpha=0.4) +
-  geom_ribbon(aes(ymin = lcir, ymax = ucir, linetype = NA), alpha = 0.2) + 
-  geom_line(lwd = 1) +
-  geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
-  labs(title = "Coarse sediments", x = "Date", y = "Sedimentation rate")
-
-# Integrate to get total sediment deposited
-## For reef 3 control sites, the earliest sediment trap sample had a midpoint of january 10-11, 2014. This cuts out almost 2 months of data after dredging began 11/20/13 from other sites for which we do have information on sedimentation rates. Therefore, to avoid excluding this data, let's assume that the sedimentation rate at these sites from 11/20/13 until data are available is the same as the sedimentation rate at the beginning of data.
-coarse.gamms.reef.dir.fits.complete <- coarse.gamms.reef.dir.fits %>%
-  complete(nesting(reef, dir, channel), middate) %>%
-  group_by(reef, dir, channel) %>%
-  fill(fitr, lcir, ucir, .direction = "up") %>%
-  ungroup()
-
-coarse.depo <- coarse.gamms.reef.dir.fits.complete %>%
-  filter(middate >= "2013-11-20",              # Filter from start of dredging
-         middate <= "2015-03-23") %>%          # Filter up to a week after date dredging ended
-  group_by(reef, dir, channel) %>%
-  summarise(int_min = sum(lcir),
-            int_fit = sum(fitr),
-            int_max = sum(ucir))
-
-ggplot(coarse.depo, aes(x = channel, y = int_fit, fill = channel)) +
-  facet_grid(dir ~ reef) +
-  geom_bar(stat = "identity") +
-  geom_errorbar(aes(ymin = int_min, ymax = int_max), width = 0.25, lwd = 0.25) +
-  labs(title = "Coarse sediment deposition 2013-11-20 to 2015-03-23",
-       y = "Grams", x = "")
-```
-
 ## Save sediment integrations as .RData
 ```{r}
-save(total.depo, fine.depo, file = "data/sed_deposited.RData")
+save(fine.depo, file = "data/sed_deposited.RData")
 ```
 
 ## Reported results

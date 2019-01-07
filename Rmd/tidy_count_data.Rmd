@@ -1,7 +1,5 @@
 ---
-title: "tidy_density_data.Rmd"
-author: "Ross Cunning"
-date: "5/28/2018"
+title: "Import and tidy coral count data"
 output: html_document
 ---
 
@@ -56,7 +54,6 @@ unique(dens2010$site)
 # Import "baseline" data from 2013
 ```{r}
 # Data from Oct - Dec 2013 (three 20m long transects (x1m wide))
-# SOME SITES/transects DONE MORE THAN ONCE -- NEED TO INCLUDE DATE
 
 #Hardbottom
 dens2013hb <- readxl::read_xlsx(
@@ -120,19 +117,6 @@ dens2015 <- readxl::read_xlsx(
   mutate(date = if_else(is.na(date), as.Date("2015-06-22"), date)) %>%  # fill in missing date
   mutate(diameter = as.numeric(diameter)) %>%
   mutate(transect_area_m2 = 20)    # transects were 20 m2
-```
-
-# Import data from 2015 - other sites / distances from channel (where is this?)
-```{r}
-# Data collected ____________
-dens2015other <- readxl::read_xlsx(
-  path = "data/Density_Data/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_comp_data.xlsx",
-  sheet = "original_data"
-)
-
-# this data looks like up to 10 corals per transect were observed for condition codes, but does not look like all corals along the transects were counted
-# do not use this data until methods are confirmed
-  
 ```
 
 # Import data from 2016 - permanent sites
@@ -353,11 +337,11 @@ all_counts <- all_counts %>%
     site=="HBN3" ~ "48",
     site=="HBSC1" ~ "1650",
     site=="HBS4" ~ "32",
-    site=="HBS1" ~ "20",      # GET DATA
-    site=="HBS2" ~ "20",      # GET DATA
-    site=="HBS3" ~ "20",      # GET DATA
-    site=="HBN1" ~ "20",      # GET DATA
-    site=="HBN2" ~ "30",      # GET DATA
+    site=="HBS1" ~ "20",     
+    site=="HBS2" ~ "20",   
+    site=="HBS3" ~ "20",    
+    site=="HBN1" ~ "20",     
+    site=="HBN2" ~ "30",     
     site=="R2N1" ~ "28",
     site=="R2NC2" ~ "9380",
     site=="R2N2" ~ "18",
@@ -371,10 +355,10 @@ all_counts <- all_counts %>%
     site=="R3NC1" ~ "9380",
     site=="R3S2" ~ "21",
     site=="R3SC2" ~ "1300",
-    site=="R3S1" ~ "30",       # GET DISTANCE
-    site=="R3S3" ~ "30",       # GET DISTANCE
-    site=="R3SC3" ~ "1300",      # GET DISTANCE
-    site=="R3SC1" ~ "1300"),    # GET DISTANCE
+    site=="R3S1" ~ "30",  
+    site=="R3S3" ~ "30",   
+    site=="R3SC3" ~ "1300",   
+    site=="R3SC1" ~ "1300"),   
     dist)) %>%
   type_convert()
 

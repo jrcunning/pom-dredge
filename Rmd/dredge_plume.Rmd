@@ -1,7 +1,5 @@
 ---
-title: "dredge plume"
-author: "Ross Cunning"
-date: "9/5/2018"
+title: "Analysis of dredge plume at permanent sites"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -27,7 +25,6 @@ logit2prob <- function(logit){
   return(prob)
 }
 
-
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
 dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 2015, page 3
@@ -35,7 +32,6 @@ dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 20
 
 # Import dredge plume data
 ```{r}
-#plume <- readxl::read_xls(path = "data/CoralSitesMay2017_bbb.xls", sheet = "exclude_normal_plumes") %>%
 plume <- readxl::read_xls(path = "data/dredge_plume.xls", sheet = "plume presence absence") %>%
   gather(date, plume, -NAME, -LATITUDE, -LONGITUDE, -idx) %>%
   clean_names() %>%
@@ -51,10 +47,6 @@ plume <- readxl::read_xls(path = "data/dredge_plume.xls", sheet = "plume presenc
 
 plume <- plume %>%
   filter(!grepl("50", name), !grepl("75", name), !(grepl("00", name)))# %>%
-  #distinct(name) %>% arrange(name) %>% print(n = nrow(.)) %>%
-  #distinct(idx, date, reef, dir, channel, plume)
-
-#plume %>% distinct(date, plume, reef, dir, channel)
 
 
 ggplot(plume, aes(x = date, y = plume)) +
@@ -67,16 +59,14 @@ ggplot(plume, aes(x = date, y = plume)) +
 # Filter data to only includ unique pixels (no duplicates, e.g. if multiple sites were in the same pixel)
 plume.f <- plume %>% distinct(idx, date, plume, reef, dir, channel)
 
-# Fit GAMMs for each reef --- but ONLY USE MULTIPLE SITES IF DIFF PIXELS!
+# Fit GAMMs for each reef --- but only use multiple sites if diff pixels
 gamms1 <- plume.f %>%
   filter(reef %in% c("HB", "R2", "R3"), dir %in% c("N", "S")) %>%
   # For each reef and direction
   nest(-reef, -dir, -channel) %>%
   mutate(
     # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
-    mod = future_map(data, ~ gam(plume ~ s(as.numeric(date)),
-                                   #random = ~ (1|idx),   # use PIXEL as random factor - some sites are in same pixel
-                                   family = "binomial", data = .)),
+    mod = future_map(data, ~ gam(plume ~ s(as.numeric(date)), family = "binomial", data = .)),
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(date = as.numeric(min(.$date):max(.$date)),
                                       channel = c("channelside", "control"))),
@@ -98,8 +88,6 @@ gamm.fits <- gamms1 %>%
 ### Plot fitted models
 ggplot(gamm.fits, aes(x = date, y = fit, color = channel)) +
   facet_grid(dir + channel ~ reef) +
-  #geom_segment(data = sedtrap, aes(x = start, xend = end, 
-  #                                 y = sedrate_mgcm2d, yend = sedrate_mgcm2d), alpha=0.4) +
   geom_ribbon(aes(ymin = lci, ymax = uci, linetype = NA), alpha = 0.2) + 
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 1, lwd = 0.25) +
