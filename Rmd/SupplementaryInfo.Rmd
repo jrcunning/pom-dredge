@@ -1,5 +1,5 @@
 ---
-title: "Extensive coral mortality and critical habitat loss following dredging associated with remote-sensed turbidity plumes"
+title: "Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes"
 output: html_document
 ---
 
@@ -13,7 +13,7 @@ output: html_document
 ^2^ Daniel P. Haerther Center for Conservation and Research, John G. Shedd Aquarium, 1200 South Lake Shore Drive, Chicago, IL 60605, USA  
 ^3^ Miami Waterkeeper, 2103 Coral Way, 2^nd^ Floor, Miami, FL 33145, USA  
 ^4^ College of Marine Science, University of South Florida, 140 7^th^ Avenue South, MSL119, St. Petersburg, FL 33701, USA  
-* Correspondence: ross.cunning@gmail.com
+* Correspondence: ross.cunning@gmail.com, rachel@miamiwaterkeeper.org
 
 
 ******
