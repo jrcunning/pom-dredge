@@ -25,7 +25,7 @@ dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 20
 
 # Load sediment trap data
 ```{r}
-load("data/sedtrap.RData")
+load("data/processed/sedtrap.RData")
 
 # Convert g/d to mg/cm2/d (1" inner diameter PVC = 5.067 square centimeters)
 sedtrap <- sedtrap %>%
@@ -120,7 +120,7 @@ fine.gamms.reef.dir.fits <- fine.gamms.reef.dir %>%
   # Convert to mg per cm2 per day (from g per day)
   mutate_at(vars(fit, lci, uci), function(x) x * 1000 / 5.067)
 
-save(fine.gamms.reef.dir.fits, sedtrap, file = "data/sedtrap.fine.gamms.RData")
+save(fine.gamms.reef.dir.fits, sedtrap, file = "data/processed/sedtrap.fine.gamms.RData")
 
 ### Plot fitted models
 ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = channel)) +
@@ -158,7 +158,7 @@ ggplot(fine.depo, aes(x = channel, y = int_fit/1000, fill = channel)) +
 
 ## Save sediment integrations as .RData
 ```{r}
-save(fine.depo, file = "data/sed_deposited.RData")
+save(fine.depo, file = "data/processed/sed_deposited.RData")
 ```
 
 ## Reported results
@@ -184,8 +184,8 @@ fine.gamms.reef.dir.fits %>%
 ```
 
 ```{r}
-load("data/sed_deposited.RData")
-load("data/sedtrap.fine.gamms.RData")
+load("data/processed/sed_deposited.RData")
+load("data/processed/sedtrap.fine.gamms.RData")
 
 fine.gamms.reef.dir.fits %>%
   group_by(reef, dir, channel) %>%

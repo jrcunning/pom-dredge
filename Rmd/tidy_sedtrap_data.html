@@ -127,7 +127,7 @@ $(document).ready(function () {
 
 <div id="load-sediment-trap-dates-data" class="section level1">
 <h1>Load sediment trap dates data</h1>
-<pre class="r"><code>dates &lt;- readxl::read_xlsx(&quot;data/sediment_trap_data/sed_trap_dates.xlsx&quot;,
+<pre class="r"><code>dates &lt;- readxl::read_xlsx(&quot;data/sediment_traps/sed_trap_dates.xlsx&quot;,
                            col_names = FALSE)
 
 dates &lt;- dates %&gt;%
@@ -142,15 +142,13 @@ dates &lt;- dates %&gt;%
          start = as.Date(start),
          end = as.Date(end),
          duration = as.numeric(end - start)) %&gt;%
-  separate(site, into = c(&quot;site&quot;, &quot;site2&quot;))
-
-#write.csv(dates, file = &quot;data/sediment_trap_data/sedtrap_dates_clean.csv&quot;)</code></pre>
+  separate(site, into = c(&quot;site&quot;, &quot;site2&quot;))</code></pre>
 </div>
 <div id="load-baseline-sediment-trap-data" class="section level1">
 <h1>Load baseline sediment trap data</h1>
 <pre class="r"><code># Import Baseline sediment tables and charts- reef 3 31114.xlsx - baseline
 df1 &lt;- readxl::read_xlsx(
-  path = &quot;data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx&quot;,
+  path = &quot;data/sediment_traps/Baseline sediment tables and charts- reef 3 31114.xlsx&quot;,
   sheet = &quot;baseline&quot;,
   skip = 5, guess_max = 10, n_max = 38) # excludes one row where PVC was found in bottle...
 
@@ -163,7 +161,7 @@ df1 &lt;- df1 %&gt;%
 #####
 # Import Baseline sediment tables and charts- reef 3 31114.xlsx - 02-06-14
 df2 &lt;- readxl::read_xlsx(
-  path = &quot;data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx&quot;,
+  path = &quot;data/sediment_traps/Baseline sediment tables and charts- reef 3 31114.xlsx&quot;,
   sheet = &quot;02-06-14&quot;,
   skip = 5, guess_max = 10, n_max = 38)
 
@@ -202,10 +200,10 @@ two_passes &lt;- function(path, sheet = NULL) {
   second_pass
 }
 
-sheets &lt;- readxl::excel_sheets(&quot;data/sediment_trap_data/Offshore Compliance Sediment Trap Data Final.xlsx&quot;)
+sheets &lt;- readxl::excel_sheets(&quot;data/sediment_traps/Offshore Compliance Sediment Trap Data Final.xlsx&quot;)
 sheets &lt;- setNames(sheets, sheets)
 trap &lt;- lapply(sheets, two_passes, 
-               path = &quot;data/sediment_trap_data/Offshore Compliance Sediment Trap Data Final.xlsx&quot;)
+               path = &quot;data/sediment_traps/Offshore Compliance Sediment Trap Data Final.xlsx&quot;)
 
 trap &lt;- bind_rows(trap)
 
@@ -248,7 +246,7 @@ sedtrap &lt;- sedtrap %&gt;%
 sedtrap &lt;- drop_na(sedtrap)
 
 # Save as .RData
-save(sedtrap, file = &quot;data/sedtrap.RData&quot;)</code></pre>
+save(sedtrap, file = &quot;data/processed/sedtrap.RData&quot;)</code></pre>
 <div id="dataset-metrics" class="section level2">
 <h2>Dataset metrics</h2>
 <pre class="r"><code># Sites for which there are sediment trap data
