@@ -138,7 +138,7 @@ $(document).ready(function () {
 
 # Import and tidy baseline density data from 2010 (10m transects) on reef 2 and reef 3 (see report dated 2012)
 dens2010 &lt;- readxl::read_xlsx(
-  path = &quot;data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx&quot;) %&gt;% 
+  path = &quot;data/coral_counts/Miami Quantitative Study Raw Data forAppendix.xlsx&quot;) %&gt;% 
   clean_names() %&gt;%
   rename(site = area_e_g_r2n, transect = transect_e_g_r2n_10, diameter = diameter_cm) %&gt;%
   select(site, transect, category, subcategory, diameter) %&gt;%
@@ -166,7 +166,7 @@ unique(dens2010$site)</code></pre>
 
 #Hardbottom
 dens2013hb &lt;- readxl::read_xlsx(
-  path = &quot;data/Density_Data/Copy of Hardbottom_Baseline_POM_022514_LATEST.xlsx&quot;,
+  path = &quot;data/coral_counts/Copy of Hardbottom_Baseline_POM_022514_LATEST.xlsx&quot;,
   sheet = &quot;Raw Data&quot;) %&gt;%
   clean_names() %&gt;%
   rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
@@ -177,7 +177,7 @@ dens2013hb &lt;- readxl::read_xlsx(
 
 # Reef 2
 dens2013r2 &lt;- readxl::read_xlsx(
-  path  = &quot;data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx&quot;, 
+  path  = &quot;data/coral_counts/Reef2_Baseline_POM_2013_050714.xlsx&quot;, 
   sheet = &quot;Raw Data&quot;, guess_max = 4000) %&gt;%
   clean_names() %&gt;%
   rename(site = site_e_g_r2n1_rr, transect = transect_e_g_r2n1_rr_1, 
@@ -189,7 +189,7 @@ dens2013r2 &lt;- readxl::read_xlsx(
 
 # Reef 3
 dens2013r3 &lt;- readxl::read_xlsx(
-  path  = &quot;data/Density_Data/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx&quot;, sheet = &quot;Raw Data&quot;) %&gt;%
+  path  = &quot;data/coral_counts/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx&quot;, sheet = &quot;Raw Data&quot;) %&gt;%
   clean_names() %&gt;%
   rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
          diameter = max_diameter, count = total_count) %&gt;%
@@ -208,7 +208,7 @@ dens2013 &lt;- bind_rows(dens2013hb, dens2013r2, dens2013r3) %&gt;%
 <pre class="r"><code># 2015 data has multiple condition codes for the same coral recorded as separate lines.
 # need to aggregate these to a single line so one row = one coral
 dens2015 &lt;- readxl::read_xlsx(
-  path = &quot;data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx&quot;,
+  path = &quot;data/coral_counts/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx&quot;,
   guess_max = 10000) %&gt;%
   clean_names() %&gt;%
   rename(category = category_scleractinian_etc,
@@ -233,7 +233,7 @@ dens2015 &lt;- readxl::read_xlsx(
 
 ## Sponges and octocorals are in one spreadsheet
 dens2016octo &lt;- readxl::read_xlsx(
-  path = &quot;data/Density_Data/permanent_sites_impact_assessment_sponges_octocorals_2016_CSI_QAQC.xlsx&quot;,
+  path = &quot;data/coral_counts/permanent_sites_impact_assessment_sponges_octocorals_2016_CSI_QAQC.xlsx&quot;,
   sheet = &quot;Raw Data&quot;, skip = 1) %&gt;%
   clean_names() %&gt;%
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
@@ -247,7 +247,7 @@ dens2016octo &lt;- readxl::read_xlsx(
 # 2016 data has multiple condition codes for the same coral recorded as separate lines.
 # need to aggregate these to a single line so one row = one coral
 dens2016scler &lt;- readxl::read_xlsx(
-  path = &quot;data/Density_Data/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX&quot;,
+  path = &quot;data/coral_counts/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX&quot;,
   sheet = &quot;Raw Data&quot;, skip = 1)  %&gt;%
   clean_names() %&gt;%
   rename(category = category_scleractinian_etc, subcategory = species,
@@ -267,7 +267,7 @@ dens2016 &lt;- bind_rows(dens2016octo, dens2016scler) %&gt;%
 <div id="import-data-from-2016---cross-sites" class="section level1">
 <h1>Import data from 2016 - cross sites</h1>
 <pre class="r"><code># find all file names ending in .xlsx 
-files &lt;- list.files(path = &quot;data/Density_Data/2016 cross-transect data/Entered Data/&quot;,
+files &lt;- list.files(path = &quot;data/coral_counts/2016 cross-transect data/Entered Data/&quot;,
                     pattern = &quot;^[^~].*.xlsx&quot;, recursive = TRUE, full.names = TRUE)
 # remove files manually if multiple files for a given transect
 files &lt;- files[-c(24,25,28,30,32,33,36)]
@@ -508,7 +508,7 @@ all_counts &lt;- all_counts %&gt;%
 </div>
 <div id="save-count-data-as-.rdata-object" class="section level1">
 <h1>Save count data as .RData object</h1>
-<pre class="r"><code>save(all_counts, file = &quot;data/all_counts.RData&quot;)</code></pre>
+<pre class="r"><code>save(all_counts, file = &quot;data/processed/all_counts.RData&quot;)</code></pre>
 </div>
 <div id="dataset-metrics" class="section level1">
 <h1>Dataset metrics</h1>
