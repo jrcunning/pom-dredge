@@ -1,7 +1,5 @@
 ---
 title: "Import and tidy CPCe data"
-author: "Ross Cunning"
-date: "6/3/2018"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -195,7 +193,7 @@ cpce_sub <- left_join(cpce, bb) %>%
 
 # Save CPCe data as .RData object
 ```{r}
-save(cpce_sub, file = "data/cpce.RData")
+save(cpce_sub, file = "data/processed/cpce.RData")
 ```
 
 # Dataset metrics
