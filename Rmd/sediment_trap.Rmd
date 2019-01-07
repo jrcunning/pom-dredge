@@ -338,3 +338,15 @@ fine.gamms.reef.dir.fits %>%
             medrate  = median(fit))
 ```
 
+```{r}
+load("data/sed_deposited.RData")
+load("data/sedtrap.fine.gamms.RData")
+
+fine.gamms.reef.dir.fits %>%
+  group_by(reef, dir, channel) %>%
+  summarise(ndays = n(),
+            over25 = sum(fit > 25),
+            pctover25 = over25/ndays) %>%
+  arrange(pctover25)
+```
+

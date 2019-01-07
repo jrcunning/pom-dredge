@@ -104,29 +104,55 @@ ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +
         legend.key.width = unit(1,"cm"))
 ```
 
-# Percent of measurements > 0.5 cm
-```{r}
-over_0.5 <- LR %>%
-  group_by(reef, dir, dist) %>%
-  summarise(N = n(),
-            n_over_0.5 = sum(sdepth_cm > 0.5),
-            pct_over_0.5 = n_over_0.5 / N)
 
-over_0.5
+# Quantile fitted at the 1 cm threshold
+```{r}
+# Get quantiles of sediment depth for each transect
+df <- LR %>%
+  filter(reef %in% c("R2", "R3")) %>% droplevels() %>%
+  nest(-reef, -dir, -dist, -transect) %>%
+  mutate(value = map(data, ~ quantile(.$sdepth_cm, seq(0, 1, 0.005))),
+         quantile = map(value, ~ factor(names(.)))) %>%
+  unnest(quantile, value)
+
+# Fit sediment depth quantiles as a function of distance from channel
+mod <- lm(value ~ reef * dir * quantile * log(dist), data = df)
+resdf <- tidyr::expand(df, crossing(reef, dir, quantile), dist = 15:500)
+resdf$fit <- predict(mod, resdf)
+## Convert depth quantile to "percent of reef covered"
+resdf$pct_reef_covered <- factor(100 - as.numeric(str_sub(resdf$quantile, 1, 2)))
+
+# Percent of reef covered in > 1 cm at 20m from channel
+resdf %>%
+  filter(dist == 20) %>%
+  group_by(reef, dir) %>%
+  mutate(thresh = abs(fit - 1)) %>%
+  filter(thresh == min(thresh))
+
+# Percent of reef covered in > 1 cm at 300m from channel
+resdf %>%
+  filter(dist == 500) %>%
+  group_by(reef, dir) %>%
+  mutate(thresh = abs(fit - 1)) %>%
+  filter(thresh == min(thresh))
 ```
 
+# Sediment depth at permanent control sites?
 ```{r}
-over_5 <- LR %>%
-  group_by(reef, dir, dist) %>%
-  summarise(N = n(),
-            n_over_5 = sum(sdepth_cm > 5),
-            pct_over_5 = n_over_5 / N)
+substrate %>% filter(perm == "yes", channel == "control") %>%
+  group_by(reef, dir) %>%
+  summarise(median = median(sdepth_cm))
 
-over_5
+substrate %>% filter(perm == "yes", channel == "control") %>%
+  ggplot(aes(x = reef:dir, y = sdepth_cm)) +
+  geom_boxplot()
+
+# Percent of measurements greater than 1 cm
+substrate %>% filter(perm == "yes", channel == "control") %>%
+  group_by(reef, dir) %>%
+  summarise(sum(sdepth_cm > 1) / n())
 ```
 
-
-  
 
 
 # Sediment type

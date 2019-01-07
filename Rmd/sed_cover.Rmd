@@ -226,5 +226,17 @@ ba2 %>%
   theme(legend.position = c(0.75, 0.075))
 
 ba2
+
+# Percent increase at R2N1
+ba2 %>%
+  filter(site == "R2N1") %>%
+  summarise(fc = meanpropsand[year == 2016] / meanpropsand[year == 2013] - 1) %>%
+  select(fc)
+
+# Percent increase at R2S1
+ba2 %>%
+  filter(site == "R2S1") %>%
+  summarise(fc = meanpropsand[year == 2016] / meanpropsand[year == 2013] - 1) %>%
+  select(fc)
 ```
 

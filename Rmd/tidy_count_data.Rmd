@@ -22,11 +22,11 @@ library(janitor)
 # Import baseline data from 2010
 ```{r}
 # Hardbottom 2010 data -- does not include coral diameter, so cannot use this with the rest of the data (because we separately analyze corals >3cm and corals <3cm in diameter)
-dens2010hb <- readxl::read_xlsx(
-  path = "data/Density_Data/Miami Quantitative Survey HB Areas Raw Data for Appendix.xlsx",
-  sheet = "HB raw data") %>%
-  clean_names() %>%
-  rename(site = area_e_g_hbn, block = block_e_g_a, transect = transect_e_g_hbna_1) 
+# dens2010hb <- readxl::read_xlsx(
+#   path = "data/Density_Data/Miami Quantitative Survey HB Areas Raw Data for Appendix.xlsx",
+#   sheet = "HB raw data") %>%
+#   clean_names() %>%
+#   rename(site = area_e_g_hbn, block = block_e_g_a, transect = transect_e_g_hbna_1) 
 #dens2010hb %>%
 
 # Import and tidy baseline density data from 2010 (10m transects) on reef 2 and reef 3 (see report dated 2012)
@@ -429,7 +429,8 @@ save(all_counts, file = "data/all_counts.RData")
 # Dataset metrics
 ```{r}
 # Subset scleractinians
-scler <- filter(all_counts, category == "scleractinian")
+scler <- filter(all_counts, category == "scleractinian") %>%
+  filter(year %in% c(2010, 2013, 2016, 2017))   # exclude 2015
 
 # Total number of corals counted
 sum(scler$count)
