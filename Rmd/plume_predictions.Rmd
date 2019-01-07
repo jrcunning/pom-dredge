@@ -1,5 +1,5 @@
 ---
-title: "predictions based on plume presence"
+title: "Prediction of impacts based on sediment plume presence"
 output: html_document
 ---
 
@@ -23,15 +23,6 @@ library(deming)
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
 dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 2015, page 3
-# Define dredge activity periods     # postcon report page 4
-#terrapin.start.date <- as.Date("2013-11-20")
-#terrapin.end.date <- as.Date("2013-12-27")
-#texas.spider.start.date <- as.Date("2013-12-17")
-#texas.spider.end.date
-#liberty.start.date <- as.Date("2014-05-14")
-#liberty.end.date <- as.Date("2014-07-03")
-#texas.spider.flare.start <- as.Date("2014-08-06")
-#channel.flare.end <- as.Date("2014-08-24")
 
 ## ggplot theme
 theme_custom <- function() {
@@ -283,37 +274,6 @@ plot_grid(fig.plumeprob, fig.finedepo, fig.sandcov, fig.pmort, ncol = 1)
 ```
 
 # Plot metrics with multiple axes
-```{r}
-ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)), d)
-
-par(mar = c(4, 3.5, 4, 6), mgp = c(2.5, 0.5, 0.5))
-
-plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
-     axes = F, yaxt= 'n', bty = 'n', type = "l",
-     xlab = "< South      Distance from channel (km)     North >", 
-     ylab = "Dredge plume presence",
-     xlim = c(-15, 15))
-axis(1, at = axTicks(1), labels = abs(axTicks(1)))
-ymin <- par("usr")[3]
-ymax <- par("usr")[4]
-yticks <- seq(round(ymin, 1), round(ymax, 1), by = 0.1)
-axis(2, at = yticks)
-axis(4, line = 0, at = yticks, labels = ascale(yticks, mod.finedepo, 0))
-text(x = line2user(0.5, 4), y = 0.75, adj = 1, labels = "Sed. deposition", srt = 315, xpd = NA, cex = 0.7)
-axis(4, line = 2, at = yticks, labels = ascale(yticks, mod.sandcov, 2))
-text(x = line2user(2.5, 4), y = 0.75, adj = 1, labels = "Sed. cover", srt = 315, xpd = NA, cex = 0.7)
-axis(4, line = 4, at = yticks, labels = ascale(yticks, mod.pmort, 2))
-text(x = line2user(4.5, 4), y = 0.75, adj = 1, labels = "Partial mortality", srt = 315, xpd = NA, cex = 0.7)
-lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
-lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
-legend("topleft", legend = c("IR", "MR", "OR"), lty = 1, col = c("black", "red", "blue"), bty = "n")
-abline(v = 0, lty = 2)
-# abline(v = 1, lty = 3)
-# abline(v = 2, lty = 3)
-# abline(v = 5, lty = 3)
-# abline(v = 10, lty = 3)
-```
-
 
 ```{r}
 ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)), d)
@@ -353,6 +313,7 @@ dev.off()
 knitr::include_graphics("../figures/Fig9.png")
 ```
 
+# Reported metrics
 ```{r}
 resdf %>%
   group_by(reef, dist > 0) %>%
