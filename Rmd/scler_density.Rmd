@@ -22,7 +22,7 @@ library(janitor)
 # Import coral count data
 ```{r}
 # Import tidy count data
-load("data/all_counts.RData")
+load("data/processed/all_counts.RData")
 
 # Subset Scleractinian count data
 scler <- filter(all_counts, category == "scleractinian") %>%      # Get scleractinians only
@@ -193,7 +193,7 @@ anno_2 <- full_join(lsm2, sig) %>%
 anno <- bind_rows(anno, anno_2)
 
 # Save as RData
-save(newdata_1, lsm, anno, file = "data/large.dens.mod.RData")
+save(newdata_1, lsm, anno, file = "data/processed/large.dens.mod.RData")
 
 # PLOT ALL RESULTS FOR LARGE CORALS
 ggplot(data = newdata_1, aes(x = dist, y = fit, color = timepoint)) +
@@ -324,7 +324,7 @@ anno <- anno %>%
          `2016/2017 cross-site surveys` = ifelse(reef == "HB", NA, `2016/2017 cross-site surveys`),
          sig2 = ifelse((reef == "HB" | (reef == "R3" & dir == "S")), "", sig2))
 
-save(newdata_2, anno, file = "data/small.dens.mod.RData")
+save(newdata_2, anno, file = "data/processed/small.dens.mod.RData")
 
 # Plot fitted results
 ggplot(data = newdata_2, aes(x = dist, y = fit, color = timepoint)) +
@@ -381,7 +381,7 @@ kwtest <- df %>%
 
 kwtest <- kwtest %>% mutate(x = 15, y = 0.1)
 
-save("df", "kwtest", file = "data/sizefreq.RData")
+save("df", "kwtest", file = "data/processed/sizefreq.RData")
 
 # Plot size frequency distributions and annotate with KW test p values
 ggplot(df, aes(x = diameter, fill = year <= 2010)) + 
@@ -410,12 +410,12 @@ df %>%
 
 ```{r}
 # Import reef area data (from Maria's GIS analysis)
-HBN <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Inner North")
-HBS <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Inner South")
-R2N <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Middle North")
-R2S <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Middle South")
-R3N <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Outer North")
-R3S <- readxl::read_xlsx(path = "data/Distance from Channel by Reef Location.xlsx", sheet = "Outer South")
+HBN <- readxl::read_xlsx(path = "data/reef_area/Distance from Channel by Reef Location.xlsx", sheet = "Inner North")
+HBS <- readxl::read_xlsx(path = "data/reef_area/Distance from Channel by Reef Location.xlsx", sheet = "Inner South")
+R2N <- readxl::read_xlsx(path = "data/reef_area/Distance from Channel by Reef Location.xlsx", sheet = "Middle North")
+R2S <- readxl::read_xlsx(path = "data/reef_area/Distance from Channel by Reef Location.xlsx", sheet = "Middle South")
+R3N <- readxl::read_xlsx(path = "data/reef_area/Distance from Channel by Reef Location.xlsx", sheet = "Outer North")
+R3S <- readxl::read_xlsx(path = "data/reef_area/Distance from Channel by Reef Location.xlsx", sheet = "Outer South")
 
 # Tidy reef area data
 reef_areas <- bind_rows(HBN = HBN, HBS = HBS, R2N = R2N, R2S = R2S, R3N = R3N, R3S = R3S, .id = "reefdir") %>%
@@ -429,7 +429,7 @@ reef_areas <- bind_rows(HBN = HBN, HBS = HBS, R2N = R2N, R2S = R2S, R3N = R3N, R
   select(reef, dir, dist, area)
   
 # Load change in large coral density data
-load("data/large.dens.mod.RData")    # newdata_1 object contains fitted values for density before and after dredging
+load("data/processed/large.dens.mod.RData")    # newdata_1 object contains fitted values for density before and after dredging
 
 total_loss_large <- newdata_1 %>%
   select(reef, dir, timepoint, dist, fit) %>%
@@ -445,7 +445,7 @@ total_loss_large <- newdata_1 %>%
 total_loss_large
 
 # Load change in small coral density data
-load("data/small.dens.mod.RData")    # newdata_1 object contains fitted values for density before and after dredging
+load("data/processed/small.dens.mod.RData")    # newdata_2 object contains fitted values for density before and after dredging
 
 total_loss_small <- newdata_2 %>%
   select(reef, dir, timepoint, dist, fit) %>%
