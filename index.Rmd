@@ -1,5 +1,5 @@
 ---
-title: "Analysis of PortMiami dredging impacts on coral reef benthic communities"
+title: "Analysis of dredging impacts to coral reefs at the Port of Miami"
 output: html_document
 ---
 
