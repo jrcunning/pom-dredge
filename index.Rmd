@@ -9,7 +9,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 -----
 
-This site walks through our data analysis with code and output in rendered Rmarkdown documents. For access to all raw data and code, visit the Github repository at [github.com/jrcunning/pom-dredge](http://github.com/jrcunning/pom-dredge).
+This site walks through the project's data analysis with code and output in rendered Rmarkdown documents. For access to all raw data and code, visit the Github repository at [github.com/jrcunning/pom-dredge](http://github.com/jrcunning/pom-dredge).
 
 ## Data import and tidying
 
