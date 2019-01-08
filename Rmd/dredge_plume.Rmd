@@ -32,7 +32,7 @@ dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 20
 
 # Import dredge plume data
 ```{r}
-plume <- readxl::read_xls(path = "data/dredge_plume.xls", sheet = "plume presence absence") %>%
+plume <- readxl::read_xls(path = "data/plume/dredge_plume.xls", sheet = "plume presence absence") %>%
   gather(date, plume, -NAME, -LATITUDE, -LONGITUDE, -idx) %>%
   clean_names() %>%
   mutate(site = as_factor(name),
@@ -103,7 +103,7 @@ plume.summ <- plume %>%
   group_by(reef, dir, channel) %>%
   summarise(nobs = n(), nyes = sum(plume), nno = nobs - nyes, pct = nyes / nobs)
 
-save(plume, plume.summ, gamm.fits, file = "data/plume.RData")
+save(plume, plume.summ, gamm.fits, file = "data/processed/plume.RData")
 ```
 
 # Reported metrics

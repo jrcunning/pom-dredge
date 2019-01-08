@@ -1,51 +1,42 @@
 # Analysis of dredging impacts to coral reefs at the Port of Miami
 
-## Data import and tidying
+[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.53231.svg)](http://dx.doi.org/10.5281/zenodo.53231)
 
-In these Rmarkdown documents, raw data is imported and tidied into usable formats for downstream analysis.
+This repository includes data and analysis scripts to accompany:
 
-##### [Sediment trap data](Rmd/tidy_sedtrap_data.html)
-
-##### [Benthic cover (CPCe) data](Rmd/tidy_cpce_data.html)
-
-##### [Tagged coral condition data](Rmd/tidy_tagged_corals.html)
-
-##### [Coral count data](Rmd/tidy_count_data.html)
-
-##### [Sediment depth data](Rmd/tidy_sed_depth_type.html)
+# Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes
+### Authors: Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker
+### Journal: (in review)
+### Link: (pending)
 
 -----
 
-## Data analysis
+### Description:
+This work analyzes.....
 
-These documents serve as records of data analysis including initial data exploration and plotting, and preliminary and intermediate analyses. As such, the labels and terminology found in some of the code and figures in these documents differ from what is presented in the final manuscript. For example, in initial analyses sites were coded as "channelside" or "control" based on the FDEP/DCA study design, but were subsequently recoded in final analyses according to distance from channel once it became clear that "control" sites were also impacted by dredging. Similarly, the benthic category "sand", as coded by DCA, is referred to as sediment in final analyses, and the reef names also change from "Hard Bottom", "Reef 2", and "Reef 3" (as coded by DCA), to "Nearshore Ridge", "Inner Reef", and "Outer Reef", respectively, to be consistent with published literature.
+### Contents:
+#### Raw data:
+* **data/sediment_traps/:** Sediment trap data from DCA
 
-##### [Dredge plume presence](Rmd/dredge_plume.html)
+* **data/CPCe/:** Benthic cover CPCe analysis data from DCA
 
-##### [Sediment deposition](Rmd/sediment_trap.html)
 
-##### [Sediment cover](Rmd/sed_cover.html)
 
-##### [Sediment depth](Rmd/sed_depth.html)
+#### Data:
+* **data/coast_n83.shp/:** Hawaii coastline shapefile, originally downloaded from [here](http://files.hawaii.gov/dbedt/op/gis/data/coast_n83.shp.zip)
 
-##### [Sedimentation stress to tagged corals](Rmd/sed_stress.html)
+* **data/bleachedpair.png:** Photograph of a bleached and non-bleached pair of _M. capitata_ colonies used in Figure 1 (photo credit: R. Ritson-Williams).
 
-##### [Partial mortality of tagged corals](Rmd/partial_mortality.html)
+* **data/qPCR/:** Directory containing .csv files of symbiont and host quantification data exported directly from Applied Biosystems StepOnePlus Software qPCR platform.
 
-##### [Total mortality of tagged corals](Rmd/total_mortality.html)
+* **data/ITS2/:** Directory containing ITS2 sequence data .fastq files (raw data) and OTU tables (final result of bioinformatic analysis). Note that intermediate/temporary data files in bioinformatic analysis are not included in the repository.
 
-##### [Scleractinian density](Rmd/scler_density.html) ([non-disease-susceptible only](Rmd/nonsus_scler_density.html))
+* **data/supp/:** Directory containing data for fluorescence normalization and gene copy number estimation, presented in the Supplement.
 
-##### [Predicted impacts from plume data](Rmd/plume_predictions.Rmd)
+* **data/temp_light/:** Directory containing temperature and light data recorded during the study, originally downloaded from Zenodo.
+    * Links to Zenodo data repositories:
+        + Temperature data: [doi:10.5281/zenodo.53226](http://dx.doi.org/10.5281/zenodo.53226)
+        + Light data: [doi:10.5281/zenodo.53227](http://dx.doi.org/10.5281/zenodo.53227)
 
-This document contains the final, formatted versions of all figures used in the manuscript (main text and supplementary).
-
-##### [Final manuscript figures](Rmd/Figures.html)
-
------
-
-## Manuscript
-
-##### [Manuscript]() (currently in review)
-
-##### [Supplementary Information](Rmd/SupplementaryInfo.html)
+#### Output:
+* **output/:** Directory containing the figures and tables produced by the analysis scripts and presented in the manuscript and the Supplement.
