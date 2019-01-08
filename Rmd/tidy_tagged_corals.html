@@ -141,7 +141,7 @@ library(janitor)</code></pre>
 <div id="hardbottom" class="section level5">
 <h5>Hardbottom</h5>
 <pre class="r"><code># Import data from file: Hardbottom_Baseline_POM_050714.xlsx
-bl_hb &lt;- readxl::read_xlsx(path = &quot;data/to_analyze/Hardbottom_Baseline_POM_050714.xlsx&quot;,
+bl_hb &lt;- readxl::read_xlsx(path = &quot;data/tagged_corals/Hardbottom_Baseline_POM_050714.xlsx&quot;,
                            sheet = &quot;Raw Data&quot;)
 # Tidy data
 bl_hb &lt;- bl_hb %&gt;%
@@ -164,7 +164,7 @@ bl_hb &lt;- bl_hb %&gt;%
 <div id="middle-reef" class="section level5">
 <h5>Middle reef</h5>
 <pre class="r"><code># Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
-bl_r2 &lt;- readxl::read_xlsx(path = &quot;data/raw/Reef2_Baseline_POM_2013_050714.xlsx&quot;,
+bl_r2 &lt;- readxl::read_xlsx(path = &quot;data/tagged_corals/Reef2_Baseline_POM_2013_050714.xlsx&quot;,
                            sheet = &quot;Raw Data&quot;, guess_max = 3000)
 
 # Tidy data
@@ -194,7 +194,7 @@ bl_r2 &lt;- bl_r2 %&gt;%
 <div id="outer-reef" class="section level5">
 <h5>Outer reef</h5>
 <pre class="r"><code># Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
-bl_r3 &lt;- readxl::read_xlsx(path = &quot;data/raw/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx&quot;,
+bl_r3 &lt;- readxl::read_xlsx(path = &quot;data/tagged_corals/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx&quot;,
                            sheet = &quot;Raw Data&quot;, guess_max = 3000)
 
 # Tidy data
@@ -227,7 +227,7 @@ bl_r3 &lt;- bl_r3 %&gt;%
 <p>Hardbottom, middle, and outer reef data are all in the same spreadsheet.</p>
 <pre class="r"><code># Import data from file: NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx
 comp &lt;- readxl::read_xlsx(
-  path = &quot;data/DEP_all/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx&quot;,
+  path = &quot;data/tagged_corals/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx&quot;,
   sheet = &quot;All Weeks&quot;, guess_max = 3000)
 
 # Tidy data
@@ -266,7 +266,7 @@ comp &lt;- comp %&gt;% select(date, site, transect, coral_id, species, condition
 <h4>April - May 2015</h4>
 <pre class="r"><code># Import data from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
 pc1 &lt;- readxl::read_xlsx(
-  path = &quot;data/raw/2015data/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx&quot;,
+  path = &quot;data/tagged_corals/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx&quot;,
   sheet = &quot;IA TAGGED ONLY&quot;)
 
 # Tidy data
@@ -284,7 +284,7 @@ pc1 &lt;- pc1 %&gt;%
 <h4>June - July 2015</h4>
 <pre class="r"><code># Import data from file: NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx
 pc2 &lt;- readxl::read_xlsx(
-  path = &quot;data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx&quot;,
+  path = &quot;data/tagged_corals/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx&quot;,
   sheet = &quot;Raw Data&quot;, guess_max = 3000)
 
 # Tidy data
@@ -304,7 +304,7 @@ pc2 &lt;- pc2 %&gt;%
 <h3>One year post-construction (Aug 2016)</h3>
 <pre class="r"><code># Import data from file: permanent_sites_impact_assessment_corals_2016_CSI_QAQC.xlsx
 pc3 &lt;- readxl::read_xlsx(
-  path = &quot;data/raw/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX&quot;,
+  path = &quot;data/tagged_corals/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX&quot;,
   sheet = &quot;Raw Data&quot;, guess_max = 3000, skip = 1)
 
 # Tidy data
@@ -474,7 +474,7 @@ tagged &lt;- tagged %&gt;%
 </div>
 <div id="save-tagged-coral-data-as-.rdata" class="section level1">
 <h1>Save tagged coral data as .RData</h1>
-<pre class="r"><code>save(tagged, tagged_bool, tagged_nest, tagged_c, file = &quot;data/tagged.RData&quot;)</code></pre>
+<pre class="r"><code>save(tagged, tagged_bool, tagged_nest, tagged_c, file = &quot;data/processed/tagged.RData&quot;)</code></pre>
 </div>
 <div id="write-concatenated-data-to-file" class="section level1">
 <h1>Write concatenated data to file</h1>
@@ -483,11 +483,11 @@ dd &lt;- tagged_c %&gt;%
   arrange(coral, date) %&gt;%
   select(-channel, -reef, -dir, -coral)
 
-write.table(dd, file=&quot;data/tagged_c.txt&quot;, row.names = FALSE, quote = FALSE, sep = &quot;\t&quot;)</code></pre>
+write.table(dd, file=&quot;data/processed/tagged_c.txt&quot;, row.names = FALSE, quote = FALSE, sep = &quot;\t&quot;)</code></pre>
 </div>
 <div id="dataset-metrics" class="section level1">
 <h1>Dataset metrics</h1>
-<pre class="r"><code>load(&quot;data/tagged.RData&quot;)
+<pre class="r"><code>load(&quot;data/processed/tagged.RData&quot;)
 
 # Number of observations
 nrow(tagged_bool)</code></pre>
