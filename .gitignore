@@ -7,3 +7,6 @@ data/raw/*
 */.DS_Store
 old_Rmd/*
 Rmd_archive_/*
+archive/*
+Mar Poll Bull/*
+R/*
