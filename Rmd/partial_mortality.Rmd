@@ -25,7 +25,7 @@ library(ggthemes)
 # Import data
 ```{r}
 # Import tidy tagged coral data
-load("data/tagged.RData")
+load("data/processed/tagged.RData")
 tagged_bool <- tagged_bool %>%
   mutate(day = (date - min(date)) / ddays(1))
 
@@ -117,7 +117,7 @@ ggplot(summary(pm.lsm1), aes(x = channel, y = prob, fill = channel)) +
   geom_text(data = data.frame(summary(pm.lsm1.sig)), inherit.aes = FALSE,
             aes(x = 1.5, y = 0.8, label = ifelse(p.value < 0.05, "*", NA)), cex = 10)
 
-save(pm.lsm1, pm.lsm1.sig, file = "data/pm.lsm.RData")
+save(pm.lsm1, pm.lsm1.sig, file = "data/processed/pm.lsm.RData")
 ```
 
 **We find a significantly higher probability of partial mortality due to sedimentation for corals at channelside sites relative to controls for the northern middle reef (75% vs. 4%, p < 0.0001), the southern middle reef (61% vs. 16%, p = 0.0003), the southern hardbottom (70% vs. 23%, p = 0.0013), and the southern outer reef (24% vs. 8%, p = 0.0216.**

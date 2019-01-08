@@ -91,7 +91,7 @@ library(ggthemes)
 # Import data
 ```{r}
 # Import tidy tagged coral data
-load("data/tagged.RData")
+load("data/processed/tagged.RData")
 
 # Omit HBN1
 tagged_bool <- tagged_bool %>%
@@ -179,7 +179,7 @@ dead.lsm4.sig <- rbind(pairs(dead.lsm4, by = c("reef", "dir")), adjust = "none")
 knitr::kable(summary(dead.lsm4.sig))
 
 # Save lsmeans and sig tests as RData
-save(dead.lsm4, dead.lsm4.sig, file = "data/tm.lsm.RData")
+save(dead.lsm4, dead.lsm4.sig, file = "data/processed/tm.lsm.RData")
 
 # Plot
 ggplot(summary(dead.lsm4), aes(x = channel, y = prob, fill = channel)) + 
