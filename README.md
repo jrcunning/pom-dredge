@@ -1,42 +1,70 @@
 # Analysis of dredging impacts to coral reefs at the Port of Miami
 
-[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.53231.svg)](http://dx.doi.org/10.5281/zenodo.53231)
+This work describes impacts to coral reefs surrounding the 2013-2015 dredging of the Port of Miami based on data collected before, during, and after dredging by Dial Cordy and Associates (DCA) on behalf of Great Lakes Dredge and Dock Company, the dredging contractors for the U.S. Army Corps of Engineers (USACE) and for the Port of Miami (Miami-Dade County). A front page for this repository can be accessed at [jrcunning.github.io/pom-dredge](http://jrcunning.github.io/pom-dredge) containing rendered Rmarkdown detailing all analyses conducted as part of this work. 
 
-This repository includes data and analysis scripts to accompany:
+This repository includes all data and analysis scripts to accompany the manuscript:
 
-# Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes
-### Authors: Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker
-### Journal: (in review)
-### Link: (pending)
+### Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes
+#### Authors: Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker
+#### Journal: (pending)
+#### Link: (pending)
 
 -----
 
-### Description:
-This work analyzes.....
-
-### Contents:
-#### Raw data:
+### Repository contents:
+#### Data:
 * **data/sediment_traps/:** Sediment trap data from DCA
 
 * **data/CPCe/:** Benthic cover CPCe analysis data from DCA
 
+* **data/coral_counts/:** Coral count data from DCA
 
+* **data/sediment_depth/:** Sediment depth data from DCA
 
-#### Data:
-* **data/coast_n83.shp/:** Hawaii coastline shapefile, originally downloaded from [here](http://files.hawaii.gov/dbedt/op/gis/data/coast_n83.shp.zip)
+* **data/sediment_traps/:** Sediment trap data from DCA
 
-* **data/bleachedpair.png:** Photograph of a bleached and non-bleached pair of _M. capitata_ colonies used in Figure 1 (photo credit: R. Ritson-Williams).
+* **data/tagged_corals/:** Tagged coral condition data from DCA
 
-* **data/qPCR/:** Directory containing .csv files of symbiont and host quantification data exported directly from Applied Biosystems StepOnePlus Software qPCR platform.
+* **data/plume/:** Satellite detections of plume presence
 
-* **data/ITS2/:** Directory containing ITS2 sequence data .fastq files (raw data) and OTU tables (final result of bioinformatic analysis). Note that intermediate/temporary data files in bioinformatic analysis are not included in the repository.
+* **data/reef_area/:** Area of coral reef and colonized hardbottom from GIS analysis
 
-* **data/supp/:** Directory containing data for fluorescence normalization and gene copy number estimation, presented in the Supplement.
+* **data/processed/:** .RData objects containing processed data and statistical models
 
-* **data/temp_light/:** Directory containing temperature and light data recorded during the study, originally downloaded from Zenodo.
-    * Links to Zenodo data repositories:
-        + Temperature data: [doi:10.5281/zenodo.53226](http://dx.doi.org/10.5281/zenodo.53226)
-        + Light data: [doi:10.5281/zenodo.53227](http://dx.doi.org/10.5281/zenodo.53227)
+#### Rmd:
+* **Rmd/tidy_count_data.Rmd/:** Code to import and tidy coral count data
 
-#### Output:
-* **output/:** Directory containing the figures and tables produced by the analysis scripts and presented in the manuscript and the Supplement.
+* **Rmd/tidy_cpce_data.Rmd/:** Code to import and tidy CPCe data
+
+* **Rmd/tidy_sed_depth_type.Rmd/:** Code to import and tidy sediment depth data
+
+* **Rmd/tidy_sedtrap_data.Rmd/:** Code to import and tidy sediment trap data
+
+* **Rmd/tidy_tagged_corals.Rmd/:** Code to import tagged coral condition data
+
+* **Rmd/dredge_plume.Rmd/:** Code to analyze dredge plume presence at permanent monitoring sites
+
+* **Rmd/sediment_trap.Rmd/:** Code to analyze sediment trap data
+
+* **Rmd/sed_cover.Rmd/:** Code to analyze sediment cover from CPCe data
+
+* **Rmd/sed_stress.Rmd/:** Code to analyze sediment stress to tagged corals
+
+* **Rmd/partial_mortality.Rmd/:** Code to analyze partial mortality of tagged corals
+
+* **Rmd/total_mortality.Rmd/:** Code to analyze total mortality of tagged corals
+
+* **Rmd/sed_depth.Rmd/:** Code to analyze sediment depth data
+
+* **Rmd/scler_density.Rmd/:** Code to analyze scleractinian coral count (density) data
+
+* **Rmd/nonsus_scler_density.Rmd/:** Code to analyze non-disease-susceptible scleractinian coral count (density) data
+
+* **Rmd/plume_predictions.Rmd/:** Code to predict/extrapolate benthic impacts from sediment plume presence
+
+* **Rmd/Figures.Rmd/:** Code to produce all final figures for manuscript
+
+* **Rmd/SupplementaryInfo.Rmd/:** Code to produce the Supplementary Information for manuscript
+
+#### Figures:
+* **figures/:** Figures produced by [Rmd/Figures.Rmd](Rmd/Figures.Rmd)
