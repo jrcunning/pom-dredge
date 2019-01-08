@@ -9,7 +9,6 @@
 <meta name="generator" content="pandoc" />
 
 
-<meta name="author" content="Ross Cunning" />
 
 
 <title>Import and tidy CPCe data</title>
@@ -122,8 +121,6 @@ $(document).ready(function () {
 
 
 <h1 class="title toc-ignore">Import and tidy CPCe data</h1>
-<h4 class="author"><em>Ross Cunning</em></h4>
-<h4 class="date"><em>6/3/2018</em></h4>
 
 </div>
 
@@ -275,19 +272,19 @@ pr</code></pre>
 <pre><code>## # A tibble: 13 x 5
 ##    file                        number_of_frames pavement_p rubble_r sand_s
 ##    &lt;chr&gt;                                  &lt;int&gt;      &lt;int&gt;    &lt;int&gt;  &lt;int&gt;
-##  1 data/CPCe/compliance/R3N1 …               40          0        1    250
-##  2 data/CPCe/Hard Bottom/HBN1…               56          0        1    443
-##  3 data/CPCe/Hard Bottom/HBN1…               71          0        2    545
-##  4 data/CPCe/Hard Bottom/HBS1…               39         57        0    149
-##  5 data/CPCe/Hard Bottom/HBS2…               53          0       23    116
-##  6 data/CPCe/Hard Bottom/HBS2…               56          0       19    154
-##  7 data/CPCe/Hard Bottom/HBS2…               58          0       12    143
-##  8 data/CPCe/Hard Bottom/HBS2…               41          0        1    162
-##  9 data/CPCe/Hard Bottom/HBS3…               62          0        8     73
-## 10 data/CPCe/Hard Bottom/HBS3…               63          0        7     13
-## 11 data/CPCe/Hard Bottom/HBS3…               68          0        6     59
-## 12 data/CPCe/Hard Bottom/HBSC…               68          0        1     52
-## 13 data/CPCe/Hard Bottom/HBSC…               38          0        4     19</code></pre>
+##  1 data/CPCe/HBN1 BW4 T1.xlsx                56          0        1    443
+##  2 data/CPCe/HBN1 BW4 T3.xlsx                71          0        2    545
+##  3 data/CPCe/HBS1 C42 T3.xlsx                39         57        0    149
+##  4 data/CPCe/HBS2 BW4 T1.xlsx                53          0       23    116
+##  5 data/CPCe/HBS2 BW4 T2.xlsx                56          0       19    154
+##  6 data/CPCe/HBS2 BW4 T3.xlsx                58          0       12    143
+##  7 data/CPCe/HBS2 C11 T3.xlsx                41          0        1    162
+##  8 data/CPCe/HBS3 BW4 T1.xlsx                62          0        8     73
+##  9 data/CPCe/HBS3 BW4 T2.xlsx                63          0        7     13
+## 10 data/CPCe/HBS3 BW4 T3.xlsx                68          0        6     59
+## 11 data/CPCe/HBSC1 BW4 T3.xlsx               68          0        1     52
+## 12 data/CPCe/HBSC1 C16 T1 - R…               38          0        4     19
+## 13 data/CPCe/R3N1 C30 T3.xlsx                40          0        1    250</code></pre>
 <pre class="r"><code># -- for these, must use this sand subcategory instead of spr major category...sub in... 
 
 # Merge all imported CPCe data with the sand subcategory data for those datafiles containing pavement or rubble points
@@ -310,7 +307,7 @@ cpce_sub &lt;- left_join(cpce, bb) %&gt;%
 </div>
 <div id="save-cpce-data-as-.rdata-object" class="section level1">
 <h1>Save CPCe data as .RData object</h1>
-<pre class="r"><code>save(cpce_sub, file = &quot;data/cpce.RData&quot;)</code></pre>
+<pre class="r"><code>save(cpce_sub, file = &quot;data/processed/cpce.RData&quot;)</code></pre>
 </div>
 <div id="dataset-metrics" class="section level1">
 <h1>Dataset metrics</h1>

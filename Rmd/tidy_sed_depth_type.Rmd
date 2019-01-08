@@ -22,7 +22,7 @@ library(janitor)
 # Import and tidy cross site sediment depth data
 ```{r}
 # find all file names ending in .xlsx 
-files <- list.files(path = "data/Density_Data/2016 cross-transect data/Entered Data/",
+files <- list.files(path = "data/sediment_depth/2016 cross-transect data/Entered Data/",
                     pattern = "^[^~].*.xlsx", recursive = TRUE, full.names = TRUE)
 # remove files manually if multiple files for a given transect
 files <- files[-c(24,25,28,30,32,33,36)]
@@ -88,7 +88,7 @@ substrate <- substrate %>%
 
 
 ```{r}
-save(substrate, file = "data/substrate.RData")
+save(substrate, file = "data/processed/sediment_depth.RData")
 ```
 
 # Dataset metrics

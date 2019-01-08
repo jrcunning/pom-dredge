@@ -25,7 +25,7 @@ library(janitor)
 ##### Hardbottom
 ```{r baseline_hb}
 # Import data from file: Hardbottom_Baseline_POM_050714.xlsx
-bl_hb <- readxl::read_xlsx(path = "data/to_analyze/Hardbottom_Baseline_POM_050714.xlsx",
+bl_hb <- readxl::read_xlsx(path = "data/tagged_corals/Hardbottom_Baseline_POM_050714.xlsx",
                            sheet = "Raw Data")
 # Tidy data
 bl_hb <- bl_hb %>%
@@ -49,7 +49,7 @@ bl_hb <- bl_hb %>%
 ##### Middle reef
 ```{r baseline_r2}
 # Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
-bl_r2 <- readxl::read_xlsx(path = "data/raw/Reef2_Baseline_POM_2013_050714.xlsx",
+bl_r2 <- readxl::read_xlsx(path = "data/tagged_corals/Reef2_Baseline_POM_2013_050714.xlsx",
                            sheet = "Raw Data", guess_max = 3000)
 
 # Tidy data
@@ -80,7 +80,7 @@ bl_r2 <- bl_r2 %>%
 ##### Outer reef
 ```{r baseline_r3}
 # Import data from file: Reef2_Baseline_POM_2013_050714.xlsx
-bl_r3 <- readxl::read_xlsx(path = "data/raw/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx",
+bl_r3 <- readxl::read_xlsx(path = "data/tagged_corals/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx",
                            sheet = "Raw Data", guess_max = 3000)
 
 # Tidy data
@@ -116,7 +116,7 @@ Hardbottom, middle, and outer reef data are all in the same spreadsheet.
 ```{r load_data_nov2013_mar2015}
 # Import data from file: NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx
 comp <- readxl::read_xlsx(
-  path = "data/DEP_all/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx",
+  path = "data/tagged_corals/NEW_Offshore_Comp_Scleractinian_Cond_All_Weeks_8_10_15-QAQC.xlsx",
   sheet = "All Weeks", guess_max = 3000)
 
 # Tidy data
@@ -156,7 +156,7 @@ comp <- comp %>% select(date, site, transect, coral_id, species, condition, surv
 ```{r load_data_aprmay2015}
 # Import data from file: NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx
 pc1 <- readxl::read_xlsx(
-  path = "data/raw/2015data/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx",
+  path = "data/tagged_corals/NEW_Offshore_Compliance_Scleractinian_Cond_R2_R3_IMPACT_ASSESS_data TAGGED CORALS.xlsx",
   sheet = "IA TAGGED ONLY")
 
 # Tidy data
@@ -175,7 +175,7 @@ pc1 <- pc1 %>%
 ```{r load_data_junjuly2015}
 # Import data from file: NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx
 pc2 <- readxl::read_xlsx(
-  path = "data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx",
+  path = "data/tagged_corals/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx",
   sheet = "Raw Data", guess_max = 3000)
 
 # Tidy data
@@ -196,7 +196,7 @@ pc2 <- pc2 %>%
 ```{r load_data_aug2016}
 # Import data from file: permanent_sites_impact_assessment_corals_2016_CSI_QAQC.xlsx
 pc3 <- readxl::read_xlsx(
-  path = "data/raw/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX",
+  path = "data/tagged_corals/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX",
   sheet = "Raw Data", guess_max = 3000, skip = 1)
 
 # Tidy data
@@ -371,7 +371,7 @@ tagged_c <- tagged %>%
 
 # Save tagged coral data as .RData
 ```{r}
-save(tagged, tagged_bool, tagged_nest, tagged_c, file = "data/tagged.RData")
+save(tagged, tagged_bool, tagged_nest, tagged_c, file = "data/processed/tagged.RData")
 ```
 
 # Write concatenated data to file
@@ -381,12 +381,12 @@ dd <- tagged_c %>%
   arrange(coral, date) %>%
   select(-channel, -reef, -dir, -coral)
 
-write.table(dd, file="data/tagged_c.txt", row.names = FALSE, quote = FALSE, sep = "\t")
+write.table(dd, file="data/processed/tagged_c.txt", row.names = FALSE, quote = FALSE, sep = "\t")
 ```
 
 # Dataset metrics
 ```{r}
-load("data/tagged.RData")
+load("data/processed/tagged.RData")
 
 # Number of observations
 nrow(tagged_bool)

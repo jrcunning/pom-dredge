@@ -139,7 +139,7 @@ library(janitor)</code></pre>
 <div id="import-and-tidy-cross-site-sediment-depth-data" class="section level1">
 <h1>Import and tidy cross site sediment depth data</h1>
 <pre class="r"><code># find all file names ending in .xlsx 
-files &lt;- list.files(path = &quot;data/Density_Data/2016 cross-transect data/Entered Data/&quot;,
+files &lt;- list.files(path = &quot;data/sediment_depth/2016 cross-transect data/Entered Data/&quot;,
                     pattern = &quot;^[^~].*.xlsx&quot;, recursive = TRUE, full.names = TRUE)
 # remove files manually if multiple files for a given transect
 files &lt;- files[-c(24,25,28,30,32,33,36)]
@@ -199,7 +199,7 @@ substrate &lt;- substrate %&gt;%
   mutate(dist_actual = case_when(
     transect == &quot;EW&quot; ~ dist,
     transect == &quot;NS&quot; ~ dist + meter_mark - 25))</code></pre>
-<pre class="r"><code>save(substrate, file = &quot;data/substrate.RData&quot;)</code></pre>
+<pre class="r"><code>save(substrate, file = &quot;data/processed/sediment_depth.RData&quot;)</code></pre>
 </div>
 <div id="dataset-metrics" class="section level1">
 <h1>Dataset metrics</h1>

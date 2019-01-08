@@ -131,7 +131,7 @@ $(document).ready(function () {
 <div id="load-data" class="section level1">
 <h1>Load data</h1>
 <pre class="r"><code># Load CPCe data (see tidy_cpce_data.Rmd)
-load(&quot;data/cpce.RData&quot;)
+load(&quot;data/processed/cpce.RData&quot;)
 # Rename dataset to 'cpce'
 cpce &lt;- cpce_sub</code></pre>
 </div>
@@ -233,7 +233,7 @@ gamms.reef.dir.fits &lt;- gamms.reef.dir %&gt;%
   unnest(newdata, fit, lci, uci) %&gt;%
   mutate(date = min(cpce$date) + dayn)
 
-save(sand.summ, gamms.reef.dir.fits, file = &quot;data/sedcov.gamms.RData&quot;)</code></pre>
+save(sand.summ, gamms.reef.dir.fits, file = &quot;data/processed/sedcov.gamms.RData&quot;)</code></pre>
 </div>
 <div id="plot-fitted-models" class="section level3">
 <h3>Plot fitted models</h3>
@@ -290,6 +290,26 @@ ba2 %&gt;%
 ## 4 R2    S     channelside R2S1  2016       0.340   0.0284 
 ## 5 R2    S     control     R2SC1 2013       0.218   0.0119 
 ## 6 R2    S     control     R2SC1 2016       0.215   0.0822</code></pre>
+<pre class="r"><code># Percent increase at R2N1
+ba2 %&gt;%
+  filter(site == &quot;R2N1&quot;) %&gt;%
+  summarise(fc = meanpropsand[year == 2016] / meanpropsand[year == 2013] - 1) %&gt;%
+  select(fc)</code></pre>
+<pre><code>## # A tibble: 1 x 4
+## # Groups:   reef, dir, channel [1]
+##   reef  dir   channel        fc
+##   &lt;fct&gt; &lt;fct&gt; &lt;fct&gt;       &lt;dbl&gt;
+## 1 R2    N     channelside  14.4</code></pre>
+<pre class="r"><code># Percent increase at R2S1
+ba2 %&gt;%
+  filter(site == &quot;R2S1&quot;) %&gt;%
+  summarise(fc = meanpropsand[year == 2016] / meanpropsand[year == 2013] - 1) %&gt;%
+  select(fc)</code></pre>
+<pre><code>## # A tibble: 1 x 4
+## # Groups:   reef, dir, channel [1]
+##   reef  dir   channel        fc
+##   &lt;fct&gt; &lt;fct&gt; &lt;fct&gt;       &lt;dbl&gt;
+## 1 R2    S     channelside  156.</code></pre>
 </div>
 
 

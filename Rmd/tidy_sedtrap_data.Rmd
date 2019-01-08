@@ -16,7 +16,7 @@ library(lubridate)
 
 # Load sediment trap dates data
 ```{r}
-dates <- readxl::read_xlsx("data/sediment_trap_data/sed_trap_dates.xlsx",
+dates <- readxl::read_xlsx("data/sediment_traps/sed_trap_dates.xlsx",
                            col_names = FALSE)
 
 dates <- dates %>%
@@ -32,8 +32,6 @@ dates <- dates %>%
          end = as.Date(end),
          duration = as.numeric(end - start)) %>%
   separate(site, into = c("site", "site2"))
-
-#write.csv(dates, file = "data/sediment_trap_data/sedtrap_dates_clean.csv")
 ```
 
 
@@ -41,7 +39,7 @@ dates <- dates %>%
 ```{r}
 # Import Baseline sediment tables and charts- reef 3 31114.xlsx - baseline
 df1 <- readxl::read_xlsx(
-  path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx",
+  path = "data/sediment_traps/Baseline sediment tables and charts- reef 3 31114.xlsx",
   sheet = "baseline",
   skip = 5, guess_max = 10, n_max = 38) # excludes one row where PVC was found in bottle...
 
@@ -54,7 +52,7 @@ df1 <- df1 %>%
 #####
 # Import Baseline sediment tables and charts- reef 3 31114.xlsx - 02-06-14
 df2 <- readxl::read_xlsx(
-  path = "data/sediment_trap_data/Baseline sediment tables and charts- reef 3 31114.xlsx",
+  path = "data/sediment_traps/Baseline sediment tables and charts- reef 3 31114.xlsx",
   sheet = "02-06-14",
   skip = 5, guess_max = 10, n_max = 38)
 
@@ -94,10 +92,10 @@ two_passes <- function(path, sheet = NULL) {
   second_pass
 }
 
-sheets <- readxl::excel_sheets("data/sediment_trap_data/Offshore Compliance Sediment Trap Data Final.xlsx")
+sheets <- readxl::excel_sheets("data/sediment_traps/Offshore Compliance Sediment Trap Data Final.xlsx")
 sheets <- setNames(sheets, sheets)
 trap <- lapply(sheets, two_passes, 
-               path = "data/sediment_trap_data/Offshore Compliance Sediment Trap Data Final.xlsx")
+               path = "data/sediment_traps/Offshore Compliance Sediment Trap Data Final.xlsx")
 
 trap <- bind_rows(trap)
 
@@ -143,7 +141,7 @@ sedtrap <- sedtrap %>%
 sedtrap <- drop_na(sedtrap)
 
 # Save as .RData
-save(sedtrap, file = "data/sedtrap.RData")
+save(sedtrap, file = "data/processed/sedtrap.RData")
 ```
 
 ## Dataset metrics

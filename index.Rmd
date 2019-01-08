@@ -9,6 +9,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 -----
 
+This site walks through the project's data analysis with code and output in rendered Rmarkdown documents. For access to all raw data and code, visit the Github repository at [github.com/jrcunning/pom-dredge](http://github.com/jrcunning/pom-dredge).
+
 ## Data import and tidying
 
 In these Rmarkdown documents, raw data is imported and tidied into usable formats for downstream analysis.
@@ -47,7 +49,7 @@ These documents serve as records of data analysis including initial data explora
 
 ##### [Predicted impacts from plume data](Rmd/plume_predictions.Rmd)
 
-This document contains the final, formatted versions of figures used in the manuscript (main text and supplementary).
+This document contains the final, formatted versions of all figures used in the manuscript (main text and supplementary).
 
 ##### [Final manuscript figures](Rmd/Figures.html)
 

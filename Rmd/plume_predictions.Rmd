@@ -92,7 +92,7 @@ line2user <- function(line, side) {
 # Import datasets from 12 areas
 ```{r}
 # Plume presence
-load("data/plume.RData")
+load("data/processed/plume.RData")
 fitplume <- gamm.fits %>%
   group_by(reef, dir, channel) %>%
   summarise(mean.plumefit = mean(fit))
@@ -103,7 +103,7 @@ plume <- plume.summ %>%
   full_join(fitplume)
 
 # Sediment deposition
-load("data/sed_deposited.RData")
+load("data/processed/sed_deposited.RData")
 depo <- fine.depo
 depo <- depo %>%
   rename(int_finedepo = int_fit) %>%
@@ -111,7 +111,7 @@ depo <- depo %>%
   mutate(int_finedepo = int_finedepo / 100)
 
 # Sediment cover
-load("data/sedcov.gamms.RData")
+load("data/processed/sedcov.gamms.RData")
 # FILTER TO INCLUDE DATES FOR WHICH FITTED VALUES EXIST FOR ALL SITES (ONLY FULLY COMPARABLE TIME INTERVALS)....
 dates1 <- gamms.reef.dir.fits %>%
   filter(date > dredge.start.date, date < dredge.end.date) %>%
@@ -125,7 +125,7 @@ sandcov <- gamms.reef.dir.fits %>%
   select(reef, dir, channel, mean_sandcov)
 
 # Sediment stress / coral burial
-load("data/sedstress_gamms.RData")
+load("data/processed/sedstress_gamms.RData")
 # FILTER TO INCLUDE DATES FOR WHICH FITTED VALUES EXIST FOR ALL SITES (ONLY FULLY COMPARABLE TIME INTERVALS)....
 dates2 <- gamms2.fitted %>%
   filter(date > dredge.start.date, date < dredge.end.date) %>%
@@ -139,7 +139,7 @@ stress <- gamms2.fitted %>%
   select(reef, dir, channel, mean_sedstress)
 
 # Partial mortality
-load("data/pm.lsm.RData")
+load("data/processed/pm.lsm.RData")
 pmort <- as_tibble(summary(pm.lsm1)) %>%
   rename(pmort = prob) %>%
   select(reef, dir, channel, pmort)
@@ -167,7 +167,7 @@ mod.pmort <- lm(pmort ~ plumeprob, data = df)
 
 # Get plume data from new areas
 ```{r}
-plume <- readxl::read_excel(path = "data/plume_presence_absence_transects.xlsx", sheet = "plume presence-absence") %>%
+plume <- readxl::read_excel(path = "data/plume/plume_presence_absence_transects.xlsx", sheet = "plume presence-absence") %>%
   gather(site, plume, -date) %>%
   mutate(site = as_factor(site),
          date = as_date(date),

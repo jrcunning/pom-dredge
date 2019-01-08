@@ -37,7 +37,7 @@ dredge.end.date <- as.Date("2015-03-16")                    # DCA report August 
 # Load data
 ```{r}
 # Load CPCe data (see tidy_cpce_data.Rmd)
-load("data/cpce.RData")
+load("data/processed/cpce.RData")
 # Rename dataset to 'cpce'
 cpce <- cpce_sub
 ```
@@ -176,7 +176,7 @@ gamms.reef.dir.fits <- gamms.reef.dir %>%
   unnest(newdata, fit, lci, uci) %>%
   mutate(date = min(cpce$date) + dayn)
 
-save(sand.summ, gamms.reef.dir.fits, file = "data/sedcov.gamms.RData")
+save(sand.summ, gamms.reef.dir.fits, file = "data/processed/sedcov.gamms.RData")
 
 ```
 

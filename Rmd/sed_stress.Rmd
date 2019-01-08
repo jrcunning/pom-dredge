@@ -39,7 +39,7 @@ We will analyze the complete tagged coral dataset.
 
 ```{r}
 # Import tidy tagged coral data
-load("data/tagged.RData") 
+load("data/processed/tagged.RData") 
 tagged_bool <- tagged_bool %>%
   filter(!site %in% c("HBN1", "HBN2")) %>%                    # Omit HBN1 and HBN2
   mutate(day = (date - min(date)) / ddays(1))
@@ -197,7 +197,7 @@ gamms2.fitted <- gamms2 %>%
   unnest(newdata, fit, lci, uci) %>%
   mutate(date = zoo::as.Date.numeric(date))
 
-save(sedstress.summ2, gamms2.fitted, file = "data/sedstress_gamms.RData")
+save(sedstress.summ2, gamms2.fitted, file = "data/processed/sedstress_gamms.RData")
 ```
 
 ```{r}
@@ -227,7 +227,7 @@ Analysis of PBUR or BUR only shows much lower prevalence of these condition code
 
 # Reported results
 ```{r}
-load("data/sedstress_gamms.RData")
+load("data/processed/sedstress_gamms.RData")
 
 # Number of corals PBUR or BUR before dredging began
 sedstress.summ2 %>% ungroup() %>%

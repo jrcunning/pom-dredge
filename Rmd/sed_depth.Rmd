@@ -21,7 +21,7 @@ library(janitor)
 
 # Load tidy sediment depth data
 ```{r}
-load(file = "data/substrate.RData")
+load(file = "data/processed/sediment_depth.RData")
 ```
 
 # Visualize all sediment depth measurements by reef area
@@ -85,7 +85,7 @@ resdf$fit <- predict(mod, resdf)
 ## Convert depth quantile to "percent of reef covered"
 resdf$pct_reef_covered <- factor(100 - as.numeric(str_sub(resdf$quantile, 1, 2)))
 
-save(LR, resdf, file = "data/sdepthmod.RData")
+save(LR, resdf, file = "data/processed/sdepthmod.RData")
 
 # Plot all sed depth measurements with fitted quantiles
 ggplot(data = LR, mapping = aes(x = dist, y = sdepth_cm)) +

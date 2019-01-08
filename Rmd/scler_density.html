@@ -11,7 +11,7 @@
 
 <meta name="author" content="Ross Cunning" />
 
-<meta name="date" content="2018-11-14" />
+<meta name="date" content="2019-01-07" />
 
 <title>Coral count data analysis</title>
 
@@ -124,7 +124,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Coral count data analysis</h1>
 <h4 class="author"><em>Ross Cunning</em></h4>
-<h4 class="date"><em>2018-11-14</em></h4>
+<h4 class="date"><em>2019-01-07</em></h4>
 
 </div>
 
@@ -132,7 +132,7 @@ $(document).ready(function () {
 <div id="import-coral-count-data" class="section level1">
 <h1>Import coral count data</h1>
 <pre class="r"><code># Import tidy count data
-load(&quot;data/all_counts.RData&quot;)
+load(&quot;data/processed/all_counts.RData&quot;)
 
 # Subset Scleractinian count data
 scler &lt;- filter(all_counts, category == &quot;scleractinian&quot;) %&gt;%      # Get scleractinians only
@@ -296,7 +296,7 @@ anno_2 &lt;- full_join(lsm2, sig) %&gt;%
 anno &lt;- bind_rows(anno, anno_2)
 
 # Save as RData
-save(newdata_1, lsm, anno, file = &quot;data/large.dens.mod.RData&quot;)
+save(newdata_1, lsm, anno, file = &quot;data/processed/large.dens.mod.RData&quot;)
 
 # PLOT ALL RESULTS FOR LARGE CORALS
 ggplot(data = newdata_1, aes(x = dist, y = fit, color = timepoint)) +
@@ -431,7 +431,7 @@ anno &lt;- anno %&gt;%
          `2016/2017 cross-site surveys` = ifelse(reef == &quot;HB&quot;, NA, `2016/2017 cross-site surveys`),
          sig2 = ifelse((reef == &quot;HB&quot; | (reef == &quot;R3&quot; &amp; dir == &quot;S&quot;)), &quot;&quot;, sig2))
 
-save(newdata_2, anno, file = &quot;data/small.dens.mod.RData&quot;)
+save(newdata_2, anno, file = &quot;data/processed/small.dens.mod.RData&quot;)
 
 # Plot fitted results
 ggplot(data = newdata_2, aes(x = dist, y = fit, color = timepoint)) +
@@ -492,7 +492,7 @@ kwtest &lt;- df %&gt;%
 
 kwtest &lt;- kwtest %&gt;% mutate(x = 15, y = 0.1)
 
-save(&quot;df&quot;, &quot;kwtest&quot;, file = &quot;data/sizefreq.RData&quot;)
+save(&quot;df&quot;, &quot;kwtest&quot;, file = &quot;data/processed/sizefreq.RData&quot;)
 
 # Plot size frequency distributions and annotate with KW test p values
 ggplot(df, aes(x = diameter, fill = year &lt;= 2010)) + 
@@ -530,12 +530,12 @@ ggplot(df, aes(x = diameter, fill = year &lt;= 2010)) +
 <div id="estimate-number-of-corals-lost-based-on-reef-area-data" class="section level1">
 <h1>Estimate number of corals lost based on reef area data</h1>
 <pre class="r"><code># Import reef area data (from Maria's GIS analysis)
-HBN &lt;- readxl::read_xlsx(path = &quot;data/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Inner North&quot;)
-HBS &lt;- readxl::read_xlsx(path = &quot;data/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Inner South&quot;)
-R2N &lt;- readxl::read_xlsx(path = &quot;data/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Middle North&quot;)
-R2S &lt;- readxl::read_xlsx(path = &quot;data/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Middle South&quot;)
-R3N &lt;- readxl::read_xlsx(path = &quot;data/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Outer North&quot;)
-R3S &lt;- readxl::read_xlsx(path = &quot;data/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Outer South&quot;)
+HBN &lt;- readxl::read_xlsx(path = &quot;data/reef_area/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Inner North&quot;)
+HBS &lt;- readxl::read_xlsx(path = &quot;data/reef_area/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Inner South&quot;)
+R2N &lt;- readxl::read_xlsx(path = &quot;data/reef_area/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Middle North&quot;)
+R2S &lt;- readxl::read_xlsx(path = &quot;data/reef_area/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Middle South&quot;)
+R3N &lt;- readxl::read_xlsx(path = &quot;data/reef_area/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Outer North&quot;)
+R3S &lt;- readxl::read_xlsx(path = &quot;data/reef_area/Distance from Channel by Reef Location.xlsx&quot;, sheet = &quot;Outer South&quot;)
 
 # Tidy reef area data
 reef_areas &lt;- bind_rows(HBN = HBN, HBS = HBS, R2N = R2N, R2S = R2S, R3N = R3N, R3S = R3S, .id = &quot;reefdir&quot;) %&gt;%
@@ -549,7 +549,7 @@ reef_areas &lt;- bind_rows(HBN = HBN, HBS = HBS, R2N = R2N, R2S = R2S, R3N = R3N
   select(reef, dir, dist, area)
   
 # Load change in large coral density data
-load(&quot;data/large.dens.mod.RData&quot;)    # newdata_1 object contains fitted values for density before and after dredging
+load(&quot;data/processed/large.dens.mod.RData&quot;)    # newdata_1 object contains fitted values for density before and after dredging
 
 total_loss_large &lt;- newdata_1 %&gt;%
   select(reef, dir, timepoint, dist, fit) %&gt;%
@@ -571,7 +571,7 @@ total_loss_large</code></pre>
 ## 2 R2    S        -16912.    192
 ## 3 R3    N        -58636.    500</code></pre>
 <pre class="r"><code># Load change in small coral density data
-load(&quot;data/small.dens.mod.RData&quot;)    # newdata_1 object contains fitted values for density before and after dredging
+load(&quot;data/processed/small.dens.mod.RData&quot;)    # newdata_2 object contains fitted values for density before and after dredging
 
 total_loss_small &lt;- newdata_2 %&gt;%
   select(reef, dir, timepoint, dist, fit) %&gt;%

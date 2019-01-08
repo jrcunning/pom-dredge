@@ -29,7 +29,7 @@ library(janitor)
 
 # Import and tidy baseline density data from 2010 (10m transects) on reef 2 and reef 3 (see report dated 2012)
 dens2010 <- readxl::read_xlsx(
-  path = "data/Density_Data/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
+  path = "data/coral_counts/Miami Quantitative Study Raw Data forAppendix.xlsx") %>% 
   clean_names() %>%
   rename(site = area_e_g_r2n, transect = transect_e_g_r2n_10, diameter = diameter_cm) %>%
   select(site, transect, category, subcategory, diameter) %>%
@@ -57,7 +57,7 @@ unique(dens2010$site)
 
 #Hardbottom
 dens2013hb <- readxl::read_xlsx(
-  path = "data/Density_Data/Copy of Hardbottom_Baseline_POM_022514_LATEST.xlsx",
+  path = "data/coral_counts/Copy of Hardbottom_Baseline_POM_022514_LATEST.xlsx",
   sheet = "Raw Data") %>%
   clean_names() %>%
   rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
@@ -68,7 +68,7 @@ dens2013hb <- readxl::read_xlsx(
 
 # Reef 2
 dens2013r2 <- readxl::read_xlsx(
-  path  = "data/Density_Data/Reef2_Baseline_POM_2013_050714.xlsx", 
+  path  = "data/coral_counts/Reef2_Baseline_POM_2013_050714.xlsx", 
   sheet = "Raw Data", guess_max = 4000) %>%
   clean_names() %>%
   rename(site = site_e_g_r2n1_rr, transect = transect_e_g_r2n1_rr_1, 
@@ -80,7 +80,7 @@ dens2013r2 <- readxl::read_xlsx(
 
 # Reef 3
 dens2013r3 <- readxl::read_xlsx(
-  path  = "data/Density_Data/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx", sheet = "Raw Data") %>%
+  path  = "data/coral_counts/Reef3_Baseline_POM_050714 (REVISED DOCUMENT).xlsx", sheet = "Raw Data") %>%
   clean_names() %>%
   rename(site = site_e_g_hbnc1_cp, transect = transect_e_g_hbna_1, 
          diameter = max_diameter, count = total_count) %>%
@@ -100,7 +100,7 @@ dens2013 <- bind_rows(dens2013hb, dens2013r2, dens2013r3) %>%
 # 2015 data has multiple condition codes for the same coral recorded as separate lines.
 # need to aggregate these to a single line so one row = one coral
 dens2015 <- readxl::read_xlsx(
-  path = "data/raw/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx",
+  path = "data/coral_counts/NEW_Offshore_Post_Construction_Data_Entry_ALL_Weeks_GOOD 151015.xlsx",
   guess_max = 10000) %>%
   clean_names() %>%
   rename(category = category_scleractinian_etc,
@@ -126,7 +126,7 @@ dens2015 <- readxl::read_xlsx(
 
 ## Sponges and octocorals are in one spreadsheet
 dens2016octo <- readxl::read_xlsx(
-  path = "data/Density_Data/permanent_sites_impact_assessment_sponges_octocorals_2016_CSI_QAQC.xlsx",
+  path = "data/coral_counts/permanent_sites_impact_assessment_sponges_octocorals_2016_CSI_QAQC.xlsx",
   sheet = "Raw Data", skip = 1) %>%
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = subcategory_genus_or_type,
@@ -140,7 +140,7 @@ dens2016octo <- readxl::read_xlsx(
 # 2016 data has multiple condition codes for the same coral recorded as separate lines.
 # need to aggregate these to a single line so one row = one coral
 dens2016scler <- readxl::read_xlsx(
-  path = "data/Density_Data/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX",
+  path = "data/coral_counts/permanent_sites_impact_assessment_corals_2016_CSI_QAQC.XLSX",
   sheet = "Raw Data", skip = 1)  %>%
   clean_names() %>%
   rename(category = category_scleractinian_etc, subcategory = species,
@@ -161,7 +161,7 @@ dens2016 <- bind_rows(dens2016octo, dens2016scler) %>%
 # Import data from 2016 - cross sites
 ```{r}
 # find all file names ending in .xlsx 
-files <- list.files(path = "data/Density_Data/2016 cross-transect data/Entered Data/",
+files <- list.files(path = "data/coral_counts/2016 cross-transect data/Entered Data/",
                     pattern = "^[^~].*.xlsx", recursive = TRUE, full.names = TRUE)
 # remove files manually if multiple files for a given transect
 files <- files[-c(24,25,28,30,32,33,36)]
@@ -407,7 +407,7 @@ all_counts <- all_counts %>%
 
 # Save count data as .RData object
 ```{r}
-save(all_counts, file = "data/all_counts.RData")
+save(all_counts, file = "data/processed/all_counts.RData")
 ```
 
 # Dataset metrics
