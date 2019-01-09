@@ -38,6 +38,7 @@ dates <- dates %>%
 # Load baseline sediment trap data
 ```{r}
 # Import Baseline sediment tables and charts- reef 3 31114.xlsx - baseline
+#### Manually added spaces between site and transect IDs in baseline tab of this spreadsheet where needed
 df1 <- readxl::read_xlsx(
   path = "data/sediment_traps/Baseline sediment tables and charts- reef 3 31114.xlsx",
   sheet = "baseline",
@@ -47,7 +48,9 @@ df1 <- df1 %>%
   select(4, 3, 8, 18) %>%
   setNames(c("sample", "end", "total_dry", "frac_fine")) %>%
   mutate(end = as.Date(end)) %>%
-  separate(sample, into = c("site", "site2"))
+  separate(sample, into = c("site", "site2")) %>%
+  mutate(site = toupper(site),
+         site = recode(site, HBNC = "HBNC1"))
 
 #####
 # Import Baseline sediment tables and charts- reef 3 31114.xlsx - 02-06-14
@@ -60,7 +63,9 @@ df2 <- df2 %>%
   select(1, 3, 6, 20) %>%
   setNames(c("sample", "end", "total_dry", "frac_fine")) %>%
   mutate(end = as.Date(end)) %>%
-  separate(sample, into = c("site", "site2"))
+  separate(sample, into = c("site", "site2")) %>%
+  mutate(site = toupper(site),
+         site = recode(site, HBNC = "HBNC1"))
 ```
 
 # Load compliance sediment trap data

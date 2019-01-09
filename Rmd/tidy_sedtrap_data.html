@@ -147,6 +147,7 @@ dates &lt;- dates %&gt;%
 <div id="load-baseline-sediment-trap-data" class="section level1">
 <h1>Load baseline sediment trap data</h1>
 <pre class="r"><code># Import Baseline sediment tables and charts- reef 3 31114.xlsx - baseline
+#### Manually added spaces between site and transect IDs in baseline tab of this spreadsheet where needed
 df1 &lt;- readxl::read_xlsx(
   path = &quot;data/sediment_traps/Baseline sediment tables and charts- reef 3 31114.xlsx&quot;,
   sheet = &quot;baseline&quot;,
@@ -156,7 +157,9 @@ df1 &lt;- df1 %&gt;%
   select(4, 3, 8, 18) %&gt;%
   setNames(c(&quot;sample&quot;, &quot;end&quot;, &quot;total_dry&quot;, &quot;frac_fine&quot;)) %&gt;%
   mutate(end = as.Date(end)) %&gt;%
-  separate(sample, into = c(&quot;site&quot;, &quot;site2&quot;))
+  separate(sample, into = c(&quot;site&quot;, &quot;site2&quot;)) %&gt;%
+  mutate(site = toupper(site),
+         site = recode(site, HBNC = &quot;HBNC1&quot;))
 
 #####
 # Import Baseline sediment tables and charts- reef 3 31114.xlsx - 02-06-14
@@ -169,7 +172,9 @@ df2 &lt;- df2 %&gt;%
   select(1, 3, 6, 20) %&gt;%
   setNames(c(&quot;sample&quot;, &quot;end&quot;, &quot;total_dry&quot;, &quot;frac_fine&quot;)) %&gt;%
   mutate(end = as.Date(end)) %&gt;%
-  separate(sample, into = c(&quot;site&quot;, &quot;site2&quot;))</code></pre>
+  separate(sample, into = c(&quot;site&quot;, &quot;site2&quot;)) %&gt;%
+  mutate(site = toupper(site),
+         site = recode(site, HBNC = &quot;HBNC1&quot;))</code></pre>
 </div>
 <div id="load-compliance-sediment-trap-data" class="section level1">
 <h1>Load compliance sediment trap data</h1>
@@ -265,7 +270,7 @@ range(sedtrap$duration)</code></pre>
 <pre><code>## [1] 10 89</code></pre>
 <pre class="r"><code># Total number of sediment samples
 nrow(sedtrap)</code></pre>
-<pre><code>## [1] 1254</code></pre>
+<pre><code>## [1] 1287</code></pre>
 </div>
 </div>
 
