@@ -66,7 +66,7 @@ ggplot(cumpm, aes(x = date, y = prop, color = channel, group = site)) +
 ```
 
 # Filter dataset
-Omit site HBN1, because this site was not monitored during much of the constructioon period because it had been 'buried' by a natural sand wave (DCA). Many of the corals were recorded as BUR before observations of this site ended.
+Omit site HBN1, because this site was not monitored during much of the construction period because it had been 'buried' by a natural sand wave (DCA). Many of the corals were recorded as BUR before observations of this site ended.
 ```{r}
 tagged_bool <- tagged_bool %>%
   filter(site != "HBN1")                     # Remove site because corals all BUR => no opp for PM?
