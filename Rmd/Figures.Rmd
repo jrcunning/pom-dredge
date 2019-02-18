@@ -25,15 +25,6 @@ library(ggpubr)
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                # NOAA sediment report April 2016, page 44
 dredge.end.date <- as.Date("2015-03-16")                  # DCA report August 2015, page 3
-# Define dredge activity periods     # postcon report page 4
-#terrapin.start.date <- as.Date("2013-11-20")
-#terrapin.end.date <- as.Date("2013-12-27")
-#texas.spider.start.date <- as.Date("2013-12-17")
-#texas.spider.end.date
-#liberty.start.date <- as.Date("2014-05-14")
-#liberty.end.date <- as.Date("2014-07-03")
-#texas.spider.flare.start <- as.Date("2014-08-06")
-#channel.flare.end <- as.Date("2014-08-24")
 
 ## ggplot theme
 theme_custom <- function() {
@@ -109,8 +100,8 @@ Fig2 <- ggplot(gamm.fits, aes(x = date, y = fit, color = dist_cat)) +
   geom_line(lwd = 1) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
   labs(x = NULL, y = "Probability of dredge plume presence", color = "Distance from channel") +
-  geom_point(data = filter(plume, reef %in% c("HB", "R2", "R3"), dir %in% c("N", "S")),
-             aes(y = as.numeric(plume)), pch = "|") +
+  geom_jitter(data = filter(plume, reef %in% c("HB", "R2", "R3"), dir %in% c("N", "S")),
+             aes(y = as.numeric(plume)), pch = 20, height = 0.02, width = 0, alpha = 0.5) +
   scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
   scale_y_continuous(limits = c(0, 1), expand = expand_scale(add = 0.025)) +
   theme_custom() +
@@ -124,7 +115,7 @@ ggsave(filename = "figures/Fig2.png", device = "png", width = 190, height = 95, 
 Fig2
 ```
 
-**Figure 2. Presence of dredge plume as detected by satellite data.** Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Points ("|") indicate the presence (y=1) or absence (y=0) of the dredge plume on a given date (data not available for all dates). Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure 2. Presence of dredge plume as detected by satellite data.** Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Points (with jitter added) indicate the presence (1) or absence (0) of the dredge plume on a given date (data not available for all dates). Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
 \  
 
