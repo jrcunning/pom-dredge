@@ -465,13 +465,20 @@ total_loss <- bind_rows(small = total_loss_small, large = total_loss_large, .id 
 
 total_loss
 
+# Add info for total area within zone of loss
+total_loss <- reef_areas %>%
+  mutate(total_area = cumsum(area)) %>%      # calculate cumulative area at each distance
+  rename(out_to = dist) %>%                  # combine with total_loss df
+  right_join(total_loss) %>%
+  mutate(total_area = total_area / 1000000)  # convert m2 to km2
+
 total_loss_f <- total_loss %>%
   ungroup() %>%
-  mutate(reef = recode(reef, R2 = "Middle", R3 = "Outer"),
+  mutate(reef = recode(reef, R2 = "Inner", R3 = "Outer"),
          dir  = recode(dir, N = "Northern", S = "Southern"),
          sizeclass = recode(sizeclass, small = "1-2 cm", large = "≥ 3 cm"),
          total_loss = round(total_loss, 0)) %>%
-  select(reef, dir, sizeclass, total_loss, out_to) %>%
+  select(dir, reef, sizeclass, total_loss, out_to, total_area) %>%
   arrange(reef, dir)
 
 write_tsv(total_loss_f, path = "figures/Table1.txt")
