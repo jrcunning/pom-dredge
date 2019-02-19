@@ -176,29 +176,6 @@ plume <- readxl::read_excel(path = "data/plume/plume_presence_absence_transects.
          siteno  = as.numeric(str_sub(site, 3, 5))) %>%
   filter(date > dredge.start.date, date < dredge.end.date)
 
-# Fit GAMs for each station
-gamms1 <- plume %>%
-  # For each site (station)
-  nest(-reef, -siteno, -site) %>%
-  mutate(
-    # Fit a binomial GAMM for sediment stress over time at channelside vs. control, site as random
-    mod = map(data, ~ gam(plume ~ s(as.numeric(date)), family = "binomial", data = .)),
-    # Get newdata frame for predict() using the appropriate range of weeks
-    newdata = map(data, ~ expand.grid(date = as.numeric(min(.$date):max(.$date)))),
-    # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response"))
-  )
-
-
-gamm.fits <- gamms1 %>% 
-  unnest(newdata, fit) %>%
-  mutate(date = zoo::as.Date.numeric(date))
-
-fit.plumeprob <- gamm.fits %>%
-  group_by(reef, siteno, site) %>%
-  summarise(plumeprob = mean(fit))
-
-
 # Summarize plume presence
 plume.summ <- plume %>%
   group_by(site, reef, siteno) %>%
@@ -211,11 +188,6 @@ plume.summ <- plume.summ %>%
 
 # Convert site ID to meters from channel
 plume.summ <- plume.summ %>%
-  mutate(dist = case_when(reef == "IR" ~ (siteno - 70.3) * 0.250,
-                          reef == "MR" ~ (siteno - 71.664) * 0.250,
-                          reef == "OR" ~ (siteno - 73.16) * 0.250))
-
-fit.plumeprob <- fit.plumeprob %>%
   mutate(dist = case_when(reef == "IR" ~ (siteno - 70.3) * 0.250,
                           reef == "MR" ~ (siteno - 71.664) * 0.250,
                           reef == "OR" ~ (siteno - 73.16) * 0.250))
