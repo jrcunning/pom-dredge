@@ -11,6 +11,8 @@ knitr::opts_chunk$set(echo = TRUE)
 
 This site walks through the project's data analysis with code and output in rendered Rmarkdown documents. For access to all raw data and code, visit the Github repository at [github.com/jrcunning/pom-dredge](http://github.com/jrcunning/pom-dredge).
 
+We also provide access to all public reports compiled by Dial Cordy and Associates related to the Port of Miami dredging project. Reports can be downloaded here: [github.com/jrcunning/pom-dredge/DCA_reports](http://github.com/jrcunning/pom-dredge/DCA_reports).
+
 ## Data import and tidying
 
 In these Rmarkdown documents, raw data is imported and tidied into usable formats for downstream analysis.

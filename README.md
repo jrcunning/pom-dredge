@@ -70,3 +70,6 @@ This repository includes all data and analysis scripts to accompany the manuscri
 
 #### Figures:
 * **figures/:** Figures produced by [Rmd/Figures.Rmd](Rmd/Figures.Rmd)
+
+#### DCA_reports:
+* **DCA_reports/\*.pdf:** PDF reports from Dial Cordy and Associates referenced in this study
