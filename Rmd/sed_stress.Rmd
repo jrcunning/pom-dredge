@@ -116,8 +116,8 @@ gamms1 <- tagged_bool_f %>%
     Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.$gam), vcov(.$gam))),
     Xp = map2(mod, newdata, ~ predict(object = .x$gam, newdata = .y, type = "lpmatrix")),
     sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
-    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
-    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
+    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.05))),
+    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.95)))
   ) 
 
 gamms1.fitted <- gamms1 %>% 
