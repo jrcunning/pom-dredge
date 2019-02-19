@@ -186,7 +186,7 @@ gamms1 <- plume %>%
     # Get newdata frame for predict() using the appropriate range of weeks
     newdata = map(data, ~ expand.grid(date = as.numeric(min(.$date):max(.$date)))),
     # Get fitted values from GAMM using newdata frame
-    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response")),
+    fit = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "response"))
   )
 
 
@@ -287,17 +287,30 @@ plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
      axes = F, yaxt= 'n', bty = 'n', type = "l",
      xlab = "< South      Distance from channel (km)     North >", 
      ylab = "Dredge plume presence",
-     xlim = c(-15, 15))
+     xlim = c(-15, 15),
+     ylim = c(0, 0.7))
 axis(1, at = axTicks(1), labels = abs(axTicks(1)))
 ymin <- par("usr")[3]
 ymax <- par("usr")[4]
 yticks <- seq(round(ymin, 1), round(ymax, 1), by = 0.1)
 axis(2, at = yticks)
 axis(4, line = 0, at = yticks, labels = ascale(yticks, mod.finedepo, 0))
+tticks <- ascale(yticks, mod.finedepo, 0)
+relticks <- ecdf(seq(min(tticks), max(tticks), 0.01))(tticks[1] * c(2, 4, 9)) * max(yticks)
+axis(4, line = 0, at = relticks, labels = c("2x", "4x", "9x"), tcl = 0.6, padj = -3, 
+     lwd = 0, lwd.ticks = 1, lty = 1)    # Add relative ticks
 mtext(4, line = 1, text = "Predicted sediment deposition (kg/m2)")
 axis(4, line = 4, at = yticks, labels = ascale(yticks, mod.sandcov, 2))
+tticks <- ascale(yticks, mod.sandcov, 2)
+relticks <- ecdf(seq(min(tticks), max(tticks), 0.0001))(tticks[1] * c(2, 4)) * max(yticks)
+axis(4, line = 4, at = relticks, labels = c("2x", "4x"), tcl = 0.6, padj = -3,
+     lwd = 0, lwd.ticks = 1)    # Add relative ticks
 mtext(4, line = 5, text = "Predicted mean daily sediment cover")
 axis(4, line = 8, at = yticks, labels = ascale(yticks, mod.pmort, 2))
+tticks <- ascale(yticks, mod.pmort, 2)
+relticks <- ecdf(seq(min(tticks), max(tticks), 0.0001))(tticks[1] * c(2, 5, 10, 12)) * max(yticks)
+axis(4, line = 8, at = relticks, labels = c("2x", "5x", "10x", "12x"), tcl = 0.6, padj = -3,
+     lwd = 0, lwd.ticks = 1)    # Add relative ticks
 mtext(4, line = 9, text = "Predicted probability of coral partial mortality")
 lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
 lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
