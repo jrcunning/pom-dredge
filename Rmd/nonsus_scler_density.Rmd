@@ -198,9 +198,9 @@ newdata_1$fit <- predict(mod_1, newdata_1, type = "response", re.form = NA)
 # Get confidence intervals by simulation
 set.seed(9870)
 bootfit_1 <- bootMer(mod_1, FUN = function(x) predict(x, newdata_1, type = "response", re.form = NA), 
-                     nsim = 200, parallel = "multicore", ncpus = 8)
-newdata_1$lci <- apply(bootfit_1$t, 2, quantile, 0.08)
-newdata_1$uci <- apply(bootfit_1$t, 2, quantile, 0.92)
+                     nsim = 400, parallel = "multicore", ncpus = 8)
+newdata_1$lci <- apply(bootfit_1$t, 2, quantile, 0.05)
+newdata_1$uci <- apply(bootfit_1$t, 2, quantile, 0.95)
 
 # Get fitted value of coral density adjacent to channel (i.e., dist = 20 m)
 lsm20 <- lsmeans(mod_1, specs = c("reef", "dir", "timepoint"),
@@ -342,9 +342,9 @@ newdata_2$fit <- predict(mod_3, newdata_2, type = "response", re.form = NA)
 # Get confidence intervals by simulation
 set.seed(9014)
 bootfit_2 <- bootMer(mod_3, FUN = function(x) predict(x, newdata_2, type = "response", re.form = NA), 
-                     nsim = 200, parallel = "multicore", ncpus = 8)
-newdata_2$lci <- apply(bootfit_2$t, 2, quantile, 0.08)
-newdata_2$uci <- apply(bootfit_2$t, 2, quantile, 0.92)
+                     nsim = 400, parallel = "multicore", ncpus = 8)
+newdata_2$lci <- apply(bootfit_2$t, 2, quantile, 0.05)
+newdata_2$uci <- apply(bootfit_2$t, 2, quantile, 0.95) 
 ```
 
 ### Plot fits and test for change in density near channel
