@@ -204,7 +204,7 @@ ggplot(fine.depo, aes(x = dist_cat, y = int_fit/100, fill = dist_cat)) +
   scale_fill_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
   theme_custom() +
   theme(legend.position = 0, axis.text.x = element_text(angle = 0, hjust = 0.5, vjust = 1)) +
-  geom_text(data = dd, aes(label = "n.d."), vjust = "bottom")
+  geom_text(data = dd, aes(label = "n/a"), vjust = "bottom")
 
 
 
@@ -371,7 +371,7 @@ ggplot(pm.lsm1, aes(x = dist_cat, y = prob, fill = dist_cat)) +
   theme(legend.position = "none",
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
   labs(x = "Distance from channel", y = "Probability of partial mortality due to sediment") +
-  geom_text(data = dd, aes(label = "n.d."), vjust = "bottom")
+  geom_text(data = dd, aes(label = "n/a"), vjust = "bottom")
 
 ggsave(filename = "figures/Fig7.png", device = "png", width = 190, height = 95, units = "mm")
 
@@ -486,7 +486,7 @@ ggplot(dead.lsm4, aes(x = dist_cat, y = prob, fill = dist_cat)) +
   theme(legend.position = "none",
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
   labs(x = "Distance from channel", y = "Probability of total mortality (non-disease)") +
-  geom_text(data = dd, aes(label = "n.d."), vjust = "bottom")
+  geom_text(data = dd, aes(label = "n/a"), vjust = "bottom")
 
 ggsave(filename = "figures/FigS4.png", device = "png", width = 190, height = 95, units = "mm")
 ```
@@ -780,7 +780,8 @@ knitr::include_graphics("../figures/FigS6.png")
 \  
 
 ```{r FIG12, fig.height = 3.74016, fig.width = 7.4801}
-load("data/processed/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; rm(anno, newdata_2)
+load("data/processed/small.dens.mod.RData"); small.dens <- newdata_2; small.anno <- anno; small.lsm <- lsm 
+rm(anno, newdata_2, lsm)
 
 # Plot results
 ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
@@ -794,6 +795,8 @@ ggplot(data = small.dens, aes(x = dist, y = fit, color = timepoint)) +
             aes(x = dist + 10, y = `2016/2017 cross-site surveys` + 0.2, 
                 label = paste0(rel2, sig2))) +
   labs(x = "Distance from channel (m)", y = "Number of small corals (1-2 cm) per m2", color = "") +
+  geom_point(data = small.lsm, aes(x = dist, y = rate), alpha = 0.5) +
+  geom_errorbar(data = small.lsm, aes(x = dist, y = rate, ymin = asymp.LCL, ymax = asymp.UCL)) +
   coord_cartesian(ylim = c(0, 1.8), xlim = c(0, 500)) +
   theme_custom() +
   theme(legend.position = c(0.1, 0.9),
