@@ -102,13 +102,21 @@ plume <- plume.summ %>%
   select(reef, dir, channel, plumeprob) %>%
   full_join(fitplume)
 
-# Sediment deposition
+# Fine sediment deposition
 load("data/processed/sed_deposited.RData")
 depo <- fine.depo
 depo <- depo %>%
   rename(int_finedepo = int_fit) %>%
   select(reef, dir, channel, int_finedepo) %>%
   mutate(int_finedepo = int_finedepo / 100)
+
+# Total sediment deposition
+#load("data/processed/totalsed_deposited.RData")
+#depo <- totalsed.depo
+#depo <- depo %>%
+#  rename(int_finedepo = int_fit) %>%
+#  select(reef, dir, channel, int_finedepo) %>%
+#  mutate(int_finedepo = int_finedepo / 100)
 
 # Sediment cover
 load("data/processed/sedcov.gamms.RData")
@@ -194,7 +202,7 @@ plume.summ <- plume.summ %>%
 ```
 
 # Predict partial mortality based on plume in new areas
-```{r}
+```{r, include = FALSE}
 resdf <- plume.summ %>%
   mutate(finedepo = predict(object = mod.finedepo, newdata = plume.summ),
          sandcov =  predict(object = mod.sandcov, newdata = plume.summ),
@@ -253,7 +261,7 @@ ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumep
 
 png(filename = "figures/Fig9.png", width = 190, height = 95, units = "mm", res = 300)
 
-par(mar = c(2.5, 2.6, 1, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
+par(mar = c(2.5, 2.6, 2, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
 
 plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
      axes = F, yaxt= 'n', bty = 'n', type = "l",
@@ -271,23 +279,24 @@ tticks <- ascale(yticks, mod.finedepo, 0)
 relticks <- ecdf(seq(min(tticks), max(tticks), 0.01))(tticks[1] * c(2, 4, 9)) * max(yticks)
 axis(4, line = 0, at = relticks, labels = c("2x", "4x", "9x"), tcl = 0.6, padj = -3, 
      lwd = 0, lwd.ticks = 1, lty = 1)    # Add relative ticks
-mtext(4, line = 1, text = "Predicted sediment deposition (kg/m2)")
+mtext(4, line = 1, text = "Fine sediment input (kg/m2)")
 axis(4, line = 4, at = yticks, labels = ascale(yticks, mod.sandcov, 2))
 tticks <- ascale(yticks, mod.sandcov, 2)
 relticks <- ecdf(seq(min(tticks), max(tticks), 0.0001))(tticks[1] * c(2, 4)) * max(yticks)
 axis(4, line = 4, at = relticks, labels = c("2x", "4x"), tcl = 0.6, padj = -3,
      lwd = 0, lwd.ticks = 1)    # Add relative ticks
-mtext(4, line = 5, text = "Predicted mean daily sediment cover")
+mtext(4, line = 5, text = "Mean daily sediment cover")
 axis(4, line = 8, at = yticks, labels = ascale(yticks, mod.pmort, 2))
 tticks <- ascale(yticks, mod.pmort, 2)
 relticks <- ecdf(seq(min(tticks), max(tticks), 0.0001))(tticks[1] * c(2, 5, 10, 12)) * max(yticks)
 axis(4, line = 8, at = relticks, labels = c("2x", "5x", "10x", "12x"), tcl = 0.6, padj = -3,
      lwd = 0, lwd.ticks = 1)    # Add relative ticks
-mtext(4, line = 9, text = "Predicted probability of coral partial mortality")
+mtext(4, line = 9, text = "Coral partial mortality")
 lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
 lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
-legend("topleft", legend = c("Nearshore Ridge (NR)", "Inner Reef (IR)", "Outer Reef (OR)"), 
-       lty = 1, col = c("black", "red", "blue"), bty = "n")
+legend(x = -16, y = 0.84, legend = c("Nearshore Ridge (NR)", "Inner Reef (IR)", "Outer Reef (OR)"), 
+       lty = 1, col = c("black", "red", "blue"), bty = "n", xpd = NA)
+text(x = 22, y = 0.78, labels = "Predicted impacts", xpd = NA)
 abline(v = 0, lty = 2)
 # abline(v = 1, lty = 3)
 # abline(v = 2, lty = 3)
@@ -296,6 +305,43 @@ abline(v = 0, lty = 2)
 dev.off()
 
 knitr::include_graphics("../figures/Fig9.png")
+```
+
+# Alternative version of figure with axes starting at zero
+```{r, eval = F}
+ascale2 <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)) - coef(model)[1], d)
+
+png(filename = "figures/Fig9alt.png", width = 190, height = 95, units = "mm", res = 300)
+
+par(mar = c(2.5, 2.6, 2, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
+
+plot(plumeprob ~ dist, data = subset(resdf, reef == "IR"),
+     axes = F, yaxt= 'n', bty = 'n', type = "l",
+     xlab = "< South      Distance from channel (km)     North >", 
+     ylab = "Dredge plume presence",
+     xlim = c(-15, 15),
+     ylim = c(0, 0.7))
+axis(1, at = axTicks(1), labels = abs(axTicks(1)))
+ymin <- par("usr")[3]
+ymax <- par("usr")[4]
+yticks <- seq(round(ymin, 1), round(ymax, 1), by = 0.1)
+axis(2, at = yticks)
+axis(4, line = 0, at = yticks, labels = ascale2(yticks, mod.finedepo, 0))
+mtext(4, line = 1, text = "Fine sediment trap accumulation (kg/m2)")
+axis(4, line = 4, at = yticks, labels = ascale2(yticks, mod.sandcov, 2))
+mtext(4, line = 5, text = "Mean daily sediment cover")
+axis(4, line = 8, at = yticks, labels = ascale2(yticks, mod.pmort, 2))
+mtext(4, line = 9, text = "Coral partial mortality")
+lines(plumeprob ~ dist, data = subset(resdf, reef == "MR"), col = "red")
+lines(plumeprob ~ dist, data = subset(resdf, reef == "OR"), col = "blue")
+legend(x = -16, y = 0.84, legend = c("Nearshore Ridge (NR)", "Inner Reef (IR)", "Outer Reef (OR)"), 
+       lty = 1, col = c("black", "red", "blue"), bty = "n", xpd = NA)
+text(x = 18.5, y = 0.78, labels = "Predicted impacts attributable to dredging", xpd = NA)
+abline(v = 0, lty = 2)
+
+dev.off()
+
+knitr::include_graphics("../figures/Fig9alt.png")
 ```
 
 # Reported metrics
