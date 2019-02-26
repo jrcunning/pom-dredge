@@ -119,7 +119,7 @@ Fig2
 
 \  
 
-### *Fine sediment deposition*
+### *Fine sediment accumulation in sediment traps*
 
 \  
 
@@ -163,7 +163,7 @@ Fig3 <- ggplot(fine.gamms.reef.dir.fits, aes(x = middate, y = fit, color = dist_
   geom_line(lwd = 0.5) +
   geom_vline(xintercept = c(dredge.start.date, dredge.end.date), linetype = 3, lwd = 0.25) +
   geom_hline(yintercept = 25, color = "black", lwd = 0.125, linetype = 2) +
-  labs(x = NULL, y = "Fine sedimentation rate (mg/cm2/d)",
+  labs(x = NULL, y = "Fine sediment trap accumulation rate (mg/cm2/d)",
        color = "Distance from channel") +
   scale_color_manual(values = c("#fc8d62", "#8da0cb", "#66c2a5")) +
   theme_custom() +
@@ -177,11 +177,11 @@ ggsave(filename = "figures/Fig3.png", device = "png", width = 190, height = 95, 
 Fig3
 ```
 
-**Figure 3. Deposition of fine sediments in each monitoring area during dredging operations.** Horizontal line segments indicate measured rates of fine sediment deposition by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations. The horizontal dashed line indicates a threshold of 25 mg cm^-2^ d^-1^; sediment deposition rates exceeding this threshold over any 30 day window may cause corals severe stress leading to mortality (Nelson et al. 2016). 
+**Figure 3. Accumulation rates of fine sediments in sediment traps during dredging operations.** Horizontal line segments indicate measured rates of sediment trap accumulation by each trap over each deployment period. Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations. The horizontal dashed line indicates a threshold of 25 mg cm^-2^ d^-1^; sediment deposition rates exceeding this threshold over any 30 day window may cause corals severe stress leading to mortality (Nelson et al. 2016). 
 
 \  
 
-### *Total fine sediment deposition*
+### *Total fine sediment trap accumulation*
 
 \  
 
@@ -211,7 +211,7 @@ ggplot(fine.depo, aes(x = dist_cat, y = int_fit/100, fill = dist_cat)) +
 ggsave(filename = "figures/Fig4.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-**Figure 4. Total amount of fine sediments deposited in each monitoring area during dredging operations.** Bars indicate the sum of fitted daily fine sediment deposition rates between 2013-11-20 and 2015-03-16 (see Fig. S1) for each monitoring area (± 95% CI). Bars are colored corresponding to distance from channel, and empty spaces indicate areas that were not monitored.
+**Figure 4. Total amount of fine sediments accumulated in traps in each monitoring area during dredging operations.** Bars indicate the sum of fitted daily fine sediment accumulation rates between 2013-11-20 and 2015-03-16 (see Fig. S1) for each monitoring area (± 95% CI). Bars are colored corresponding to distance from channel, and empty spaces indicate areas that were not monitored.
 
 \  
 
@@ -270,7 +270,7 @@ ggplot(data = droplevels(sedtrapmod), mapping = aes(x = date, y = fit, color = d
   facet_grid(dir ~ reef + dist_cat, scales = "free", drop = TRUE, labeller = global_labeller) +
   geom_line(data = sedtrapmod) +
   geom_line(data = sedcovmod, aes(y = fit * 400), linetype = 2) +
-  scale_y_continuous("Fine sedimentation rate (mg/cm2/day)",
+  scale_y_continuous("Fine sediment accumulation rate (mg/cm2/day)",
                      sec.axis = sec_axis(~ (.) / 400, name = "Percent sediment cover", labels = scales::percent)) +
   geom_text(data = corrs, aes(label = paste0("cor =", round(cor, 2)), hjust = "left"), size = 2) +
   geom_text(data = corrs, aes(y = fit - 50, label = paste0("lag =", lag), hjust = "left"), size = 2) +
@@ -286,7 +286,7 @@ ggsave(filename = "figures/FigS2.png", device = "png", width = 190, height = 95,
 #median(corrs$lag)
 ```
 
-**Figure S2. Correlation between fine sediment deposition rates and benthic sediment cover during dredging operations at each monitoring area.** The left y-axis and solid lines correspond to the fine sediment deposition rate (see Fig. S1), while the right y-axis and dotted lines correspond to percent sediment cover (see Fig. 2), with separate panels for each monitoring area. The coefficient of correlation between the two time series is displayed in each panel, along with the lag time (of cover following deposition) for which the highest correlation is observed (up to 120 days). Colors correspond to distance from channel. Blank panels are combinations of reef, direction, and distance for which monitoring data do not exist. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure S2. Correlation between fine sediment accumulation rates and benthic sediment cover during dredging operations at each monitoring area.** The left y-axis and solid lines correspond to the fine sediment accumulation rate (see Fig. 3), while the right y-axis and dotted lines correspond to percent sediment cover (see Fig. 5), with separate panels for each monitoring area. The coefficient of correlation between the two time series is displayed in each panel, along with the lag time for which the highest correlation is observed (up to 120 days). Colors correspond to distance from channel. Blank panels are combinations of reef, direction, and distance for which monitoring data do not exist. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
 *Figure S2 presents the same data from Figures 3 and 5, analyzed and visualized together to show their correlation.*
 
@@ -595,7 +595,7 @@ gatherpairs <- function(data, ...,
 keynames <- c(plumeprob = "Dredge plume",
               mean_sedstress = "Coral burial",
               mean_sandcov = "Benthic sed.",
-              int_finedepo = "Sed. deposition",
+              int_finedepo = "Sed. accumulation",
               pmort = "Coral mort.")
 key_labeller <- labeller(
   .xkey = keynames, .ykey = keynames, dist_cat = distcatnames,
@@ -623,7 +623,7 @@ ggsave(filename = "figures/Fig8.png", device = "png", width = 190, height = 190,
 Fig8
 ```
 
-**Figure 8. Correlations among multiple metrics measured across monitoring areas.** Points represent monitoring areas (n = 12) colored by distance from channel (green = <50 m; blue = 1.25 - 2.5 km; red = 9.38 km). Metrics are as follows: Dredge plume = proportion of days dredge plume present (see Fig. 2); Sed. deposition = total fine sediment deposition during project (kg / m2; see Fig. 5); Benthic sed. = mean daily proportion benthic sediment cover during project (see Fig. 4); Coral burial = mean daily probability of coral burial during project (see Fig. 6); Coral mort. = probability of partial mortality among tagged corals (see Fig. 7). Metrics derived from time series (e.g., Benthic sed., Coral burial) only include dates for which data were available from all monitoring areas. Each panel displays the correlation coefficient (*R*) for the two metrics, a linear regression, and p-value for the null hypothesis that the slope is equal to zero.
+**Figure 8. Correlations among multiple metrics measured across monitoring areas.** Points represent monitoring areas (n = 12) colored by distance from channel (green = <50 m; blue = 1.25 - 2.5 km; red = 9.38 km). Metrics are as follows: Dredge plume = proportion of days dredge plume present (see Fig. 2); Sed. accumulation = total fine sediment trap accumulation during project (kg / m2; see Fig. 5); Benthic sed. = mean daily proportion benthic sediment cover during project (see Fig. 4); Coral burial = mean daily probability of coral burial during project (see Fig. 6); Coral mort. = probability of partial mortality among tagged corals (see Fig. 7). Metrics derived from time series (e.g., Benthic sed., Coral burial) only include dates for which data were available from all monitoring areas. Each panel displays the correlation coefficient (*R*) for the two metrics, a linear regression, and p-value for the null hypothesis that the slope is equal to zero.
 
 \  
 
