@@ -71,5 +71,5 @@ This repository includes all data and analysis scripts to accompany the manuscri
 #### Figures:
 * **figures/:** Figures produced by [Rmd/Figures.Rmd](Rmd/Figures.Rmd)
 
-#### DCA_reports:
-* **DCA_reports/\*.pdf:** PDF reports from Dial Cordy and Associates referenced in this study
+#### reports:
+* **reports/\*.pdf:** PDFs of reports referenced in this study from Dial Cordy and Associates (DCA), Florida Department of Environmental Protection (FDEP), and National Marine Fisheries Service (NMFS).
