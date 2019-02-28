@@ -32,6 +32,16 @@ logit2prob <- function(logit){
 # Define start and end of dredging (for plotting)
 dredge.start.date <- as.Date("2013-11-20")                  # NOAA sediment report April 2016, page 44
 dredge.end.date <- as.Date("2015-03-16")                    # DCA report August 2015, page 3
+
+# Function to add distance category for each area
+add_dist_cat <- function(x) {
+  x %>% 
+    mutate(dist_cat = factor(case_when(
+      channel == "channelside" ~ "< 50 m",
+      reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+}
 ```
 
 # Load data
@@ -168,8 +178,8 @@ gamms.reef.dir <- cpce.f %>%
     Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
     Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
     sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
-    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.05))),
-    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.95)))
+    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.025))),
+    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.975)))
   )
 
 gamms.reef.dir.fits <- gamms.reef.dir %>% 
@@ -238,5 +248,22 @@ ba2 %>%
   filter(site == "R2S1") %>%
   summarise(fc = meanpropsand[year == 2016] / meanpropsand[year == 2013] - 1) %>%
   select(fc)
+```
+
+# Mean daily percent sediment cover by distance from channel
+```{r}
+dates1 <- gamms.reef.dir.fits %>%
+  filter(date > dredge.start.date, date < dredge.end.date) %>%
+  group_by(reef, dir, channel) %>%
+  summarise(d = list(unique(as.Date(date))))
+dates_all <- zoo::as.Date.numeric(Reduce(intersect, dates1$d))
+sandcov <- gamms.reef.dir.fits %>%
+  filter(date %in% dates_all) %>%
+  add_dist_cat() %>%
+  group_by(dist_cat) %>%
+  summarise(mean_sandcov = mean(fit),
+            sd_sandcov = sd(fit))
+
+sandcov
 ```
 

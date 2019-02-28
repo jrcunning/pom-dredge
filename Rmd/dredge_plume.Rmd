@@ -76,8 +76,8 @@ gamms1 <- plume.f %>%
     Rbeta = map(mod, ~ mvrnorm(n = 1000, coef(.), vcov(.))),
     Xp = map2(mod, newdata, ~ predict(object = .x, newdata = .y, type = "lpmatrix")),
     sim = map2(Xp, Rbeta, function(x, y) x %*% t(y)),
-    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.08))),
-    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.92)))
+    lci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.025))),
+    uci = map(sim, ~ logit2prob(apply(., 1, quantile, 0.975)))
   )
 
 

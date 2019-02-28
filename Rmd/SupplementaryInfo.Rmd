@@ -31,7 +31,7 @@ knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE)
 knitr::include_graphics("../figures/FigS1.png")
 ```
 
-**Figure S1. Percent sediment cover at each monitoring area during dredging operations.** Points indicate the mean percent sediment cover for each transect measured by CPCe analysis, and smooth lines show GAMM fits for each monitoring area (±84% CI). Fitted lines are colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure S1. Percent sediment cover at each monitoring area during dredging operations.** Points indicate the mean percent sediment cover for each transect measured by CPCe analysis, and smooth lines show GAMM fits for each monitoring area (±95% CI). Fitted lines are colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
 *Figure S1 is the same as Figure 5 with the time axis extended to show 2016 data points.*
 
@@ -42,9 +42,9 @@ knitr::include_graphics("../figures/FigS1.png")
 knitr::include_graphics("../figures/FigS2.png")
 ```
 
-**Figure S2. Correlation between fine sediment deposition rates and benthic sediment cover during dredging operations at each monitoring area.** The left y-axis and solid lines correspond to the fine sediment deposition rate (see Fig. S1), while the right y-axis and dotted lines correspond to percent sediment cover (see Fig. 2), with separate panels for each monitoring area. The coefficient of correlation between the two time series is displayed in each panel, along with the lag time (of cover following deposition) for which the highest correlation is observed (up to 120 days). Colors correspond to distance from channel. Blank panels are combinations of reef, direction, and distance for which monitoring data do not exist. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure S2. Correlation between fine sediment accumulation rates and benthic sediment cover during dredging operations at each monitoring area.** The left y-axis and solid lines correspond to the fine sediment trap accumulation rate (see Fig. S1), while the right y-axis and dotted lines correspond to percent sediment cover on the benthos (see Fig. 2), with separate panels for each monitoring area. The coefficient of correlation between the two time series is displayed in each panel, along with the lag time (of cover following accumulation) for which the highest correlation is observed (up to 120 days). Colors correspond to distance from channel. Blank panels are combinations of reef, direction, and distance for which monitoring data do not exist. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
-*Figure S2 presents the same data from Figures 3 and 5, analyzed and visualized together to show their correlation.*
+*Figure S2 presents the same data from Figures 3 and 5, analyzed and visualized together to show their temporal correlation.*
 
 \  
 
@@ -53,7 +53,7 @@ knitr::include_graphics("../figures/FigS2.png")
 knitr::include_graphics("../figures/FigS3.png")
 ```
 
-**Figure S3. Probability of partial or complete coral burial by sediments in each monitoring area during dredging operations.** Points indicate the proportion of living tagged corals in each monitoring area observed on a given date with the condition codes PBUR (partial burial) or BUR (complete burial). Lines represent GAMM fits for each monitoring area (±84% CI) colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure S3. Probability of partial or complete coral burial by sediments in each monitoring area during dredging operations.** Points indicate the proportion of living tagged corals in each monitoring area observed on a given date with the condition codes PBUR (partial burial) or BUR (complete burial). Lines represent GAMM fits for each monitoring area (±95% CI) colored by distance from channel. Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
 *Figure S3 is the same as Figure 6, but with the time axis extended to show the 2016 data points.*
 
@@ -82,7 +82,7 @@ knitr::include_graphics("../figures/FigS5.png")
 knitr::include_graphics("../figures/FigS6.png")
 ```
 
-**Figure S6. Density of non-disease-susceptible corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
+**Figure S6. Density of non-disease-susceptible corals ≥3cm within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010 and 2013, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m, and otherwise as points including only data from within 50m of the channel. Shaded regions and error bars represent 95% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (*** = p < 0.0001; ns = not significantly different).
 
 \ 
 
@@ -91,7 +91,7 @@ knitr::include_graphics("../figures/FigS6.png")
 knitr::include_graphics("../figures/FigS7.png")
 ```
 
-**Figure S7. Density of non-disease-susceptible small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 84% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
+**Figure S7. Density of non-disease-susceptible small corals (1-2cm) within 500m from the channel in each monitoring region before and after dredging operations.** Data 'before' dredging were collected in 2010, and data after dredging were collected in 2016-2017. GLMM fits are shown as lines for the regions and times in which data were collected at >2 points beyond 50m. Shaded regions and error bars represent 95% CI's. Text annotations indicate the results of tests for differences between timepoints at 20m and 300m from the channel (. = p < 0.1; * = p < 0.05; ns = not significantly different).
 
 \  
 
