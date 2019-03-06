@@ -187,11 +187,25 @@ fine.gamms.reef.dir.fits %>%
 load("data/processed/sed_deposited.RData")
 load("data/processed/sedtrap.fine.gamms.RData")
 
+add_dist_cat <- function(x) {
+  x %>% 
+    mutate(dist_cat = factor(case_when(
+      channel == "channelside" ~ "< 50 m",
+      reef == "HB" & channel == "control" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "S" ~ "1.25 - 2.5 km",
+      reef %in% c("R2", "R3") & channel == "control" & dir == "N" ~ "9.38 km")))
+}
+
+
 fine.gamms.reef.dir.fits %>%
+  #filter(middate >= "2013-11-20", middate <= "2015-03-16") %>%
   group_by(reef, dir, channel) %>%
   summarise(ndays = n(),
             over25 = sum(fit > 25),
             pctover25 = over25/ndays) %>%
-  arrange(pctover25)
+  arrange(pctover25) %>%
+  add_dist_cat() %>%
+  group_by(dist_cat) %>%
+  summarise(mean_pctover25 = mean(pctover25))
 ```
 
