@@ -423,5 +423,11 @@ sum(scler$count)
 transects <- scler %>%
   distinct(site, site2, transect, date)
 nrow(transects)
+
+# Total number of ESA listed corals counted
+scler %>%
+  filter(species %in% c("cervicornis", "ferox", "annularis", "faveolata", "franksi")) %>%
+  group_by(species) %>%
+  summarise(total = sum(count))
 ```
 
