@@ -259,7 +259,7 @@ plot_grid(fig.plumeprob, fig.finedepo, fig.sandcov, fig.pmort, ncol = 1)
 ascale <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)), d)
 
 
-png(filename = "figures/Fig9.png", width = 190, height = 95, units = "mm", res = 300)
+png(filename = "figures/Fig10.png", width = 190, height = 95, units = "mm", res = 300)
 
 par(mar = c(2.5, 2.6, 2, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
 
@@ -304,14 +304,14 @@ abline(v = 0, lty = 2)
 # abline(v = 10, lty = 3)
 dev.off()
 
-knitr::include_graphics("../figures/Fig9.png")
+knitr::include_graphics("../figures/Fig10.png")
 ```
 
 # Alternative version of figure with axes starting at zero
 ```{r, eval = F}
 ascale2 <- function(x, model, d) round(predict(model, newdata = data.frame(plumeprob = x)) - coef(model)[1], d)
 
-png(filename = "figures/Fig9alt.png", width = 190, height = 95, units = "mm", res = 300)
+png(filename = "figures/Fig10alt.png", width = 190, height = 95, units = "mm", res = 300)
 
 par(mar = c(2.5, 2.6, 2, 11), mgp = c(1.25, -0.1, 0), tcl = 0.3, cex.axis = 0.8)
 
@@ -341,7 +341,7 @@ abline(v = 0, lty = 2)
 
 dev.off()
 
-knitr::include_graphics("../figures/Fig9alt.png")
+knitr::include_graphics("../figures/Fig10alt.png")
 ```
 
 # Reported metrics
