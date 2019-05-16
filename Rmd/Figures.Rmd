@@ -123,7 +123,7 @@ ggplot(gamm.fits, aes(x = date, y = fit, color = dist_cat)) +
 ggsave(filename = "figures/Fig3.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
-**Figure 3. Presence of dredge plume as detected by satellite data.** Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Points (with jitter added) indicate the presence (1) or absence (0) of the dredge plume on a given date (data not available for all dates). Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
+**Figure 3. Presence of dredge plume as detected by satellite data.** Smooth lines are GAM fits for each monitoring area (±95% CI), colored according to distance from channel. Points indicate the presence or absence of the dredge plume on a given date (data not available for all dates). Vertical dotted lines indicate the beginning (2013-11-20) and end (2015-03-16) of dredging operations.
 
 \  
 
@@ -894,6 +894,8 @@ ggplot(df2, aes(x = diameter, fill = timepoint)) +
         legend.text = element_text(size = 8),
         axis.text.x = element_text(angle=0, hjust=0.5, vjust = 1)) +
   scale_fill_manual(labels = c("Before dredging", "After dredging"), values = c("#00BFC4", "#F8766D"))
+
+ggsave(filename = "figures/FigS8.png", device = "png", width = 190, height = 95, units = "mm")
 ```
 
 **Figure S8 - alternative.** *Alternative version of Figure S5, with absolute density instead of relative proportion on y-axis.*

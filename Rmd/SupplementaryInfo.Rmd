@@ -100,7 +100,7 @@ knitr::include_graphics("../figures/FigS7.png")
 knitr::include_graphics("../figures/FigS8.png")
 ```
 
-**Figure S8. Size frequency distribution of corals before and after dredging.** For the northern and southern middle and outer reefs, histograms show the relative proportion of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.
+**Figure S8. Size frequency distribution of corals before and after dredging.** For the northern and southern middle and outer reefs, histograms show the density of corals within 100m of the channel with a given maximum diameter. P-values on each panel are based on a Kruskal-Wallis test for a difference in mean diameter between the two timepoints.
 
 \ 
 

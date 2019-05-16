@@ -198,14 +198,18 @@ add_dist_cat <- function(x) {
 
 
 fine.gamms.reef.dir.fits %>%
-  #filter(middate >= "2013-11-20", middate <= "2015-03-16") %>%
-  group_by(reef, dir, channel) %>%
-  summarise(ndays = n(),
-            over25 = sum(fit > 25),
-            pctover25 = over25/ndays) %>%
-  arrange(pctover25) %>%
+  filter(middate >= "2013-11-20", middate <= "2015-03-16") %>%
+  nest(-reef, -dir, -channel) %>%
+  mutate(       days = map(data, nrow),
+              over25 = map(data, ~rle(.$fit > 25)),         # flag all days > 25 mg/cm2 threshold
+          over25runs = map(over25, ~ .$lengths[.$values]),  # count consec days above threshold
+         over25for30 = map(over25runs, ~ .[. > 30]),        # get periods over threshold for >30 days
+         overthresh  = map(over25for30, ~ sum(.))) %>%      # Sum length of these periods 
+  unnest(days, overthresh) %>%
+  mutate(pctoverthresh = overthresh / days) %>%             # Percent of days in these periods over threshold
+  arrange(pctoverthresh) %>%
   add_dist_cat() %>%
   group_by(dist_cat) %>%
-  summarise(mean_pctover25 = mean(pctover25))
+  summarise(mean_pctoverthresh = mean(pctoverthresh))
 ```
 
