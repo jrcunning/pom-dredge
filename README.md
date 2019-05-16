@@ -32,6 +32,9 @@ This work describes impacts to coral reefs surrounding the 2013-2015 dredging of
 * **data/processed/:** .RData objects containing processed data and statistical models for all analyses
 
 #### Rmd:
+
+*Note:* These R Markdown documents serve as records of data analysis including initial data exploration and plotting, and preliminary and intermediate analyses. As such, the labels and terminology found in some of the code and figures in these documents differ from what is presented in the final manuscript. For example, in initial analyses sites were coded as “channelside” or “control” based on the FDEP/DCA study design, but were subsequently recoded in final analyses according to distance from channel once it became clear that “control” sites were also impacted by dredging. Similarly, the benthic category “sand”, as coded by DCA, is referred to as sediment in final analyses, and the reef names also change from “Hard Bottom”, “Reef 2”, and “Reef 3” (as coded by DCA), to “Nearshore Ridge”, “Inner Reef”, and “Outer Reef”, respectively, to be consistent with published literature.
+
 * **Rmd/tidy_count_data.Rmd:** Code to import and tidy coral count data
 
 * **Rmd/tidy_cpce_data.Rmd:** Code to import and tidy CPCe data
