@@ -1,15 +1,13 @@
-# Analysis of dredging impacts to coral reefs at the Port of Miami
+This repository includes all data and analysis to accompany the manuscript:
 
-This work describes impacts to coral reefs surrounding the 2013-2015 dredging of the Port of Miami based on data collected before, during, and after dredging by Dial Cordy and Associates (DCA) on behalf of Great Lakes Dredge and Dock Company, the dredging contractors for the U.S. Army Corps of Engineers (USACE) and for the Port of Miami (Miami-Dade County). A front page for this repository can be accessed at [jrcunning.github.io/pom-dredge](http://jrcunning.github.io/pom-dredge) containing rendered Rmarkdown detailing all analyses conducted as part of this work. 
+## Extensive coral mortality and critical habitat loss following dredging and their association with remotely-sensed sediment plumes
+**Authors:** Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker  
+**Journal:** *Marine Pollution Bulletin*  
+**Link:** (pending)  
 
 -----
 
-This repository includes all data and analysis scripts to accompany the manuscript:
-
-#### Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes
-**Authors:** Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker  
-**Journal:** (pending)  
-**Link:** (pending)  
+This work describes impacts to coral reefs surrounding the 2013-2015 dredging of the Port of Miami based on data collected before, during, and after dredging by Dial Cordy and Associates (DCA) on behalf of Great Lakes Dredge and Dock Company, the dredging contractors for the U.S. Army Corps of Engineers (USACE) and for the Port of Miami (Miami-Dade County). A front page for this repository can be accessed at [jrcunning.github.io/pom-dredge](http://jrcunning.github.io/pom-dredge) containing rendered R Markdown detailing all analyses conducted as part of this work. 
 
 -----
 
@@ -27,7 +25,7 @@ This repository includes all data and analysis scripts to accompany the manuscri
 
 * **data/tagged_corals/:** Tagged coral condition data from DCA
 
-* **data/plume/:** Satellite detections of plume presence
+* **data/plume/:** Satellite detections of sediment plume presence
 
 * **data/reef_area/:** Area of coral reef and colonized hardbottom from GIS analysis
 
@@ -69,7 +67,7 @@ This repository includes all data and analysis scripts to accompany the manuscri
 * **Rmd/SupplementaryInfo.Rmd:** Code to produce the Supplementary Information for manuscript
 
 #### Figures:
-* **figures/:** Figures produced by [Rmd/Figures.Rmd](Rmd/Figures.Rmd)
+* **figures/\*:** Figures produced by [Rmd/Figures.Rmd](Rmd/Figures.Rmd), and tables
 
-#### reports:
+#### Reports:
 * **reports/\*.pdf:** PDFs of reports referenced in this study from Dial Cordy and Associates (DCA), Florida Department of Environmental Protection (FDEP), and National Marine Fisheries Service (NMFS).
