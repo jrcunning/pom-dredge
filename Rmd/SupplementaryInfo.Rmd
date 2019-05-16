@@ -1,11 +1,11 @@
 ---
-title: "Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes"
+title: "Extensive coral mortality and critical habitat loss following dredging and their association with remotely-sensed sediment plumes"
 output: html_document
 ---
 
 \  
   
-#### Ross Cunning^1,2,^*, Rachel N. Silverstein^3^, Brian B. Barnes^4^, Andrew C. Baker^1^
+#### Ross Cunning^1,2,^*, Rachel N. Silverstein^3,^*, Brian B. Barnes^4^, Andrew C. Baker^1^
 
 \  
 
