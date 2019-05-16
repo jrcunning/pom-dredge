@@ -274,7 +274,7 @@ anno_2 <- full_join(lsm2, sig) %>%
 anno <- bind_rows(anno, anno_2)
 
 # Save as RData
-save(newdata_1, lsm, anno, file = "data/nonsus.large.dens.mod.RData")
+save(newdata_1, lsm, anno, file = "data/processed/nonsus.large.dens.mod.RData")
 
 # PLOT ALL RESULTS FOR LARGE CORALS
 ggplot(data = newdata_1, aes(x = dist, y = fit, color = timepoint)) +
@@ -500,7 +500,7 @@ kwtest <- df %>%
 
 kwtest <- kwtest %>% mutate(x = 15, y = 0.1)
 
-save("df", "kwtest", file = "data/nonsus.sizefreq.RData")
+save("df", "kwtest", file = "data/processed/nonsus.sizefreq.RData")
 
 # Plot size frequency distributions and annotate with KW test p values
 ggplot(df, aes(x = diameter, fill = year <= 2010)) + 

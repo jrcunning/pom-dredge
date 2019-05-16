@@ -11,7 +11,7 @@
 
 <meta name="author" content="Ross Cunning" />
 
-<meta name="date" content="2019-02-28" />
+<meta name="date" content="2019-05-16" />
 
 <title>Disease-resistant coral count data analysis</title>
 
@@ -124,7 +124,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Disease-resistant coral count data analysis</h1>
 <h4 class="author"><em>Ross Cunning</em></h4>
-<h4 class="date"><em>2019-02-28</em></h4>
+<h4 class="date"><em>2019-05-16</em></h4>
 
 </div>
 
@@ -305,7 +305,7 @@ anno_2 &lt;- full_join(lsm2, sig) %&gt;%
 anno &lt;- bind_rows(anno, anno_2)
 
 # Save as RData
-save(newdata_1, lsm, anno, file = &quot;data/nonsus.large.dens.mod.RData&quot;)
+save(newdata_1, lsm, anno, file = &quot;data/processed/nonsus.large.dens.mod.RData&quot;)
 
 # PLOT ALL RESULTS FOR LARGE CORALS
 ggplot(data = newdata_1, aes(x = dist, y = fit, color = timepoint)) +
@@ -523,7 +523,7 @@ kwtest &lt;- df %&gt;%
 
 kwtest &lt;- kwtest %&gt;% mutate(x = 15, y = 0.1)
 
-save(&quot;df&quot;, &quot;kwtest&quot;, file = &quot;data/nonsus.sizefreq.RData&quot;)
+save(&quot;df&quot;, &quot;kwtest&quot;, file = &quot;data/processed/nonsus.sizefreq.RData&quot;)
 
 # Plot size frequency distributions and annotate with KW test p values
 ggplot(df, aes(x = diameter, fill = year &lt;= 2010)) + 
