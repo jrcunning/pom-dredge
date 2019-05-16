@@ -1,7 +1,5 @@
 ---
-title: "sediment_cover.Rmd"
-author: "Ross Cunning"
-date: "6/3/2018"
+title: "Sediment cover analysis"
 output: html_document
 editor_options: 
   chunk_output_type: console

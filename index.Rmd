@@ -1,7 +1,11 @@
 ---
-title: "Analysis of dredging impacts to coral reefs at the Port of Miami"
+title: "Extensive coral mortality and critical habitat loss following dredging and their association with remotely-sensed sediment plumes"
 output: html_document
 ---
+
+### Authors: Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker
+### Journal: Marine Pollution Bulletin
+### Link: (pending)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -9,13 +13,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 -----
 
-This site walks through the project's data analysis with code and output in rendered Rmarkdown documents. For access to all raw data and code, visit the Github repository at [github.com/jrcunning/pom-dredge](http://github.com/jrcunning/pom-dredge).
+This site walks through the project's data analysis with code and output in rendered R Markdown documents. For access to all raw data and code, visit the Github repository at [github.com/jrcunning/pom-dredge](http://github.com/jrcunning/pom-dredge).
 
 We also provide access to all public reports compiled by Dial Cordy and Associates, Florida Department of Environmental Protection (FDEP), and National Marine Fisheries Service (NMFS) related to the Port of Miami dredging project. Reports can be downloaded [here](https://github.com/jrcunning/pom-dredge/tree/master/reports).
 
 ## Data import and tidying
 
-In these Rmarkdown documents, raw data is imported and tidied into usable formats for downstream analysis.
+In these documents, raw data is imported and tidied into usable formats for downstream analysis.
 
 ##### [Sediment trap data](Rmd/tidy_sedtrap_data.html)
 

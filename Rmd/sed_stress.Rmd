@@ -1,5 +1,5 @@
 ---
-title: "Analysis of sedimentation stress to tagged corals"
+title: "Sedimentation stress to tagged corals: partial and total burial"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -99,6 +99,7 @@ tagged_bool_f <- tagged_bool %>%
   unnest(data.f)
 
 # Fit GAMMs for each reef
+set.seed(55423)
 gamms1 <- tagged_bool_f %>%
   # For each reef and direction
   nest(-reef, -dir) %>%
@@ -172,6 +173,7 @@ ggplot(sedstress.summ2, aes(x = date, y = prop, color = channel)) +
 
 ```{r}
 # Fit GAMMs for each reef
+set.seed(4327)
 gamms2 <- tagged_bool_f %>%
   # For each reef (R2N, R2S, R3N, R3S)
   nest(-reef, -dir) %>%

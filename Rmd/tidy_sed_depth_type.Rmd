@@ -1,7 +1,5 @@
 ---
-title: "tidy_sed_depth_type"
-author: "Ross Cunning"
-date: "8/3/2018"
+title: "Import and tidy sediment depth data"
 output: html_document
 ---
 

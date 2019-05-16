@@ -1,7 +1,5 @@
 ---
 title: "Coral count data analysis"
-author: "Ross Cunning"
-date: "`r Sys.Date()`"
 output: html_document
 editor_options: 
   chunk_output_type: console

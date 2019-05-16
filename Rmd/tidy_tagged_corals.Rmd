@@ -1,7 +1,5 @@
 ---
-title: "Import and tidy tagged coral data"
-author: "Ross Cunning, Rachel Silverstein"
-date: "3/07/2018"
+title: "Import and tidy tagged coral condition data"
 output: html_document
 ---
 

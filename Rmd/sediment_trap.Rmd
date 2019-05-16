@@ -1,5 +1,5 @@
 ---
-title: "Analysis of sediment deposition data"
+title: "Sediment trap data analysis"
 output: html_document
 ---
 
@@ -91,6 +91,7 @@ ggplot(sedrate, aes(x = middate, y = meanfine, color = channel)) +
 ## Fine sediments
 ```{r}
 # No random effects -- each sediment trap within a monitoring area is treated as an independent replicate
+set.seed(4324)
 fine.gamms.reef.dir <- sedtrap %>%
   nest(-reef, -dir, -channel) %>%   # Nest by reef and direction
   mutate(

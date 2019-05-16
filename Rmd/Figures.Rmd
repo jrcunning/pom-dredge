@@ -1,7 +1,5 @@
 ---
-title: "Extensive coral mortality and critical habitat loss following dredging associated with remotely-sensed sediment plumes"
-subtitle: "Manuscript Figures and Supplementary Figures"
-author: "Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker"
+title: "Manuscript Figures and Supplementary Figures"
 output:
   html_document:
     toc: true

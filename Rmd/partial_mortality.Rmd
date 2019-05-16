@@ -1,5 +1,5 @@
 ---
-title: "Analysis of partial mortality of tagged corals"
+title: "Partial mortality of tagged corals data analysis"
 output: html_document
 editor_options: 
   chunk_output_type: console

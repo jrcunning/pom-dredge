@@ -1,5 +1,5 @@
 ---
-title: "Analysis of dredge plume at permanent sites"
+title: "Analysis of dredge plume at permanent monitoring sites"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -60,6 +60,7 @@ ggplot(plume, aes(x = date, y = plume)) +
 plume.f <- plume %>% distinct(idx, date, plume, reef, dir, channel)
 
 # Fit GAMMs for each reef --- but only use multiple sites if diff pixels
+set.seed(9483)
 gamms1 <- plume.f %>%
   filter(reef %in% c("HB", "R2", "R3"), dir %in% c("N", "S")) %>%
   # For each reef and direction
