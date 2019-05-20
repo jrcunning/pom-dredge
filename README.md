@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.3065488.svg)](https://doi.org/10.5281/zenodo.3065488)
+
 This repository includes all data and analysis to accompany the manuscript:
 
 ## Extensive coral mortality and critical habitat loss following dredging and their association with remotely-sensed sediment plumes
