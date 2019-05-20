@@ -5,7 +5,7 @@ output: html_document
 
 \  
   
-#### Ross Cunning^1,2,^*, Rachel N. Silverstein^3,^*, Brian B. Barnes^4^, Andrew C. Baker^1^
+#### Ross Cunning^1,2,^\*, Rachel N. Silverstein^3,^\*, Brian B. Barnes^4^, Andrew C. Baker^1^
 
 \  
 
@@ -73,7 +73,7 @@ knitr::include_graphics("../figures/FigS4.png")
 knitr::include_graphics("../figures/FigS5.png")
 ```
 
-**Figure S5. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected.** Bars indicate the mean percent sediment based on CPCe analysis, and error bars represent standard deviation.
+**Figure S5. Percent cover before (2013) and after dredging (2016) at the three permanent monitoring sites for which both before and after data were collected.** Sites R2N1 and R2S1 were adjacent to the dredged channel, while site R2SC1 was located ~1.3 km away. Bars indicate the mean percent sediment based on CPCe analysis, and error bars represent standard deviation.
 
 \ 
 
