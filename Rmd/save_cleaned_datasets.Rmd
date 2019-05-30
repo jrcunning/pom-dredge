@@ -1,0 +1,51 @@
+---
+title: "Save cleaned versions of each DCA dataset as text file"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+# Save cleaned version of sediment trap data
+```{r}
+load("data/processed/sedtrap.RData")
+
+write.table(sedtrap, file = "data/cleaned_datasets/sediment_trap_data.txt", sep = "\t",
+            row.names = F, quote = F)
+```
+
+# Save cleaned version of CPCe data
+```{r}
+load("data/processed/cpce.RData")
+
+write.table(cpce_sub, file = "data/cleaned_datasets/cpce_data.txt", sep = "\t",
+            row.names = F, quote = F)
+```
+
+# Save cleaned version of tagged coral data
+```{r}
+load("data/processed/tagged.RData")
+
+write.table(tagged_c, file = "data/cleaned_datasets/tagged_coral_condition_data_1.txt",
+            sep = "\t", row.names = F, quote = F)
+write.table(tagged_bool, file = "data/cleaned_datasets/tagged_coral_condition_data_2.txt",
+            sep = "\t", row.names = F, quote = F)
+```
+
+# Save cleaned version of sediment depth data
+```{r}
+load("data/processed/sediment_depth.RData")
+substrate <- select(substrate, reef, dir, dist, dist_actual, site, site0, transect, meter_mark, sdepth_cm, stype)
+write.table(substrate, file = "data/cleaned_datasets/sediment_depth_and_type_data.txt",
+            sep = "\t", row.names = F, quote = F)
+```
+
+# Save cleaned version of scleractinian density data
+```{r}
+load("data/processed/all_counts.RData")
+write.table(all_counts, file = "data/cleaned_datasets/coral_count_data.txt",
+            sep = "\t", row.names = F, quote = F)
+```
+
