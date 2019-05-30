@@ -5,7 +5,7 @@ This repository includes all data and analysis to accompany the manuscript:
 ## Extensive coral mortality and critical habitat loss following dredging and their association with remotely-sensed sediment plumes
 **Authors:** Ross Cunning, Rachel N. Silverstein, Brian B. Barnes, Andrew C. Baker  
 **Journal:** *Marine Pollution Bulletin*  
-**Link:** (pending)  
+**Link:** [https://doi.org/10.1016/j.marpolbul.2019.05.027](https://doi.org/10.1016/j.marpolbul.2019.05.027)
 
 -----
 
