@@ -63,6 +63,6 @@ This document contains the final, formatted versions of all figures used in the 
 
 ## Manuscript
 
-##### [Manuscript]() (currently in review)
+##### [Manuscript](https://doi.org/10.1016/j.marpolbul.2019.05.027)
 
 ##### [Supplementary Information](Rmd/SupplementaryInfo.html)
