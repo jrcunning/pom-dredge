@@ -1,7 +1,7 @@
 ---
 title: "Review of: Unprecedented disease-related coral mortality in Southeastern Florida"
 author: "Rachel N. Silverstein, Ross Cunning, Andrew C. Baker"
-date: "`r Sys.Date()`"
+date: "2018-07-09"
 output: html_document
 editor_options: 
   chunk_output_type: console
@@ -67,6 +67,14 @@ Data issues that we have identified in this study are described in detail below.
 #####*Highlights indicate where conflicts occur that were not disclosed.*
 10. [Appendix I - Competing Interests Policy annotated.pdf](Appendix I - Competing Interests Policy annotated.pdf)
 
+### *\*Updated 2018-09-05:* Precht et al. response to this review (dated: 2018-09-05)
+11. [Precht et al. Response to Silverstein et al. 9.7.18 (WFP FINAL).pdf](Precht et al. Response to Silverstein et al. 9.7.18 (WFP FINAL).pdf)
+
+### *\*Updated 2019-05-24:* Cunning et al. 2019 *Mar Poll Bull*: Analysis of dredge impacts at Port of Miami
+12. [Cunning et al. 2019 - Extensive coral mortality and critical habitat loss following dredging and their association with remotely-sensed sediment plumes.pdf](Cunning et al. 2019 - Extensive coral mortality and critical habitat los ... g dredging and their association with remotely-sensed sediment plumes.pdf)
+
+### *\*Updated 2019-09-30:* Supplemental reports
+13. All Dial Cordy, FDEP, and NMFS reports associated with the dredging project can be accessed [here.](https://github.com/jrcunning/pom-dredge/tree/master/reports)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
