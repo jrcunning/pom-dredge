@@ -7,7 +7,7 @@ editor_options:
   chunk_output_type: console
 ---
 
-### *\*Updated 2019-11-05:* A [formal refutation of Precht et al. 2016](Review of Precht et al. Manuscript Nov 2019.pdf) has been submitted to the editorial office of *Scientific Reports*.
+### *\*Updated 2019-11-05:* A summary of this review, along with related scientific and ethical concerns, has been submitted to the editorial office of *Scientific Reports*, and can be accessed [here.](Review of Precht et al. Manuscript Nov 5 2019.pdf)
 
 # Introduction
 
